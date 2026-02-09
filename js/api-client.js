@@ -32,15 +32,16 @@ class APIClient {
             script.src = `${this.baseURL}?${queryParams.toString()}`;
 
             // Define global callback
-            window[callbackName] = (data) => {
+            window[callbackName] = (response) => {
                 // Cleanup
                 delete window[callbackName];
                 document.body.removeChild(script);
 
-                if (data.success) {
-                    resolve(data.data || data);
+                // API returns { success: true/false, data: {...} } or { success: false, message: "..." }
+                if (response.success) {
+                    resolve(response.data);
                 } else {
-                    reject(new Error(data.message || 'Request failed'));
+                    reject(new Error(response.message || 'Request failed'));
                 }
             };
 
