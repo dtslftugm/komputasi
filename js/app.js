@@ -1,148 +1,386 @@
 /**
- * Main Application Logic
+ * Main Application Logic - Layanan Komputasi DTSL
+ * GitHub Pages Version with JSONP API Integration
  */
 
-// ===== DOM ELEMENTS =====
-const form = document.getElementById('submission-form');
-const loadingOverlay = document.getElementById('loading-overlay');
-const loadingMessage = document.getElementById('loading-message');
-const successModal = new bootstrap.Modal(document.getElementById('success-modal'));
-const needsComputerCheckbox = document.getElementById('needsComputer');
-const computerSection = document.getElementById('computer-section');
+// ===== GLOBAL STATE =====
+let initialData = null;
+let dosenList = [];
+let softwareRules = {};
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('App initialized');
-    await loadInitialData();
-    setupEventListeners();
-});
 
-// ===== LOAD INITIAL DATA =====
-async function loadInitialData() {
+    // Show loading
+    showLoading('Memuat data awal...');
+
     try {
-        showLoading('Memuat data...');
+        // Load initial data from API
+        initialData = await api.getInitialData();
+        console.log('Initial Data:', initialData);
 
-        const data = await api.getInitialData();
-
-        // Populate dropdowns
-        if (data.prodiList) {
-            populateSelect('prodi', data.prodiList);
-        }
+        // Setup UI Components
+        setupThemeToggle();
+        setupBranding();
+        setupProdiDropdown();
+        setupDosenDropdown();
+        setupSoftwareSelect();
+        setupFormHandlers();
+        setupUploadMethodToggle();
+        setupComputerToggle();
 
         // Show announcement if exists
-        if (data.announcementText) {
-            document.getElementById('announcement-text').textContent = data.announcementText;
-            document.getElementById('announcement-alert').classList.remove('d-none');
-        }
+        showAnnouncement();
 
         hideLoading();
     } catch (error) {
-        console.error('Failed to load initial data:', error);
+        console.error('Initialization error:', error);
         hideLoading();
-        showError('Gagal memuat data. Pastikan backend sudah di-deploy.');
+        alert('Gagal memuat data. Silakan refresh halaman.');
+    }
+});
+
+// ===== BRANDING =====
+function setupBranding() {
+    if (!initialData) return;
+
+    // Set logo
+    const logo = document.getElementById('app-logo');
+    if (logo && initialData.logoUrl) {
+        logo.src = initialData.logoUrl;
+    }
+
+    // Set QR code
+    const qr = document.getElementById('app-qr');
+    if (qr && initialData.qrUrl) {
+        qr.src = initialData.qrUrl;
     }
 }
 
-// ===== POPULATE SELECT OPTIONS =====
-function populateSelect(selectId, options) {
-    const select = document.getElementById(selectId);
-    options.forEach(option => {
-        const optElement = document.createElement('option');
-        optElement.value = option;
-        optElement.textContent = option;
-        select.appendChild(optElement);
+// ===== ANNOUNCEMENT =====
+function showAnnouncement() {
+    if (!initialData || !initialData.announcementText) return;
+
+    const alert = document.getElementById('announcement-alert');
+    const text = document.getElementById('announcement-text');
+
+    if (initialData.announcementText.trim()) {
+        text.innerHTML = initialData.announcementText;
+        alert.classList.remove('d-none');
+    }
+}
+
+// ===== THEME TOGGLE =====
+function setupThemeToggle() {
+    const toggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        body.classList.remove('light-mode');
+        toggle.innerHTML = '☀️ Light Mode';
+    }
+
+    toggle.addEventListener('click', () => {
+        body.classList.toggle('light-mode');
+        const isLight = body.classList.contains('light-mode');
+        toggle.innerHTML = isLight ? '🌙 Dark Mode' : '☀️ Light Mode';
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
 }
 
-// ===== EVENT LISTENERS =====
-function setupEventListeners() {
-    // Form submission
-    form.addEventListener('submit', handleSubmit);
+// ===== PRODI DROPDOWN =====
+function setupProdiDropdown() {
+    if (!initialData || !initialData.prodiList) return;
 
-    // Computer checkbox toggle
-    needsComputerCheckbox.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            computerSection.classList.remove('d-none');
-        } else {
-            computerSection.classList.add('d-none');
-        }
+    const select = document.getElementById('prodi');
+    select.innerHTML = '<option value="">-- Pilih Prodi --</option>';
+
+    initialData.prodiList.forEach(prodi => {
+        const option = document.createElement('option');
+        option.value = prodi;
+        option.textContent = prodi;
+        select.appendChild(option);
     });
 
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('mulai').setAttribute('min', today);
-    document.getElementById('akhir').setAttribute('min', today);
+    // Handle change
+    select.addEventListener('change', handleProdiChange);
+}
+
+function handleProdiChange() {
+    const prodi = document.getElementById('prodi').value;
+    const universitasContainer = document.getElementById('universitas-container');
+    const dosenSelect = document.getElementById('dosenPembimbing');
+    const dosenManual = document.getElementById('dosenPembimbingManual');
+
+    if (prodi === 'Non-UGM') {
+        // Show universitas field, use manual dosen input
+        universitasContainer.style.display = 'block';
+        dosenSelect.style.display = 'none';
+        dosenManual.style.display = 'block';
+        dosenManual.required = false;
+    } else if (prodi) {
+        // Hide universitas, show dosen dropdown
+        universitasContainer.style.display = 'none';
+        dosenSelect.style.display = 'block';
+        dosenManual.style.display = 'none';
+        dosenSelect.disabled = false;
+    } else {
+        // No prodi selected
+        universitasContainer.style.display = 'none';
+        dosenSelect.disabled = true;
+    }
+}
+
+// ===== DOSEN DROPDOWN =====
+async function setupDosenDropdown() {
+    try {
+        // Get dosen list from initialData
+        if (initialData && initialData.dosenList) {
+            dosenList = initialData.dosenList;
+        }
+
+        const select = $('#dosenPembimbing');
+        select.empty();
+        select.append(new Option('-- Pilih Dosen --', ''));
+
+        dosenList.forEach(dosen => {
+            select.append(new Option(dosen, dosen));
+        });
+
+        // Initialize Select2
+        select.select2({
+            placeholder: 'Pilih Dosen Pembimbing / Pengampu',
+            allowClear: true,
+            width: '100%'
+        });
+
+    } catch (error) {
+        console.error('Error loading dosen list:', error);
+    }
+}
+
+// ===== SOFTWARE MULTI-SELECT =====
+async function setupSoftwareSelect() {
+    try {
+        // Get software list and rules from initialData
+        if (initialData && initialData.softwareList) {
+            const softwareList = initialData.softwareList;
+            softwareRules = initialData.softwareRules || {};
+
+            const select = $('#software');
+            select.empty();
+
+            softwareList.forEach(sw => {
+                select.append(new Option(sw, sw));
+            });
+
+            // Initialize Select2
+            select.select2({
+                placeholder: 'Pilih Software (boleh lebih > 1)',
+                allowClear: true,
+                width: '100%'
+            });
+        }
+    } catch (error) {
+        console.error('Error loading software list:', error);
+    }
+}
+
+// ===== UPLOAD METHOD TOGGLE =====
+function setupUploadMethodToggle() {
+    const methodUpload = document.getElementById('methodUpload');
+    const methodLink = document.getElementById('methodLink');
+    const uploadContainer = document.getElementById('inputUploadContainer');
+    const linkContainer = document.getElementById('inputLinkContainer');
+    const uploadInput = document.getElementById('uploadSurat');
+    const linkInput = document.getElementById('linkSurat');
+
+    function toggleMode() {
+        if (methodUpload.checked) {
+            uploadContainer.style.display = 'block';
+            linkContainer.style.display = 'none';
+            uploadInput.required = true;
+            linkInput.required = false;
+        } else {
+            uploadContainer.style.display = 'none';
+            linkContainer.style.display = 'block';
+            uploadInput.required = false;
+            linkInput.required = true;
+        }
+    }
+
+    methodUpload.addEventListener('change', toggleMode);
+    methodLink.addEventListener('change', toggleMode);
+}
+
+// ===== COMPUTER LAB TOGGLE =====
+function setupComputerToggle() {
+    const needsComputerYes = document.getElementById('needsComputerYes');
+    const needsComputerNo = document.getElementById('needsComputerNo');
+    const computerSection = document.getElementById('computer-section');
+
+    function toggleComputer() {
+        if (needsComputerYes.checked) {
+            computerSection.style.display = 'block';
+        } else {
+            computerSection.style.display = 'none';
+        }
+    }
+
+    needsComputerYes.addEventListener('change', toggleComputer);
+    needsComputerNo.addEventListener('change', toggleComputer);
 }
 
 // ===== FORM SUBMISSION =====
-async function handleSubmit(e) {
-    e.preventDefault();
+function setupFormHandlers() {
+    const form = document.getElementById('submission-form');
 
-    try {
-        showLoading('Mengirim permohonan...');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-        // Gather form data
-        const formData = {
-            nama: document.getElementById('nama').value.trim(),
-            nim: document.getElementById('nim').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            phone: document.getElementById('phone').value.trim(),
-            prodi: document.getElementById('prodi').value,
-            keperluanPenggunaan: document.getElementById('keperluan').value,
-            topik: document.getElementById('topik').value.trim(),
-            software: document.getElementById('software').value.trim(),
-            mulaiPemakaian: document.getElementById('mulai').value,
-            akhirPemakaian: document.getElementById('akhir').value || null,
-            needsComputer: needsComputerCheckbox.checked,
-            computerRoomPreference: document.getElementById('roomPreference').value || null,
-            linkSurat: document.getElementById('linkSurat').value.trim(),
-            timestamp: new Date().toISOString()
-        };
+        // Show loading
+        showLoading('Menyimpan data...');
 
-        // Submit to API
-        const result = await api.submitRequest(formData);
+        try {
+            // Collect form data
+            const formData = collectFormData();
 
-        hideLoading();
+            // Validate
+            if (!validateFormData(formData)) {
+                hideLoading();
+                return;
+            }
 
-        if (result.success) {
-            showSuccess(`Permohonan berhasil dikirim!<br>Request ID: <strong>${result.requestId || 'N/A'}</strong><br><br>Kami akan memverifikasi berkas Anda dan mengirimkan informasi akses melalui email.`);
-            form.reset();
-            computerSection.classList.add('d-none');
-        } else {
-            showError(result.message || 'Gagal mengirim permohonan');
+            // Submit via API
+            const result = await api.submitRequest(formData);
+
+            hideLoading();
+
+            if (result.success) {
+                showSuccessModal(result.requestId || 'Berhasil');
+                form.reset();
+            } else {
+                alert('Gagal menyimpan: ' + (result.message || 'Unknown error'));
+            }
+
+        } catch (error) {
+            hideLoading();
+            console.error('Submission error:', error);
+            alert('Terjadi kesalahan: ' + error.message);
         }
+    });
+}
 
-    } catch (error) {
-        hideLoading();
-        console.error('Submit error:', error);
-        showError('Terjadi kesalahan: ' + error.message);
+function collectFormData() {
+    // Get keperluan (radio buttons)
+    const keperluan = document.querySelector('input[name="keperluan"]:checked');
+
+    // Get software values (Select2 multi-select)
+    const softwareValues = $('#software').val() || [];
+
+    return {
+        keperluan: keperluan ? keperluan.value : '',
+        email: document.getElementById('email').value,
+        nama: document.getElementById('nama').value,
+        phone: document.getElementById('phone').value,
+        nim: document.getElementById('nim').value,
+        emailUGM: document.getElementById('emailUGM').value,
+        prodi: document.getElementById('prodi').value,
+        dosenPembimbing: getDosenValue(),
+        universitas: document.getElementById('universitas').value,
+        topik: document.getElementById('topik').value,
+        software: softwareValues.join(', '),
+        needsComputer: document.querySelector('input[name="needsComputer"]:checked')?.value,
+        roomPreference: document.getElementById('roomPreference').value,
+        mulai: document.getElementById('mulai').value,
+        akhir: document.getElementById('akhir').value,
+        catatan: document.getElementById('catatan').value,
+        uploadMethod: document.querySelector('input[name="uploadMethod"]:checked')?.value,
+        linkSurat: document.getElementById('linkSurat').value
+    };
+}
+
+function getDosenValue() {
+    const prodi = document.getElementById('prodi').value;
+    if (prodi === 'Non-UGM') {
+        return document.getElementById('dosenPembimbingManual').value;
+    } else {
+        return $('#dosenPembimbing').val();
     }
 }
 
-// ===== UI HELPERS =====
-function showLoading(message = 'Mohon Tunggu...') {
-    loadingMessage.textContent = message;
-    loadingOverlay.classList.add('active');
+function validateFormData(data) {
+    if (!data.keperluan) {
+        alert('Pilih keperluan penggunaan');
+        return false;
+    }
+
+    if (!data.email || !data.nama || !data.nim) {
+        alert('Lengkapi data personal');
+        return false;
+    }
+
+    if (!data.prodi) {
+        alert('Pilih program studi');
+        return false;
+    }
+
+    if (!data.topik) {
+        alert('Isi topik/judul');
+        return false;
+    }
+
+    if (!data.software || data.software === '') {
+        alert('Pilih minimal 1 software');
+        return false;
+    }
+
+    if (!data.mulai) {
+        alert('Tentukan tanggal mulai');
+        return false;
+    }
+
+    // Check upload method
+    if (data.uploadMethod === 'upload') {
+        const file = document.getElementById('uploadSurat').files[0];
+        if (!file) {
+            alert('Upload file surat keterangan');
+            return false;
+        }
+        if (file.size > 3 * 1024 * 1024) {
+            alert('File terlalu besar (max 3MB)');
+            return false;
+        }
+    } else if (data.uploadMethod === 'link') {
+        if (!data.linkSurat) {
+            alert('Sertakan link surat keterangan');
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// ===== SUCCESS MODAL =====
+function showSuccessModal(requestId) {
+    const modal = new bootstrap.Modal(document.getElementById('success-modal'));
+    const message = document.getElementById('success-message');
+    message.textContent = `Permohonan berhasil disubmit! Request ID: ${requestId}. Email konfirmasi telah dikirim.`;
+    modal.show();
+}
+
+// ===== LOADING OVERLAY =====
+function showLoading(message = 'Memuat...') {
+    const overlay = document.getElementById('loading-overlay');
+    const messageEl = document.getElementById('loading-message');
+    if (messageEl) messageEl.textContent = message;
+    overlay.classList.add('active');
 }
 
 function hideLoading() {
-    loadingOverlay.classList.remove('active');
-}
-
-function showSuccess(message) {
-    document.getElementById('success-message').innerHTML = message;
-    successModal.show();
-}
-
-function showError(message) {
-    alert('❌ Error: ' + message);
-}
-
-// ===== UTILITY FUNCTIONS =====
-function validateEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validateNIM(nim) {
-    return /^\d{2}\/\d{6}\/\w{2}\/\d{5}$/.test(nim);
+    const overlay = document.getElementById('loading-overlay');
+    overlay.classList.remove('active');
 }
