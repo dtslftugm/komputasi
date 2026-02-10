@@ -63,6 +63,10 @@ function setupBranding() {
         if (initialData.logoUrl && initialData.logoUrl.trim()) {
             logo.src = initialData.logoUrl;
             console.log('✅ Logo set successfully');
+        } else if (initialData.logo && initialData.logo.trim()) {
+            // Fallback for different key names
+            logo.src = initialData.logo;
+            console.log('✅ Logo set successfully (fallback)');
         } else {
             console.warn('⚠️ Logo URL is empty or invalid');
         }
@@ -76,6 +80,10 @@ function setupBranding() {
         if (initialData.qrUrl && initialData.qrUrl.trim()) {
             qr.src = initialData.qrUrl;
             console.log('✅ QR set successfully');
+        } else if (initialData.qr && initialData.qr.trim()) {
+            // Fallback
+            qr.src = initialData.qr;
+            console.log('✅ QR set successfully (fallback)');
         } else {
             console.warn('⚠️ QR URL is empty or invalid');
         }
@@ -164,8 +172,11 @@ function handleProdiChange() {
 async function setupDosenDropdown() {
     try {
         // Get dosen list from initialData
-        // Now returns array of {inisial, nama} objects
-        if (initialData && initialData.dosenList) {
+        // Use dosenListDetailed which returns array of {inisial, nama} objects
+        if (initialData && initialData.dosenListDetailed) {
+            dosenList = initialData.dosenListDetailed;
+        } else if (initialData && initialData.dosenList) {
+            // Fallback to simple format if detailed not available
             dosenList = initialData.dosenList;
         }
 
@@ -315,8 +326,8 @@ function collectFormData() {
     const softwareValues = $('#software').val() || [];
 
     return {
-        keperluan: keperluan ? keperluan.value : '',
-        email: document.getElementById('email').value,
+        keperluanPenggunaan: keperluan ? keperluan.value : '',
+        emailAddress: document.getElementById('email').value,
         nama: document.getElementById('nama').value,
         phone: document.getElementById('phone').value,
         nim: document.getElementById('nim').value,
@@ -324,15 +335,18 @@ function collectFormData() {
         prodi: document.getElementById('prodi').value,
         dosenPembimbing: getDosenValue(),
         universitas: document.getElementById('universitas').value,
-        topik: document.getElementById('topik').value,
+        topikJudul: document.getElementById('topik').value,
         software: softwareValues.join(', '),
-        needsComputer: document.querySelector('input[name="needsComputer"]:checked')?.value,
-        roomPreference: document.getElementById('roomPreference').value,
-        mulai: document.getElementById('mulai').value,
-        akhir: document.getElementById('akhir').value,
+        needsComputer: document.querySelector('input[name="needsComputer"]:checked')?.value === 'yes',
+        computerRoomPreference: document.getElementById('roomPreference').value,
+        preferredComputer: 'Auto Assign', // Default for standalone frontend
+        mulaiPemakaian: document.getElementById('mulai').value,
+        akhirPemakaian: document.getElementById('akhir').value,
         catatan: document.getElementById('catatan').value,
         uploadMethod: document.querySelector('input[name="uploadMethod"]:checked')?.value,
-        linkSurat: document.getElementById('linkSurat').value
+        linkSurat: document.getElementById('linkSurat').value,
+        isRenewal: false, // Default for new standalone requests
+        previousRequestId: ""
     };
 }
 
@@ -346,12 +360,12 @@ function getDosenValue() {
 }
 
 function validateFormData(data) {
-    if (!data.keperluan) {
+    if (!data.keperluanPenggunaan) {
         alert('Pilih keperluan penggunaan');
         return false;
     }
 
-    if (!data.email || !data.nama || !data.nim) {
+    if (!data.emailAddress || !data.nama || !data.nim) {
         alert('Lengkapi data personal');
         return false;
     }
@@ -361,7 +375,7 @@ function validateFormData(data) {
         return false;
     }
 
-    if (!data.topik) {
+    if (!data.topikJudul) {
         alert('Isi topik/judul');
         return false;
     }
@@ -371,7 +385,7 @@ function validateFormData(data) {
         return false;
     }
 
-    if (!data.mulai) {
+    if (!data.mulaiPemakaian) {
         alert('Tentukan tanggal mulai');
         return false;
     }

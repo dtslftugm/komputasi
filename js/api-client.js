@@ -58,25 +58,13 @@ class APIClient {
     }
 
     /**
-     * Make POST request using form submission trick
+     * Make POST request (using JSONP fallback for reading responses)
      */
     async postRequest(path, data) {
-        // For POST, we'll use fetch with no-cors mode as fallback
-        // Or we can create an iframe approach
-        try {
-            const response = await fetch(this.baseURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path, ...data })
-            });
-
-            // no-cors mode doesn't allow reading response
-            // Assume success if no error thrown
-            return { success: true };
-        } catch (error) {
-            throw new Error('POST request failed: ' + error.message);
-        }
+        // Since GAS doesn't support CORS for POST, we use JSONP even for data-sending actions
+        // if they are within URL length limits (~2KB). For larger data (files), 
+        // we must use standard POST and accept that we might not read the response.
+        return this.jsonpRequest(path, data);
     }
 
     // ==================== PUBLIC ENDPOINTS ====================
@@ -105,10 +93,10 @@ class APIClient {
     }
 
     /**
-     * Get software access rules
+     * Check software access restrictions
      */
-    async getSoftwareRules() {
-        return this.jsonpRequest('software-rules');
+    async checkSoftwareRestrictions(softwareListStr) {
+        return this.jsonpRequest('check-restrictions', { software: softwareListStr });
     }
 
     /**
