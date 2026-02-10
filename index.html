@@ -62,13 +62,20 @@
             </div>
 
             <!-- Announcement Box -->
-            <div id="announcement-alert" class="alert alert-warning d-none mb-4" role="alert">
-                <div class="d-flex align-items-start">
+            <div id="announcement-alert" class="alert alert-warning d-none mb-4 p-0 overflow-hidden shadow-sm"
+                role="alert" style="border-radius: 12px; cursor: pointer;">
+                <div class="d-flex align-items-center p-3" id="announcement-header">
                     <div class="fs-4 me-3">📢</div>
                     <div class="flex-grow-1">
-                        <strong>Informasi Penting</strong>
-                        <p id="announcement-text" class="mb-0 mt-2"></p>
+                        <strong class="d-block">Informasi Penting <span id="announcement-status-text"
+                                class="fw-normal small opacity-75">- Klik untuk detail</span></strong>
                     </div>
+                    <div id="announcement-chevron" class="ms-auto fs-5 fw-bold" style="transition: transform 0.3s;">▼
+                    </div>
+                </div>
+                <div id="announcement-body" class="p-4 pt-0 border-top mt-0"
+                    style="display: none; border-color: rgba(0,0,0,0.05) !important;">
+                    <div id="announcement-text" class="small"></div>
                 </div>
             </div>
 
@@ -188,6 +195,13 @@
                     <div class="col-12">
                         <label class="form-label required-label">Software</label>
                         <select class="form-select" id="software" multiple required></select>
+                        <div id="labOnlyWarning" class="alert alert-warning d-none mt-2 shadow-sm"
+                            style="border-radius: 8px;">
+                            <div class="d-flex">
+                                <span class="me-2">⚠️</span>
+                                <div id="labOnlyWarningText" class="small"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Computer Lab Request Section -->
@@ -233,6 +247,46 @@
                                                 <strong style="color: var(--info-text);">Note:</strong> Akses remote
                                                 (AnyDesk) hanya tersedia untuk <strong>Ruang Penelitian</strong>.
                                             </div>
+                                        </div>
+
+                                        <!-- Computer List Container -->
+                                        <div id="computer-selection-container" class="col-12 mt-3"
+                                            style="display:none;">
+                                            <hr class="my-3 opacity-25">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 class="fw-bold mb-0">🖥️ Pilih Unit Komputer</h6>
+                                                <div class="input-group input-group-sm" style="width: 250px;">
+                                                    <input type="text" id="computer-search" class="form-control"
+                                                        placeholder="Cari software/unit...">
+                                                </div>
+                                            </div>
+
+                                            <!-- Loading Spinner -->
+                                            <div id="computer-loading" class="text-center py-4" style="display:none;">
+                                                <div class="spinner-border text-primary" role="status"></div>
+                                                <div class="mt-2 small text-muted">Mencari unit tersedia...</div>
+                                            </div>
+
+                                            <!-- Computers Grid -->
+                                            <div id="computer-list" class="row g-3"></div>
+
+                                            <!-- No Computers Message -->
+                                            <div id="no-computers" class="text-center py-4 d-none">
+                                                <div class="text-muted mb-2">Tidak ada komputer tersedia di ruangan ini.
+                                                </div>
+                                            </div>
+
+                                            <!-- Pagination -->
+                                            <nav id="computer-pagination" class="mt-4 d-none">
+                                                <ul class="pagination pagination-sm justify-content-center">
+                                                    <li class="page-item"><button class="page-link"
+                                                            id="prev-page">Prev</button></li>
+                                                    <li class="page-item disabled"><span class="page-link"
+                                                            id="page-info">Page 1 / 1</span></li>
+                                                    <li class="page-item"><button class="page-link"
+                                                            id="next-page">Next</button></li>
+                                                </ul>
+                                            </nav>
                                         </div>
                                     </div>
                                 </div>

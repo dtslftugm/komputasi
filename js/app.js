@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupUploadMethodToggle();
         setupComputerToggle();
 
+        // Attach event listener for software change
+        $('#software').on('change', handleSoftwareChange);
+
         // Show announcement if exists
         showAnnouncement();
 
@@ -57,38 +60,36 @@ function setupBranding() {
     console.log('logoUrl:', initialData.logoUrl ? 'present (length: ' + initialData.logoUrl.length + ')' : 'EMPTY');
     console.log('qrUrl:', initialData.qrUrl ? 'present (length: ' + initialData.qrUrl.length + ')' : 'EMPTY');
 
-    // Set logo (use empty if not provided by API)
+    // Set logo
     const logo = document.getElementById('app-logo');
     if (logo) {
-        if (initialData.logoUrl && initialData.logoUrl.trim()) {
-            logo.src = initialData.logoUrl;
+        let logoSrc = initialData.logoUrl || initialData.logo || '';
+        if (logoSrc.trim()) {
+            // Add prefix if missing and it's likely base64 (doesn't start with http or data:)
+            if (!logoSrc.startsWith('http') && !logoSrc.startsWith('data:')) {
+                logoSrc = 'data:image/png;base64,' + logoSrc;
+            }
+            logo.src = logoSrc;
             console.log('✅ Logo set successfully');
-        } else if (initialData.logo && initialData.logo.trim()) {
-            // Fallback for different key names
-            logo.src = initialData.logo;
-            console.log('✅ Logo set successfully (fallback)');
         } else {
-            console.warn('⚠️ Logo URL is empty or invalid');
+            console.warn('⚠️ Logo URL/Data is empty');
         }
-    } else {
-        console.error('❌ Logo element #app-logo not found in DOM');
     }
 
-    // Set QR code (use empty if not provided)
+    // Set QR code
     const qr = document.getElementById('app-qr');
     if (qr) {
-        if (initialData.qrUrl && initialData.qrUrl.trim()) {
-            qr.src = initialData.qrUrl;
+        let qrSrc = initialData.qrUrl || initialData.qr || '';
+        if (qrSrc.trim()) {
+            // Add prefix if missing
+            if (!qrSrc.startsWith('http') && !qrSrc.startsWith('data:')) {
+                qrSrc = 'data:image/png;base64,' + qrSrc;
+            }
+            qr.src = qrSrc;
             console.log('✅ QR set successfully');
-        } else if (initialData.qr && initialData.qr.trim()) {
-            // Fallback
-            qr.src = initialData.qr;
-            console.log('✅ QR set successfully (fallback)');
         } else {
-            console.warn('⚠️ QR URL is empty or invalid');
+            console.warn('⚠️ QR URL/Data is empty');
         }
-    } else {
-        console.error('❌ QR element #app-qr not found in DOM');
     }
 }
 
@@ -96,12 +97,36 @@ function setupBranding() {
 function showAnnouncement() {
     if (!initialData || !initialData.announcementText) return;
 
-    const alert = document.getElementById('announcement-alert');
-    const text = document.getElementById('announcement-text');
+    const alertEl = document.getElementById('announcement-alert');
+    const textEl = document.getElementById('announcement-text');
+    const headerEl = document.getElementById('announcement-header');
+    const bodyEl = document.getElementById('announcement-body');
+    const chevronEl = document.getElementById('announcement-chevron');
+    const statusEl = document.getElementById('announcement-status-text');
 
     if (initialData.announcementText.trim()) {
-        text.innerHTML = initialData.announcementText;
-        alert.classList.remove('d-none');
+        textEl.innerHTML = initialData.announcementText;
+        alertEl.classList.remove('d-none');
+
+        // Toggle logic
+        let isExpanded = false;
+        headerEl.addEventListener('click', () => {
+            isExpanded = !isExpanded;
+            $(bodyEl).slideToggle();
+            chevronEl.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+            statusEl.textContent = isExpanded ? '- Klik untuk menutup' : '- Klik untuk detail';
+        });
+
+        // Auto-collapse timer (optional, like original)
+        setTimeout(() => {
+            if (!isExpanded) {
+                // Keep it collapsed initially as per user request "tidak menutup sendiri" 
+                // Wait, user said "tidak menutup sendiri" means it stays open? 
+                // OR it DIDN'T close itself but he wanted it to?
+                // "pengumuman tidak menutup sendiri" usually means it's stuck open.
+                // I'll make it interactive so he can close it.
+            }
+        }, 5000);
     }
 }
 
@@ -171,36 +196,37 @@ function handleProdiChange() {
 // ===== DOSEN DROPDOWN =====
 async function setupDosenDropdown() {
     try {
-        // Get dosen list from initialData
-        // Use dosenListDetailed which returns array of {inisial, nama} objects
-        if (initialData && initialData.dosenListDetailed) {
-            dosenList = initialData.dosenListDetailed;
-        } else if (initialData && initialData.dosenList) {
-            // Fallback to simple format if detailed not available
-            dosenList = initialData.dosenList;
+        if (initialData && (initialData.dosenListDetailed || initialData.dosenList)) {
+            dosenList = initialData.dosenListDetailed || initialData.dosenList;
+
+            const selectEl = document.getElementById('dosenPembimbing');
+            selectEl.innerHTML = '<option value="">-- Pilih Dosen --</option>';
+
+            dosenList.forEach(dosen => {
+                const opt = document.createElement('option');
+                if (typeof dosen === 'object' && dosen.nama && dosen.inisial) {
+                    opt.value = dosen.inisial;
+                    opt.textContent = dosen.nama;
+                } else {
+                    opt.value = dosen;
+                    opt.textContent = dosen;
+                }
+                selectEl.appendChild(opt);
+            });
+
+            // Initialize Select2 with a slight delay to ensure container width is available
+            setTimeout(() => {
+                $('#dosenPembimbing').select2({
+                    placeholder: 'Pilih Dosen Pembimbing / Pengampu',
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $('#dosenPembimbing').parent()
+                });
+            }, 100);
+        } else {
+            console.warn('Dosen list missing in initialData');
+            document.getElementById('dosenPembimbing').innerHTML = '<option value="">-- Dosen Tidak Ditemukan --</option>';
         }
-
-        const select = $('#dosenPembimbing');
-        select.empty();
-        select.append(new Option('-- Pilih Dosen --', ''));
-
-        // Display nama, but value is inisial
-        dosenList.forEach(dosen => {
-            if (typeof dosen === 'object' && dosen.nama && dosen.inisial) {
-                select.append(new Option(dosen.nama, dosen.inisial));
-            } else if (typeof dosen === 'string') {
-                // Fallback for old format
-                select.append(new Option(dosen, dosen));
-            }
-        });
-
-        // Initialize Select2
-        select.select2({
-            placeholder: 'Pilih Dosen Pembimbing / Pengampu',
-            allowClear: true,
-            width: '100%'
-        });
-
     } catch (error) {
         console.error('Error loading dosen list:', error);
     }
@@ -209,27 +235,74 @@ async function setupDosenDropdown() {
 // ===== SOFTWARE MULTI-SELECT =====
 async function setupSoftwareSelect() {
     try {
-        // Get software list and rules from initialData
         if (initialData && initialData.softwareList) {
             const softwareList = initialData.softwareList;
             softwareRules = initialData.softwareRules || {};
 
-            const select = $('#software');
-            select.empty();
+            const selectEl = document.getElementById('software');
+            selectEl.innerHTML = ''; // Start empty for multi-select
 
             softwareList.forEach(sw => {
-                select.append(new Option(sw, sw));
+                const opt = document.createElement('option');
+                opt.value = sw;
+                opt.textContent = sw;
+                selectEl.appendChild(opt);
             });
 
-            // Initialize Select2
-            select.select2({
-                placeholder: 'Pilih Software (boleh lebih > 1)',
-                allowClear: true,
-                width: '100%'
-            });
+            setTimeout(() => {
+                $('#software').select2({
+                    placeholder: 'Pilih Software (boleh lebih > 1)',
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $('#software').parent()
+                });
+            }, 100);
+        } else {
+            console.warn('Software list missing in initialData');
         }
     } catch (error) {
         console.error('Error loading software list:', error);
+    }
+}
+
+async function handleSoftwareChange() {
+    const selectedSoftware = $('#software').val() || [];
+    const warningDiv = document.getElementById('labOnlyWarning');
+    const warningText = document.getElementById('labOnlyWarningText');
+    const roomSelect = document.getElementById('roomPreference');
+
+    if (selectedSoftware.length > 0) {
+        try {
+            const result = await api.checkSoftwareRestrictions(selectedSoftware.join(', '));
+            const { requiresLab, requiresNetwork, allowedRooms = [] } = result;
+
+            if (requiresLab) {
+                warningDiv.classList.remove('d-none');
+                warningText.innerHTML = `<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Kami telah mengaktifkan opsi penggunaan komputer lab untuk Anda.`;
+                document.getElementById('needsComputerYes').checked = true;
+                document.getElementById('computer-section').style.display = 'block';
+            } else if (result.needsBorrowKey) {
+                warningDiv.classList.remove('d-none');
+                warningText.innerHTML = `<strong>Borrow License:</strong> Software ini dapat diinstal di laptop pribadi, namun Anda memerlukan Borrow Key yang akan dikirim via email.`;
+            } else if (requiresNetwork) {
+                warningDiv.classList.remove('d-none');
+                warningText.innerHTML = `<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi internal UGM untuk mengaktifkan lisensi software ini di laptop pribadi.`;
+            } else {
+                warningDiv.classList.add('d-none');
+            }
+
+            // Filter available rooms
+            Array.from(roomSelect.options).forEach(opt => {
+                if (opt.value === '') return;
+                opt.disabled = allowedRooms.length > 0 && !allowedRooms.includes(opt.value);
+            });
+
+        } catch (error) {
+            console.error('Error checking software restrictions:', error);
+        }
+    } else {
+        warningDiv.classList.add('d-none');
+        Array.from(roomSelect.options).forEach(opt => opt.disabled = false);
     }
 }
 
@@ -261,21 +334,158 @@ function setupUploadMethodToggle() {
 }
 
 // ===== COMPUTER LAB TOGGLE =====
+let availableComputers = [];
+let filteredComputers = [];
+let selectedComputer = null;
+let currentPage = 1;
+const itemsPerPage = 6;
+
 function setupComputerToggle() {
     const needsComputerYes = document.getElementById('needsComputerYes');
     const needsComputerNo = document.getElementById('needsComputerNo');
     const computerSection = document.getElementById('computer-section');
+    const roomPreference = document.getElementById('roomPreference');
+    const computerSearch = document.getElementById('computer-search');
 
     function toggleComputer() {
         if (needsComputerYes.checked) {
             computerSection.style.display = 'block';
+            if (roomPreference.value) loadAvailableComputers();
         } else {
             computerSection.style.display = 'none';
+            selectedComputer = null;
         }
     }
 
     needsComputerYes.addEventListener('change', toggleComputer);
     needsComputerNo.addEventListener('change', toggleComputer);
+
+    // Room change listener
+    roomPreference.addEventListener('change', loadAvailableComputers);
+
+    // Search listener
+    computerSearch.addEventListener('input', filterComputers);
+
+    // Pagination listeners
+    document.getElementById('prev-page').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage > 1) {
+            currentPage--;
+            renderComputerPage();
+        }
+    });
+
+    document.getElementById('next-page').addEventListener('click', (e) => {
+        e.preventDefault();
+        const totalPages = Math.ceil(filteredComputers.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderComputerPage();
+        }
+    });
+}
+
+async function loadAvailableComputers() {
+    const room = document.getElementById('roomPreference').value;
+    const container = document.getElementById('computer-selection-container');
+    const loading = document.getElementById('computer-loading');
+    const list = document.getElementById('computer-list');
+    const noComputers = document.getElementById('no-computers');
+    const pagination = document.getElementById('computer-pagination');
+
+    if (!room) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    loading.style.display = 'block';
+    list.innerHTML = '';
+    noComputers.classList.add('d-none');
+    pagination.classList.add('d-none');
+
+    try {
+        const computers = await api.getAvailableComputers(room);
+        availableComputers = computers || [];
+        filterComputers();
+    } catch (error) {
+        console.error('Error loading computers:', error);
+        loading.style.display = 'none';
+        alert('Gagal memuat daftar komputer.');
+    }
+}
+
+function filterComputers() {
+    const searchTerm = document.getElementById('computer-search').value.toLowerCase();
+
+    filteredComputers = availableComputers.filter(comp => {
+        const name = (comp.name || '').toLowerCase();
+        const sw = (comp.softwareInstalled || '').toLowerCase();
+        return name.includes(searchTerm) || sw.includes(searchTerm);
+    });
+
+    currentPage = 1;
+    renderComputerPage();
+}
+
+function renderComputerPage() {
+    const loading = document.getElementById('computer-loading');
+    const list = document.getElementById('computer-list');
+    const noComputers = document.getElementById('no-computers');
+    const pagination = document.getElementById('computer-pagination');
+    const pageInfo = document.getElementById('page-info');
+
+    loading.style.display = 'none';
+    list.innerHTML = '';
+
+    if (filteredComputers.length === 0) {
+        noComputers.classList.remove('d-none');
+        pagination.classList.add('d-none');
+        return;
+    }
+
+    noComputers.classList.add('d-none');
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredComputers.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const items = filteredComputers.slice(start, end);
+
+    items.forEach(comp => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+
+        const isSelected = selectedComputer && selectedComputer.name === comp.name;
+
+        col.innerHTML = `
+            <div class="card h-100 computer-card ${isSelected ? 'selected' : ''}" style="cursor: pointer; transition: all 0.2s;">
+                <div class="card-body p-3">
+                    <h6 class="card-title fw-bold mb-1">${comp.name}</h6>
+                    <div class="small text-muted mb-2">📍 ${comp.location || '-'}</div>
+                    <div class="small mb-2" style="font-size: 0.75rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                        <strong>💾:</strong> ${comp.softwareInstalled || '-'}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        col.querySelector('.card').addEventListener('click', () => {
+            selectedComputer = comp;
+            renderComputerPage();
+        });
+
+        list.appendChild(col);
+    });
+
+    if (totalPages > 1) {
+        pagination.classList.remove('d-none');
+        pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+        document.getElementById('prev-page').parentElement.classList.toggle('disabled', currentPage === 1);
+        document.getElementById('next-page').parentElement.classList.toggle('disabled', currentPage === totalPages);
+    } else {
+        pagination.classList.add('d-none');
+    }
 }
 
 // ===== FORM SUBMISSION =====
@@ -339,7 +549,7 @@ function collectFormData() {
         software: softwareValues.join(', '),
         needsComputer: document.querySelector('input[name="needsComputer"]:checked')?.value === 'yes',
         computerRoomPreference: document.getElementById('roomPreference').value,
-        preferredComputer: 'Auto Assign', // Default for standalone frontend
+        preferredComputer: selectedComputer ? selectedComputer.name : 'Auto Assign',
         mulaiPemakaian: document.getElementById('mulai').value,
         akhirPemakaian: document.getElementById('akhir').value,
         catatan: document.getElementById('catatan').value,
