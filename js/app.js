@@ -280,17 +280,29 @@ async function handleSoftwareChange() {
 
             if (requiresLab) {
                 warningDiv.classList.remove('d-none');
-                warningText.innerHTML = `<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Kami telah mengaktifkan opsi penggunaan komputer lab untuk Anda.`;
-                document.getElementById('needsComputerYes').checked = true;
-                document.getElementById('computer-section').style.display = 'block';
+                warningText.innerHTML = `<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Anda wajib memilih unit komputer di bawah ini.`;
+
+                const needsComputerYes = document.getElementById('needsComputerYes');
+                const needsComputerNo = document.getElementById('needsComputerNo');
+
+                if (needsComputerYes) needsComputerYes.checked = true;
+                if (needsComputerNo) needsComputerNo.disabled = true;
+
+                // Show computer section
+                const computerSection = document.getElementById('computer-section');
+                if (computerSection) computerSection.style.display = 'block';
+
             } else if (result.needsBorrowKey) {
                 warningDiv.classList.remove('d-none');
                 warningText.innerHTML = `<strong>Borrow License:</strong> Software ini dapat diinstal di laptop pribadi, namun Anda memerlukan Borrow Key yang akan dikirim via email.`;
+                document.getElementById('needsComputerNo').disabled = false;
             } else if (requiresNetwork) {
                 warningDiv.classList.remove('d-none');
                 warningText.innerHTML = `<strong>Info Jaringan:</strong> Gunakan VPN UGM atau koneksi internal UGM untuk mengaktifkan lisensi software ini di laptop pribadi.`;
+                document.getElementById('needsComputerNo').disabled = false;
             } else {
                 warningDiv.classList.add('d-none');
+                document.getElementById('needsComputerNo').disabled = false;
             }
 
             // Filter available rooms
