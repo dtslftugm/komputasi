@@ -173,18 +173,22 @@ function handleProdiChange() {
     const universitasContainer = document.getElementById('universitas-container');
     const dosenSelect = document.getElementById('dosenPembimbing');
     const dosenManual = document.getElementById('dosenPembimbingManual');
+    const select2Container = $(dosenSelect).next('.select2-container');
 
     if (prodi === 'Non-UGM') {
         // Show universitas field, use manual dosen input
         universitasContainer.style.display = 'block';
-        dosenSelect.style.display = 'none';
+        if (select2Container.length) select2Container.hide();
+        else dosenSelect.style.display = 'none';
         dosenManual.style.display = 'block';
-        dosenManual.required = false;
+        dosenManual.required = true;
     } else if (prodi) {
         // Hide universitas, show dosen dropdown
         universitasContainer.style.display = 'none';
-        dosenSelect.style.display = 'block';
+        if (select2Container.length) select2Container.show();
+        else dosenSelect.style.display = 'block';
         dosenManual.style.display = 'none';
+        dosenManual.required = false;
         dosenSelect.disabled = false;
     } else {
         // No prodi selected
@@ -549,7 +553,7 @@ function collectFormData() {
         software: softwareValues.join(', '),
         needsComputer: document.querySelector('input[name="needsComputer"]:checked')?.value === 'yes',
         computerRoomPreference: document.getElementById('roomPreference').value,
-        preferredComputer: selectedComputer ? selectedComputer.name : 'Auto Assign',
+        preferredComputer: selectedComputer ? selectedComputer.name : '',
         mulaiPemakaian: document.getElementById('mulai').value,
         akhirPemakaian: document.getElementById('akhir').value,
         catatan: document.getElementById('catatan').value,
