@@ -213,6 +213,9 @@ async function setupDosenDropdown() {
                 selectEl.appendChild(opt);
             });
 
+            // Enable element
+            selectEl.disabled = false;
+
             // Initialize Select2 with a slight delay to ensure container width is available
             setTimeout(() => {
                 $('#dosenPembimbing').select2({
