@@ -38,8 +38,9 @@ class APIClient {
                 document.body.removeChild(script);
 
                 // API returns { success: true/false, data: {...} } or { success: false, message: "..." }
+                // We handle both legacy direct-return and new standard-wrapped formats
                 if (response.success) {
-                    resolve(response.data);
+                    resolve(response.data !== undefined ? response.data : response);
                 } else {
                     reject(new Error(response.message || 'Request failed'));
                 }
