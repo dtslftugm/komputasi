@@ -304,7 +304,12 @@ function checkSoftwareRestrictionsClient(softwareStr) {
 
             if (hasBorrow) needsBorrowKey = true;
 
-            if (!hasCloud && !hasServer && !hasBorrow) {
+            // User Rule: Forced lab only if software ONLY has physical room rules
+            const isPhysicalOnly = swRules.length > 0 && swRules.every(rule =>
+                physicalRooms.some(pr => rule.toLowerCase().includes(pr.toLowerCase()))
+            );
+
+            if (isPhysicalOnly) {
                 requiresLabTotal = true;
             }
             if (!hasCloud && !hasBorrow && hasServer) {
