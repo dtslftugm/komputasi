@@ -658,7 +658,7 @@ function setupFormHandlers() {
 
             if (result.success) {
                 showSuccessModal(result.requestId || 'Berhasil');
-                form.reset();
+                resetForm();
             } else {
                 alert('Gagal menyimpan: ' + (result.message || 'Unknown error'));
             }
@@ -792,4 +792,50 @@ function showLoading(message = 'Memuat...') {
 function hideLoading() {
     const overlay = document.getElementById('loading-overlay');
     overlay.classList.remove('active');
+}
+
+// ===== COMPREHENSIVE RESET =====
+function resetForm() {
+    const form = document.getElementById('submission-form');
+    if (!form) return;
+
+    // 1. Reset standard HTML fields
+    form.reset();
+
+    // 2. Reset Select2 (Software & Dosen)
+    $('#software').val(null).trigger('change');
+    $('#dosenPembimbing').val(null).trigger('change');
+
+    // 3. Reset Computer Selection State
+    selectedComputer = null;
+    availableComputers = [];
+    filteredComputers = [];
+    currentPage = 1;
+
+    // 4. Reset UI Sections & Warnings
+    document.getElementById('computer-section').style.display = 'none';
+    const serverFields = document.getElementById('serverAccessFields');
+    if (serverFields) serverFields.style.display = 'none';
+
+    const warningDiv = document.getElementById('labOnlyWarning');
+    if (warningDiv) warningDiv.classList.add('d-none');
+
+    const roomSelect = document.getElementById('roomPreference');
+    if (roomSelect) {
+        Array.from(roomSelect.options).forEach(opt => opt.disabled = false);
+    }
+
+    const computerList = document.getElementById('computer-list');
+    if (computerList) computerList.innerHTML = '';
+
+    const computerPagination = document.getElementById('computer-pagination');
+    if (computerPagination) computerPagination.classList.add('d-none');
+
+    const universitasContainer = document.getElementById('universitas-container');
+    if (universitasContainer) universitasContainer.style.display = 'none';
+
+    const dosenManual = document.getElementById('dosenPembimbingManual');
+    if (dosenManual) dosenManual.style.display = 'none';
+
+    console.log('Form reset completed');
 }
