@@ -675,6 +675,12 @@ function collectFormData() {
     // Get keperluan (radio buttons)
     const keperluan = document.querySelector('input[name="keperluan"]:checked');
 
+    // Clean and format phone number
+    let rawPhone = document.getElementById('phone').value.replace(/\D/g, '');
+    if (rawPhone.startsWith('0')) rawPhone = rawPhone.substring(1);
+    else if (rawPhone.startsWith('62')) rawPhone = rawPhone.substring(2);
+    const formattedPhone = 'https://wa.me/+62' + rawPhone;
+
     // Get software values (Select2 multi-select)
     const softwareValues = $('#software').val() || [];
 
@@ -682,7 +688,7 @@ function collectFormData() {
         keperluanPenggunaan: keperluan ? keperluan.value : '',
         emailAddress: document.getElementById('email').value,
         nama: document.getElementById('nama').value,
-        phone: document.getElementById('phone').value,
+        phone: formattedPhone,
         nim: document.getElementById('nim').value,
         emailUGM: document.getElementById('emailUGM').value,
         prodi: document.getElementById('prodi').value,
