@@ -775,10 +775,29 @@ function validateFormData(data) {
 
 // ===== SUCCESS MODAL =====
 function showSuccessModal(requestId) {
-    const modal = new bootstrap.Modal(document.getElementById('success-modal'));
+    const modalEl = document.getElementById('success-modal');
+    if (!modalEl) return;
+
     const message = document.getElementById('success-message');
-    message.textContent = `Permohonan berhasil disubmit! Request ID: ${requestId}. Email konfirmasi telah dikirim.`;
-    modal.show();
+    if (message) {
+        message.textContent = `Permohonan berhasil disubmit! Request ID: ${requestId}. Email konfirmasi telah dikirim.`;
+    }
+
+    // Get or create instance to avoid duplicate objects
+    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    // Fix ARIA Warning: remove aria-hidden before showing
+    modalEl.removeAttribute('aria-hidden');
+
+    // Add hidden listener to ensure focus is moved properly when closed
+    modalEl.addEventListener('hide.bs.modal', function () {
+        // Blur any focused element inside to prevent "Blocked aria-hidden"
+        if (document.activeElement && modalEl.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    }, { once: true });
+
+    modalInstance.show();
 }
 
 // ===== LOADING OVERLAY =====
