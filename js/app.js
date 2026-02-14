@@ -246,8 +246,16 @@ async function setupSoftwareSelect() {
 
             softwareList.forEach(sw => {
                 const opt = document.createElement('option');
-                opt.value = sw;
-                opt.textContent = sw;
+
+                if (typeof sw === 'object' && sw.name) {
+                    opt.value = sw.name;
+                    opt.textContent = sw.name + (sw.isAvailable ? "" : " (FULL)");
+                    if (!sw.isAvailable) opt.disabled = true;
+                } else {
+                    opt.value = sw;
+                    opt.textContent = sw;
+                }
+
                 selectEl.appendChild(opt);
             });
 
@@ -643,28 +651,62 @@ function setupFormHandlers() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Show loading
-        showLoading('Menyimpan data...');
+        // Collect form data
+        const formData = collectFormData();
 
-        try {
-            // Collect form data
-            const formData = collectFormData();
+        // Validate
+        if (!validateFormData(formData)) {
+            return;
+        }
 
-            // Validate
-            if (!validateFormData(formData)) {
-                hideLoading();
-                return;
+        // Handle File Reading first if needed
+        let fileObj = null;
+        if (formData.uploadMethod === 'upload') {
+            const fileInput = document.getElementById('uploadSurat');
+            if (fileInput.files.length > 0) {
+                showLoading('Membaca file...');
+                try {
+                    fileObj = await getFileBase64(fileInput.files[0]);
+                } catch (err) {
+                    hideLoading();
+                    alert('Gagal membaca file: ' + err.message);
+                    return;
+                }
             }
+        }
 
-            // Submit via API
+        // Step 1: Submit Text Data
+        showLoading('Menyimpan data...');
+        try {
             const result = await api.submitRequest(formData);
 
-            hideLoading();
-
             if (result.success) {
-                showSuccessModal(result.requestId || 'Berhasil');
+                const rowIndex = result.rowIndex;
+                const requestId = result.requestId;
+
+                // Step 2: Upload File if exists
+                if (fileObj && rowIndex) {
+                    showLoading('Mengunggah file (Step 2/2)...');
+                    try {
+                        const uploadResult = await api.uploadFile({
+                            rowIndex: rowIndex,
+                            fileData: fileObj.data,
+                            mimeType: fileObj.mimeType,
+                            fileName: fileObj.name
+                        });
+                        console.log('Upload result (opaque):', uploadResult);
+                    } catch (uploadErr) {
+                        console.error('File upload failed:', uploadErr);
+                        // We still show success for data, but warn about file
+                        alert('Data tersimpan, namun unggahan file gagal. Admin akan menghubungi Anda jika diperlukan.');
+                    }
+                }
+
+                hideLoading();
+                showSuccessModal(requestId || 'Berhasil');
                 resetForm();
             } else {
+                hideLoading();
                 alert('Gagal menyimpan: ' + (result.message || 'Unknown error'));
             }
 
@@ -673,6 +715,25 @@ function setupFormHandlers() {
             console.error('Submission error:', error);
             alert('Terjadi kesalahan: ' + error.message);
         }
+    });
+}
+
+/**
+ * Helper to convert File to Base64
+ */
+function getFileBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64String = reader.result.split(',')[1];
+            resolve({
+                data: base64String,
+                mimeType: file.type,
+                name: file.name
+            });
+        };
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
     });
 }
 

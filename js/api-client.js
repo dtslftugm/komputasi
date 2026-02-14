@@ -153,6 +153,33 @@ class APIClient {
     async rejectRequest(requestId, reason) {
         return this.postRequest('admin-reject', { requestId, reason });
     }
+
+    /**
+     * Upload file via simple POST (bypass JSONP URL length limits)
+     * Uses simple request (no-cors) to avoid preflight issues
+     * @param {object} data - { rowIndex, fileData, mimeType, fileName }
+     * @returns {Promise}
+     */
+    async uploadFile(data) {
+        const payload = JSON.stringify({
+            path: 'upload-file',
+            ...data
+        });
+
+        // Use fetch with text/plain to maintain 'Simple Request' status
+        return fetch(this.baseURL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+            body: payload
+        }).then(() => {
+            // mode: 'no-cors' returns opaque response, we can't read content
+            // However, reaching here usually means the bytes were sent
+            return { success: true, opaque: true };
+        });
+    }
 }
 
 // Create singleton instance
