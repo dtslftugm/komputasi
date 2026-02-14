@@ -287,6 +287,83 @@
         </main>
     </div>
 
+    <!-- Agenda Management Modal -->
+    <div class="modal fade" id="agendaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="fw-bold outfit"><i class="bi bi-calendar-event me-2"></i>Manajemen Agenda Lab</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Form Tambah Agenda -->
+                    <div class="card border-0 bg-light mb-4 shadow-sm" style="border-radius: 16px;">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-3 small text-uppercase text-primary outfit">Tambah Agenda Baru</h6>
+                            <form id="agendaForm" onsubmit="event.preventDefault(); handleSimpanAgenda();">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Ruangan</label>
+                                        <select class="form-select rounded-pill small" id="agenda-ruangan" required>
+                                            <option value="Ruang Komputer 1">Ruang Komputer 1 (Barat)</option>
+                                            <option value="Ruang Komputer 2">Ruang Komputer 2 (Timur)</option>
+                                            <option value="Ruang Penelitian">Ruang Penelitian</option>
+                                            <option value="Semua Ruangan">Semua Ruangan</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-bold">Nama Kegiatan</label>
+                                        <input type="text" class="form-control rounded-pill small" id="agenda-kegiatan"
+                                            required placeholder="Contoh: Kuliah Gambar Teknik">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Waktu Mulai</label>
+                                        <input type="datetime-local" class="form-control rounded-pill small"
+                                            id="agenda-mulai" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Waktu Selesai</label>
+                                        <input type="datetime-local" class="form-control rounded-pill small"
+                                            id="agenda-selesai" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Deskripsi / Catatan</label>
+                                        <textarea class="form-control" id="agenda-deskripsi" rows="2"
+                                            style="border-radius: 12px; font-size: 13px;"
+                                            placeholder="Keterangan tambahan..."></textarea>
+                                    </div>
+                                    <div class="col-12 text-end mt-2">
+                                        <button type="submit"
+                                            class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">Simpan
+                                            Agenda</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- List Agenda Mendatang -->
+                    <h6 class="fw-bold mb-3 small text-uppercase outfit">Agenda Mendatang</h6>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr class="small">
+                                    <th>Ruangan</th>
+                                    <th>Kegiatan</th>
+                                    <th>Waktu</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agenda-list" class="small">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Process Modal -->
     <div class="modal fade" id="processModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
