@@ -201,6 +201,32 @@ function renderMaintenanceTable(data) {
 
     data.forEach(item => {
         const tr = document.createElement('tr');
+
+        let checklistHtml = '';
+        let actionBtn = '';
+
+        if (item.type === 'PC') {
+            checklistHtml = `
+                <div class="form-check small mb-1">
+                    <input class="form-check-input" type="checkbox" id="check-storage-${item.targetName}">
+                    <label class="form-check-label" for="check-storage-${item.targetName}">Cek Sisa Storage</label>
+                </div>
+                <div class="form-check small mb-1">
+                    <input class="form-check-input" type="checkbox" id="check-junk-${item.targetName}">
+                    <label class="form-check-label" for="check-junk-${item.targetName}">Bersihkan File Sampah</label>
+                </div>
+            `;
+            actionBtn = `<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="handleFinishPCMaintenance('${item.targetName}')">PC OK</button>`;
+        } else {
+            checklistHtml = `
+                <div class="form-check small fw-bold text-info">
+                    <input class="form-check-input border-info" type="checkbox" id="check-license-${item.requestId}">
+                    <label class="form-check-label" for="check-license-${item.requestId}">Hapus dari Cloud Vendor Dashboard</label>
+                </div>
+            `;
+            actionBtn = `<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup('${item.requestId}', ${item.rowIndex})">Lisensi OK</button>`;
+        }
+
         tr.innerHTML = `
             <td>
                 <span class="badge ${item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white'} me-2">${item.type}</span>
@@ -214,34 +240,283 @@ function renderMaintenanceTable(data) {
                 <div class="small">${item.dateRef || '-'}</div>
                 <div class="extra-small text-danger">${item.daysAgo || 0} hari lalu</div>
             </td>
-            <td><div class="small text-muted">Maintenance rutin/Cleanup</div></td>
-            <td class="text-center">
-                <button class="btn btn-outline-primary btn-sm rounded-pill px-3" 
-                        onclick="alert('Selesaikan maintenance di dashboard GAS untuk keamanan sinkronisasi data.')">Detail</button>
-            </td>
+            <td>${checklistHtml}</td>
+            <td class="text-center">${actionBtn}</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
 function showMaintenanceModal() {
-    const container = document.getElementById('maintenance-container');
-    if (container) {
-        container.classList.remove('d-none');
-        container.scrollIntoView({ behavior: 'smooth' });
+    const modal = new bootstrap.Modal(document.getElementById('maintenanceModal'));
+    loadMaintenanceList('maintenanceTableBody');
+    modal.show();
+}
+
+async function handleFinishPCMaintenance(computerName) {
+    const storageCheck = document.getElementById(`check-storage-${computerName}`).checked;
+    const junkCheck = document.getElementById(`check-junk-${computerName}`).checked;
+
+    if (!storageCheck || !junkCheck) {
+        alert("Berikan tanda centang pada tugas yang sudah dikerjakan.");
+        return;
+    }
+
+    if (!confirm(`Status PC ${computerName} akan diatur menjadi Available. Lanjutkan?`)) return;
+
+    showLoading("Memproses...");
+    try {
+        const res = await api.jsonpRequest('admin-complete-maintenance', { computerName: computerName });
+        if (res.success) {
+            alert("Berhasil: PC sudah tersedia kembali.");
+            loadRequests();
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleFinishLicenseCleanup(requestId, rowIndex) {
+    if (!document.getElementById(`check-license-${requestId}`).checked) {
+        alert("Konfirmasi bahwa user telah dihapus dari vendor dashboard.");
+        return;
+    }
+
+    if (!confirm(`Selesaikan tugas cleanup untuk ID ${requestId}?`)) return;
+
+    showLoading("Memproses...");
+    try {
+        const res = await api.jsonpRequest('admin-complete-license-cleanup', { requestId, rowIndex });
+        if (res.success) {
+            alert("Berhasil: Tugas cleanup selesai.");
+            loadRequests();
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
     }
 }
 
 // Global functions for UI
 window.loadRequests = loadRequests;
 window.showSection = (sectionId) => {
-    // Basic navigation logic
     console.log("Switching to section:", sectionId);
-    // For now, only dashboard is implemented. 
-    // If you add more pages, handle them here.
 };
 window.showMaintenanceModal = showMaintenanceModal;
-window.openProcessModal = (id) => alert("Fitur proses detail (modal) akan menyusul di versi berikutnya.");
+window.handleFinishPCMaintenance = handleFinishPCMaintenance;
+window.handleFinishLicenseCleanup = handleFinishLicenseCleanup;
+
+/**
+ * --- REQUEST PROCESSING LOGIC ---
+ */
+let currentRequest = null;
+let processModalObj = null;
+
+async function openProcessModal(requestId) {
+    const req = pendingRequests.find(r => r.requestId === requestId);
+    if (!req) return;
+
+    currentRequest = req;
+    if (!processModalObj) {
+        processModalObj = new bootstrap.Modal(document.getElementById('processModal'));
+    }
+
+    // Set UI Details
+    document.getElementById('modal-request-id').textContent = requestId;
+    document.getElementById('modal-nama').textContent = req.nama;
+    document.getElementById('modal-nim').textContent = req.nim;
+    document.getElementById('modal-prodi').textContent = req.prodi;
+    document.getElementById('modal-email').textContent = req.email || '-';
+    document.getElementById('modal-doc-link').href = req.fileUrl;
+    document.getElementById('admin-notes').value = '';
+
+    // Handle Software Badges
+    const swContainer = document.getElementById('modal-software');
+    swContainer.innerHTML = '';
+    if (req.software) {
+        req.software.split(',').forEach(s => {
+            const span = document.createElement('span');
+            span.className = 'badge bg-light text-dark border small';
+            span.textContent = s.trim();
+            swContainer.appendChild(span);
+        });
+    }
+
+    // Default Expiration (14 days for Research, 30 for others)
+    const days = (req.roomPreference === 'Ruang Penelitian') ? 14 : 30;
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + days);
+    document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
+
+    // Activation Key handling (simplified for now)
+    const keyContainer = document.getElementById('activation-key-container');
+    keyContainer.classList.add('d-none');
+    if (req.requestType === 'Borrow License') {
+        keyContainer.classList.remove('d-none');
+    }
+
+    // Load Computer Specs if assigned
+    const specContainer = document.getElementById('computer-specs-container');
+    specContainer.classList.add('d-none');
+    if (req.preferredComputer && req.preferredComputer !== 'Auto Assign') {
+        specContainer.classList.remove('d-none');
+        document.getElementById('spec-name').textContent = req.preferredComputer;
+
+        try {
+            const res = await api.jsonpRequest('admin-computer-details', { computerName: req.preferredComputer });
+            if (res.success && res.data) {
+                document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
+                document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
+                document.getElementById('spec-location').textContent = res.data.location || '-';
+            }
+        } catch (e) {
+            console.warn("Failed to load computer details:", e);
+        }
+    }
+
+    processModalObj.show();
+}
+
+async function submitApproval() {
+    if (!document.getElementById('check-doc').checked) {
+        alert("Mohon verifikasi kelengkapan dokumen terlebih dahulu.");
+        return;
+    }
+
+    const data = {
+        requestId: currentRequest.requestId,
+        expirationDate: document.getElementById('expiration-date-input').value,
+        adminNotes: document.getElementById('admin-notes').value,
+        activationKey: document.getElementById('activation-key-input').value
+    };
+
+    showLoading("Memproses Approval...");
+    try {
+        const res = await api.jsonpRequest('admin-approve', data);
+        if (res.success) {
+            alert("Permohonan berhasil disetujui.");
+            processModalObj.hide();
+            loadRequests();
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function submitRejection() {
+    const reason = prompt("Masukkan alasan penolakan:");
+    if (!reason) return;
+
+    showLoading("Memproses Penolakan...");
+    try {
+        const res = await api.jsonpRequest('admin-reject', {
+            requestId: currentRequest.requestId,
+            reason: reason
+        });
+        if (res.success) {
+            alert("Permohonan telah ditolak.");
+            processModalObj.hide();
+            loadRequests();
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+window.openProcessModal = openProcessModal;
+window.submitApproval = submitApproval;
+window.submitRejection = submitRejection;
+
+/**
+ * --- EXPIRED USAGE LOGIC ---
+ */
+let expiredModalObj = null;
+
+async function showExpiredModal() {
+    if (!expiredModalObj) {
+        expiredModalObj = new bootstrap.Modal(document.getElementById('expiredModal'));
+    }
+    expiredModalObj.show();
+    loadExpiredUsage();
+}
+
+async function loadExpiredUsage() {
+    const tbody = document.getElementById('expiredTableBody');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">Memuat data...</td></tr>';
+
+    try {
+        const res = await api.jsonpRequest('admin-expired-usage');
+        if (res.success && res.data) {
+            renderExpiredTable(res.data);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">Tidak ada data expired.</td></tr>';
+        }
+    } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">Gagal memuat data.</td></tr>';
+    }
+}
+
+function renderExpiredTable(data) {
+    const tbody = document.getElementById('expiredTableBody');
+    tbody.innerHTML = '';
+
+    data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <div class="fw-bold">${item.nama}</div>
+                <div class="extra-small text-muted">${item.email}</div>
+            </td>
+            <td>
+                <div class="small fw-bold">${item.software}</div>
+                <div class="extra-small text-muted">${item.computer} (${item.room})</div>
+            </td>
+            <td class="text-danger fw-bold small">${item.expirationDate}</td>
+            <td class="text-center">
+                <button class="btn btn-outline-danger btn-sm" onclick="handleRevoke('${item.requestId}', '${item.nama}', ${item.rowIndex})">Revoke</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function handleRevoke(requestId, name, rowIndex) {
+    if (!confirm(`Cabut akses untuk ${name}? Komputer akan dijadwalkan maintenance.`)) return;
+
+    showLoading("Revoking Access...");
+    try {
+        const res = await api.jsonpRequest('admin-revoke', { requestId, rowIndex });
+        if (res.success) {
+            alert("Akses berhasil dicabut.");
+            loadExpiredUsage();
+            loadRequests();
+        } else {
+            alert("Gagal: " + res.message);
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+window.showExpiredModal = showExpiredModal;
+window.handleRevoke = handleRevoke;
 
 /**
  * --- AGENDA MANAGEMENT ---
@@ -264,7 +539,7 @@ async function refreshAgendaList() {
         const res = await api.jsonpRequest('admin-agendas');
         if (!tbody) return;
         const agendas = res.data || [];
-        
+
         if (agendas.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Tidak ada agenda mendatang</td></tr>';
             return;
@@ -318,7 +593,7 @@ async function handleSimpanAgenda() {
 
 async function handleHapusAgenda(rowIndex) {
     if (!confirm("Hapus agenda ini?")) return;
-    
+
     showLoading("Menghapus...");
     try {
         const res = await api.jsonpRequest('admin-delete-agenda', { rowIndex: rowIndex });
@@ -336,7 +611,7 @@ async function handleHapusAgenda(rowIndex) {
 
 async function handleBroadcastAgenda(rowIndex) {
     if (!confirm("Siarkan pengingat agenda ke pengguna terkait?")) return;
-    
+
     showLoading("Broadcasting...");
     try {
         const res = await api.jsonpRequest('admin-broadcast-agenda', { rowIndex: rowIndex });
