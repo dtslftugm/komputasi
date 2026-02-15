@@ -12,10 +12,15 @@ var softwareRules = {};
 document.addEventListener('DOMContentLoaded', function () {
     console.log('App initialized');
 
+    var renewalId = getUrlParam('renewal_id');
+    if (renewalId) {
+        console.log('Renewal detected:', renewalId);
+    }
+
     // Show loading
     showLoading('Memuat data awal...');
 
-    api.getInitialData()
+    api.getInitialData(renewalId)
         .then(function (response) {
             console.log('API Response received:', response);
 
@@ -24,11 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 throw new Error(response ? response.message : 'Unknown API error');
             }
-
-            console.log('Initial Data extracted:', initialData);
-            console.log('Has logo?', initialData && initialData.logo !== undefined);
-            console.log('Has qr?', initialData && initialData.qr !== undefined);
-            console.log('Has prodiList?', initialData && initialData.prodiList !== undefined);
 
             // Setup UI Components
             setupThemeToggle();
@@ -45,6 +45,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Show announcement if exists
             showAnnouncement();
+
+            // Handle Renewal Prefill
+            if (initialData && initialData.renewalData) {
+                prefillRenewalForm(initialData.renewalData);
+                // Mark as renewal
+                document.getElementById('main-content').insertAdjacentHTML('afterbegin',
+                    '<div class="alert alert-info shadow-sm mb-4"><strong>🔄 Mode Perpanjangan:</strong> Data Anda telah dimuat otomatis dari permohonan sebelumnya. Silahkan dicek kembali, lakukan edit sesuai kebutuhan.</div>'
+                );
+            }
 
             hideLoading();
         })
@@ -373,7 +382,7 @@ function handleSoftwareChange() {
 
         if (requiresLab) {
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = '<strong>Wajib di Lab:</strong> Software ini hanya tersedia di komputer laboratorium DTSL. Anda wajib memilih unit komputer di bawah ini.';
+            warningText.innerHTML = '<strong>Wajib di Lab:</strong> Software ini hanya tersedia di lab Komputasi DTSL. Anda wajib memilih unit komputer di bawah ini.';
 
             var needsComputerYes = document.getElementById('needsComputerYes');
             var needsComputerNo = document.getElementById('needsComputerNo');
@@ -496,7 +505,6 @@ function setupUploadMethodToggle() {
     methodLink.addEventListener('change', toggleMode);
 }
 
-// ===== COMPUTER LAB TOGGLE =====
 // ===== COMPUTER LAB TOGGLE =====
 var availableComputers = [];
 var filteredComputers = [];
@@ -794,8 +802,8 @@ function collectFormData() {
         tipeAkses: document.getElementById('tipeAkses').value,
         computerUserName: (document.getElementById('computerUserName') || {}).value || '',
         computerHostname: (document.getElementById('computerHostname') || {}).value || '',
-        isRenewal: false,
-        previousRequestId: ""
+        isRenewal: !!getUrlParam('renewal_id'),
+        previousRequestId: getUrlParam('renewal_id') || ""
     };
 }
 
@@ -839,6 +847,26 @@ function validateFormData(data) {
         return false;
     }
 
+    // Date Validation (ES5)
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var selectedDate = new Date(data.mulaiPemakaian);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+        alert('Tanggal mulai tidak boleh di masa lalu. Silakan pilih tanggal hari ini atau yang akan datang.');
+        return false;
+    }
+
+    if (data.akhirPemakaian) {
+        var endDate = new Date(data.akhirPemakaian);
+        endDate.setHours(0, 0, 0, 0);
+        if (endDate < selectedDate) {
+            alert('Tanggal akhir tidak boleh mendahului tanggal mulai.');
+            return false;
+        }
+    }
+
     // Check upload method
     if (data.uploadMethod === 'upload') {
         var fileList = document.getElementById('uploadSurat').files;
@@ -868,7 +896,7 @@ function showSuccessModal(requestId) {
 
     var message = document.getElementById('success-message');
     if (message) {
-        message.textContent = 'Permohonan berhasil disubmit! Request ID: ' + requestId + '. Email konfirmasi telah dikirim.';
+        message.textContent = 'Permohonan berhasil dikirim! Request ID: ' + requestId + '. Email konfirmasi telah dikirim.';
     }
 
     // Get or create instance to avoid duplicate objects
@@ -947,4 +975,71 @@ function resetForm() {
     if (dosenManual) dosenManual.style.display = 'none';
 
     console.log('Form reset completed');
+}
+
+// ===== HELPERS =====
+
+function getUrlParam(name) {
+    var search = window.location.search.substring(1);
+    var pairs = search.split('&');
+    for (var i = 0; i < pairs.length; i++) {
+        var pair = pairs[i].split('=');
+        if (decodeURIComponent(pair[0]) === name) {
+            return decodeURIComponent(pair[1] || '');
+        }
+    }
+    return null;
+}
+
+function prefillRenewalForm(data) {
+    if (!data) return;
+
+    if (data.nama) document.getElementById('nama').value = data.nama;
+    if (data.nim) document.getElementById('nim').value = data.nim;
+    if (data.emailAddress) document.getElementById('email').value = data.emailAddress;
+    if (data.emailUGM) document.getElementById('emailUGM').value = data.emailUGM;
+
+    if (data.phone) {
+        var phone = data.phone.replace('https://wa.me/+62', '');
+        document.getElementById('phone').value = phone;
+    }
+
+    if (data.prodi) {
+        document.getElementById('prodi').value = data.prodi;
+        handleProdiChange();
+    }
+
+    if (data.universitas) document.getElementById('universitas').value = data.universitas;
+    if (data.topikJudul) document.getElementById('topik').value = data.topikJudul;
+
+    if (data.software) {
+        var swArray = data.software.split(',').map(function (s) { return s.trim(); });
+        $('#software').val(swArray).trigger('change');
+    }
+
+    if (data.keperluanPenggunaan) {
+        var radio = document.querySelector('input[name="keperluan"][value="' + data.keperluanPenggunaan + '"]');
+        if (radio) radio.checked = true;
+    }
+
+    if (data.dosenPembimbing) {
+        var prodi = document.getElementById('prodi').value;
+        if (prodi === 'Non-UGM') {
+            document.getElementById('dosenPembimbingManual').value = data.dosenPembimbing;
+        } else {
+            $('#dosenPembimbing').val(data.dosenPembimbing).trigger('change');
+        }
+    }
+
+    if (data.preferredComputer) {
+        var needsYes = document.getElementById('needsComputerYes');
+        if (needsYes) {
+            needsYes.checked = true;
+            setupComputerToggle();
+            document.getElementById('roomPreference').value = data.computerRoomPreference || '';
+        }
+    }
+
+    if (data.computerUserName) document.getElementById('computerUserName').value = data.computerUserName;
+    if (data.computerHostname) document.getElementById('computerHostname').value = data.computerHostname;
 }
