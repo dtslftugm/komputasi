@@ -165,11 +165,14 @@
                 <a href="#" class="nav-link active" onclick="showSection('dashboard'); return false;">🏠 Dashboard</a>
                 <a href="#" class="nav-link" onclick="openAgendaModal(); return false;">📅 Agenda Lab</a>
                 <a href="#" class="nav-link" onclick="showMaintenanceModal(); return false;">🛠️ Maintenance</a>
-                <a href="#" class="nav-link" onclick="alert('Fitur ini hanya tersedia di versi GAS'); return false;">📊
+                <a href="#" class="nav-link"
+                    onclick="ui.info('Fitur ini hanya tersedia di versi GAS', 'Versi Terbatas'); return false;">📊
                     Diagnostics</a>
-                <a href="#" class="nav-link" onclick="alert('Fitur ini hanya tersedia di versi GAS'); return false;">📅
+                <a href="#" class="nav-link"
+                    onclick="ui.info('Fitur ini hanya tersedia di versi GAS', 'Versi Terbatas'); return false;">📅
                     Normalize Dates</a>
-                <a href="#" class="nav-link" onclick="alert('Fitur ini hanya tersedia di versi GAS'); return false;">⚙️
+                <a href="#" class="nav-link"
+                    onclick="ui.info('Fitur ini hanya tersedia di versi GAS', 'Versi Terbatas'); return false;">⚙️
                     Setup Triggers</a>
                 <a href="#" class="nav-link" onclick="loadRequests(); return false;">🔄 Refresh Data</a>
             </nav>
@@ -502,9 +505,10 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/config.js?v=17.1"></script>
-    <script src="js/api-client.js?v=17.1"></script>
-    <script src="js/admin.js?v=17.1"></script>
+    <script src="js/config.js?v=17.2"></script>
+    <script src="js/ui-helper.js?v=17.2"></script>
+    <script src="js/api-client.js?v=17.2"></script>
+    <script src="js/admin.js?v=17.2"></script>
 </body>
 
 </html>

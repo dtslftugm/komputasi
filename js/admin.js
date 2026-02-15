@@ -7,6 +7,12 @@ var pendingRequests = [];
 var currentUser = null;
 var sessionToken = localStorage.getItem('adminAuthToken');
 
+// Modal Objects (Global for access across functions)
+var processModalObj = null;
+var expiredModalObj = null;
+var maintenanceModalObj = null;
+var agendaModalObj = null;
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function () {
     setupUI();
@@ -65,11 +71,11 @@ function handleLogin(e) {
                 currentUser = res.data.user;
                 showDashboard();
             } else {
-                alert("Login Gagal: " + (res.message || "Email atau password salah"));
+                ui.error("Login Gagal: " + (res.message || "Email atau password salah"), "Login Error");
             }
         })
         .catch(function (err) {
-            alert("Error: " + err.message);
+            ui.error("Error: " + err.message, "System Error");
         })
         .finally(function () {
             hideLoading();
@@ -89,9 +95,12 @@ function showLogin() {
 }
 
 function handleLogout() {
-    if (confirm("Keluar dari dashboard?")) {
-        handleLogoutAction();
-    }
+    ui.confirm("Logout dari dashboard?", "Konfirmasi Logout")
+        .then(function (confirmed) {
+            if (confirmed) {
+                handleLogoutAction();
+            }
+        });
 }
 
 function handleLogoutAction() {
@@ -198,18 +207,21 @@ function loadMaintenanceList() {
 }
 
 function renderMaintenanceTable(data) {
-    var tbody = document.getElementById('maintenanceSectionBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+    var tbodyInline = document.getElementById('maintenanceSectionBody');
+    var tbodyModal = document.getElementById('maintenanceTableBody');
+
+    // Clear both if they exist
+    if (tbodyInline) tbodyInline.innerHTML = '';
+    if (tbodyModal) tbodyModal.innerHTML = '';
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data maintenance.</td></tr>';
+        var emptyHtml = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data maintenance.</td></tr>';
+        if (tbodyInline) tbodyInline.innerHTML = emptyHtml;
+        if (tbodyModal) tbodyModal.innerHTML = emptyHtml;
         return;
     }
 
     data.forEach(function (item) {
-        var tr = document.createElement('tr');
-
         var checklistHtml = '';
         var actionBtn = '';
 
@@ -231,7 +243,7 @@ function renderMaintenanceTable(data) {
             actionBtn = '<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup(\'' + item.requestId + '\', ' + item.rowIndex + ')">Lisensi OK</button>';
         }
 
-        tr.innerHTML = '<td>' +
+        var rowHtml = '<td>' +
             '<span class="badge ' + (item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white') + ' me-2">' + item.type + '</span>' +
             '<span class="fw-bold">' + item.targetName + '</span>' +
             '</td>' +
@@ -245,68 +257,90 @@ function renderMaintenanceTable(data) {
             '</td>' +
             '<td>' + checklistHtml + '</td>' +
             '<td class="text-center">' + actionBtn + '</td>';
-        tbody.appendChild(tr);
+
+        if (tbodyInline) {
+            var trInline = document.createElement('tr');
+            trInline.innerHTML = rowHtml;
+            tbodyInline.appendChild(trInline);
+        }
+        if (tbodyModal) {
+            var trModal = document.createElement('tr');
+            trModal.innerHTML = rowHtml;
+            tbodyModal.appendChild(trModal);
+        }
     });
 }
 
 function showMaintenanceModal() {
-    var modal = new bootstrap.Modal(document.getElementById('maintenanceModal'));
+    if (!maintenanceModalObj) {
+        maintenanceModalObj = new bootstrap.Modal(document.getElementById('maintenanceModal'));
+    }
     loadMaintenanceList();
-    modal.show();
+    maintenanceModalObj.show();
 }
 
 function handleFinishPCMaintenance(computerName) {
-    var storageCheck = document.getElementById('check-storage-' + computerName).checked;
-    var junkCheck = document.getElementById('check-junk-' + computerName).checked;
+    var checkStorage = document.getElementById('check-storage-' + computerName);
+    var checkJunk = document.getElementById('check-junk-' + computerName);
 
-    if (!storageCheck || !junkCheck) {
-        alert("Berikan tanda centang pada tugas yang sudah dikerjakan.");
+    if (!checkStorage || !checkJunk || !checkStorage.checked || !checkJunk.checked) {
+        ui.warning("Berikan tanda centang pada seluruh tugas (Storage & Junk) yang sudah dikerjakan.", "Ceklis Diperlukan");
         return;
     }
 
-    if (!confirm("Status PC " + computerName + " akan diatur menjadi Available. Lanjutkan?")) return;
+    ui.confirm("Status PC " + computerName + " akan diatur menjadi Available. Lanjutkan?", "Selesaikan Maintenance")
+        .then(function (confirmed) {
+            if (!confirmed) return;
 
-    showLoading("Memproses...");
-    api.jsonpRequest('admin-maintenance-complete', { computerName: computerName })
-        .then(function (res) {
-            if (res.success) {
-                alert("Berhasil: PC sudah tersedia kembali.");
-                loadRequests();
-            } else {
-                alert("Gagal: " + res.message);
-            }
-        })
-        .catch(function (err) {
-            alert("Error: " + err.message);
-        })
-        .finally(function () {
-            hideLoading();
+            showLoading("Memproses...");
+            api.jsonpRequest('admin-maintenance-complete', { computerName: computerName })
+                .then(function (res) {
+                    if (res.success) {
+                        ui.success("Berhasil: PC sudah tersedia kembali.");
+                        if (maintenanceModalObj) maintenanceModalObj.hide();
+                        loadRequests();
+                    } else {
+                        ui.error("Gagal: " + res.message);
+                    }
+                })
+                .catch(function (err) {
+                    ui.error("Error: " + err.message);
+                })
+                .finally(function () {
+                    hideLoading();
+                });
         });
 }
 
-function handleFinishLicenseCleanup(requestId, rowIndex) {
-    if (!document.getElementById('check-license-' + requestId).checked) {
-        alert("Konfirmasi bahwa user telah dihapus dari vendor dashboard.");
+function handleFinishLicenseCleanup(requestId) {
+    var checkLicense = document.getElementById('check-license-' + requestId);
+
+    if (!checkLicense || !checkLicense.checked) {
+        ui.warning("Konfirmasi bahwa user telah dihapus dari vendor dashboard.", "Ceklis Diperlukan");
         return;
     }
 
-    if (!confirm("Selesaikan tugas cleanup untuk ID " + requestId + "?")) return;
+    ui.confirm("Selesaikan tugas cleanup untuk ID " + requestId + "?", "Selesaikan Cleanup")
+        .then(function (confirmed) {
+            if (!confirmed) return;
 
-    showLoading("Memproses...");
-    api.jsonpRequest('admin-license-cleanup', { requestId: requestId, rowIndex: rowIndex })
-        .then(function (res) {
-            if (res.success) {
-                alert("Berhasil: Tugas cleanup selesai.");
-                loadRequests();
-            } else {
-                alert("Gagal: " + res.message);
-            }
-        })
-        .catch(function (err) {
-            alert("Error: " + err.message);
-        })
-        .finally(function () {
-            hideLoading();
+            showLoading("Memproses...");
+            api.jsonpRequest('admin-license-cleanup', { requestId: requestId })
+                .then(function (res) {
+                    if (res.success) {
+                        ui.success("Berhasil: Tugas cleanup selesai.");
+                        if (maintenanceModalObj) maintenanceModalObj.hide();
+                        loadRequests();
+                    } else {
+                        ui.error("Gagal: " + res.message);
+                    }
+                })
+                .catch(function (err) {
+                    ui.error("Error: " + err.message);
+                })
+                .finally(function () {
+                    hideLoading();
+                });
         });
 }
 
@@ -399,13 +433,13 @@ function openProcessModal(requestId) {
 
 function submitApproval() {
     if (!document.getElementById('check-doc').checked) {
-        alert("Mohon verifikasi kelengkapan dokumen terlebih dahulu.");
+        ui.warning("Mohon verifikasi kelengkapan dokumen terlebih dahulu.", "Verifikasi Dokumen");
         return;
     }
 
     var data = {
         requestId: currentRequest.requestId,
-        expirationDate: document.getElementById('expiration-date-input').value,
+        customExpirationDate: document.getElementById('expiration-date-input').value,
         adminNotes: document.getElementById('admin-notes').value,
         activationKey: document.getElementById('activation-key-input').value
     };
@@ -414,15 +448,15 @@ function submitApproval() {
     api.jsonpRequest('admin-approve', data)
         .then(function (res) {
             if (res.success) {
-                alert("Permohonan berhasil disetujui.");
+                ui.success("Permohonan berhasil disetujui.");
                 processModalObj.hide();
                 loadRequests();
             } else {
-                alert("Gagal: " + res.message);
+                ui.error("Gagal: " + res.message);
             }
         })
         .catch(function (err) {
-            alert("Error: " + err.message);
+            ui.error("Error: " + err.message);
         })
         .finally(function () {
             hideLoading();
@@ -430,28 +464,30 @@ function submitApproval() {
 }
 
 function submitRejection() {
-    var reason = prompt("Masukkan alasan penolakan:");
-    if (!reason) return;
+    ui.prompt("Masukkan alasan penolakan:", "Tolak Permohonan")
+        .then(function (reason) {
+            if (!reason) return;
 
-    showLoading("Memproses Penolakan...");
-    api.jsonpRequest('admin-reject', {
-        requestId: currentRequest.requestId,
-        reason: reason
-    })
-        .then(function (res) {
-            if (res.success) {
-                alert("Permohonan telah ditolak.");
-                processModalObj.hide();
-                loadRequests();
-            } else {
-                alert("Gagal: " + res.message);
-            }
-        })
-        .catch(function (err) {
-            alert("Error: " + err.message);
-        })
-        .finally(function () {
-            hideLoading();
+            showLoading("Memproses Penolakan...");
+            api.jsonpRequest('admin-reject', {
+                requestId: currentRequest.requestId,
+                reason: reason
+            })
+                .then(function (res) {
+                    if (res.success) {
+                        ui.success("Permohonan telah ditolak.");
+                        processModalObj.hide();
+                        loadRequests();
+                    } else {
+                        ui.error("Gagal: " + res.message);
+                    }
+                })
+                .catch(function (err) {
+                    ui.error("Error: " + err.message);
+                })
+                .finally(function () {
+                    hideLoading();
+                });
         });
 }
 
@@ -512,24 +548,27 @@ function renderExpiredTable(data) {
 }
 
 function handleRevoke(requestId, name, rowIndex) {
-    if (!confirm("Cabut akses untuk " + name + "? Komputer akan dijadwalkan maintenance.")) return;
+    ui.confirm("Cabut akses untuk " + name + "? Komputer akan dijadwalkan maintenance.", "Cabut Akses")
+        .then(function (confirmed) {
+            if (!confirmed) return;
 
-    showLoading("Revoking Access...");
-    api.jsonpRequest('admin-revoke', { requestId: requestId, rowIndex: rowIndex })
-        .then(function (res) {
-            if (res.success) {
-                alert("Akses berhasil dicabut.");
-                loadExpiredUsage();
-                loadRequests();
-            } else {
-                alert("Gagal: " + res.message);
-            }
-        })
-        .catch(function (err) {
-            alert("Error: " + err.message);
-        })
-        .finally(function () {
-            hideLoading();
+            showLoading("Mencabut akses...");
+            api.jsonpRequest('admin-revoke', { requestId: requestId, rowIndex: rowIndex })
+                .then(function (res) {
+                    if (res.success) {
+                        ui.success("Akses berhasil dicabut.");
+                        expiredModalObj.hide();
+                        loadRequests();
+                    } else {
+                        ui.error("Gagal: " + res.message);
+                    }
+                })
+                .catch(function (err) {
+                    ui.error("Error: " + err.message);
+                })
+                .finally(function () {
+                    hideLoading();
+                });
         });
 }
 
@@ -595,15 +634,15 @@ function handleSimpanAgenda() {
     api.jsonpRequest('admin-save-agenda', data)
         .then(function (res) {
             if (res.success) {
-                alert("Agenda berhasil disimpan.");
+                ui.success("Agenda berhasil disimpan.");
                 document.getElementById('agendaForm').reset();
                 refreshAgendaList();
             } else {
-                alert("Gagal: " + res.message);
+                ui.error("Gagal: " + res.message);
             }
         })
         .catch(function (err) {
-            alert("Error: " + err.message);
+            ui.error("Error: " + err.message);
         })
         .finally(function () {
             hideLoading();
@@ -611,42 +650,49 @@ function handleSimpanAgenda() {
 }
 
 function handleHapusAgenda(rowIndex) {
-    if (!confirm("Hapus agenda ini?")) return;
+    ui.confirm("Hapus agenda ini?", "Hapus Agenda")
+        .then(function (confirmed) {
+            if (!confirmed) return;
 
-    showLoading("Menghapus...");
-    api.jsonpRequest('admin-delete-agenda', { rowIndex: rowIndex })
-        .then(function (res) {
-            if (res.success) {
-                refreshAgendaList();
-            } else {
-                alert("Gagal: " + res.message);
-            }
-        })
-        .catch(function (err) {
-            alert("Error: " + err.message);
-        })
-        .finally(function () {
-            hideLoading();
+            showLoading("Menghapus...");
+            api.jsonpRequest('admin-delete-agenda', { rowIndex: rowIndex })
+                .then(function (res) {
+                    if (res.success) {
+                        ui.success("Agenda dihapus.");
+                        refreshAgendaList();
+                    } else {
+                        ui.error("Gagal: " + res.message);
+                    }
+                })
+                .catch(function (err) {
+                    ui.error("Error: " + err.message);
+                })
+                .finally(function () {
+                    hideLoading();
+                });
         });
 }
 
 function handleBroadcastAgenda(rowIndex) {
-    if (!confirm("Siarkan pengingat agenda ke pengguna terkait?")) return;
+    ui.confirm("Siarkan pengingat agenda ke pengguna terkait?", "Broadcast Agenda")
+        .then(function (confirmed) {
+            if (!confirmed) return;
 
-    showLoading("Broadcasting...");
-    api.jsonpRequest('admin-broadcast-agenda', { rowIndex: rowIndex })
-        .then(function (res) {
-            if (res.success) {
-                alert("Broadcast terkirim ke " + res.count + " pengguna.");
-            } else {
-                alert("Gagal: " + res.message);
-            }
-        })
-        .catch(function (err) {
-            alert("Error: " + err.message);
-        })
-        .finally(function () {
-            hideLoading();
+            showLoading("Menyiarkan...");
+            api.jsonpRequest('admin-broadcast-agenda', { rowIndex: rowIndex })
+                .then(function (res) {
+                    if (res.success) {
+                        ui.success("Broadcast terkirim ke " + res.count + " pengguna.");
+                    } else {
+                        ui.error("Gagal: " + res.message);
+                    }
+                })
+                .catch(function (err) {
+                    ui.error("Error: " + err.message);
+                })
+                .finally(function () {
+                    hideLoading();
+                });
         });
 }
 

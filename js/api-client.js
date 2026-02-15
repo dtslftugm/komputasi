@@ -14,7 +14,18 @@ function APIClient() {
         'apiCheckAuth': 'admin-check-auth',
         'apiGetAdminRequests': 'admin-requests',
         'apiApproveRequest': 'admin-approve',
-        'apiRejectRequest': 'admin-reject'
+        'apiRejectRequest': 'admin-reject',
+        'apiRevokeRequest': 'admin-revoke',
+        'apiGetMaintenanceList': 'admin-maintenance-list',
+        'apiCompleteMaintenance': 'admin-maintenance-complete',
+        'apiGetExpiredUsage': 'admin-expired-usage',
+        'apiGetAgendas': 'admin-agendas',
+        'apiSimpanAgenda': 'admin-save-agenda',
+        'apiHapusAgenda': 'admin-delete-agenda',
+        'apiSiarkanPengingatAgenda': 'admin-broadcast-agenda',
+        'apiGetComputerDetails': 'admin-get-computer-details',
+        'apiCompleteLicenseCleanup': 'admin-license-cleanup',
+        'apiSubmitQuisioner': 'submit-quisioner'
     };
     console.log('APIClient (ES5) initialized');
 }

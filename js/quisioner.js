@@ -112,13 +112,13 @@ function handleSubmit(e) {
                 if (successMsg) successMsg.style.display = 'block';
                 window.scrollTo(0, 0);
             } else {
-                alert("Gagal mengirim quisioner: " + res.message);
+                ui.error("Gagal mengirim quisioner: " + res.message, "Simpan Gagal");
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Kirim Quisioner";
             }
         })
         .catch(function (err) {
-            alert("Terjadi kesalahan koneksi: " + err.message);
+            ui.error("Terjadi kesalahan koneksi: " + err.message, "System Error");
             submitBtn.disabled = false;
             submitBtn.textContent = "Kirim Quisioner";
         });
