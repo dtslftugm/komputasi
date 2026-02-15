@@ -6,8 +6,15 @@ class APIClient {
     constructor() {
         // Detect environment
         this.isGAS = typeof google !== 'undefined' && google.script && google.script.run;
-        this.baseURL = (typeof CONFIG !== 'undefined' && CONFIG.API_URL) ? CONFIG.API_URL : '';
+
+        // Robust CONFIG detection
+        var globalConfig = (typeof CONFIG !== 'undefined') ? CONFIG : (window.CONFIG || {});
+        this.baseURL = globalConfig.API_URL || '';
         this.callbackCounter = 0;
+
+        if (!this.isGAS && !this.baseURL) {
+            console.error('APIClient: CONFIG.API_URL is missing! Check config.js');
+        }
 
         // Map internal GAS function names to JSONP paths
         this.functionMap = {
@@ -28,11 +35,11 @@ class APIClient {
      * Generic run method that works in both environments
      */
     async run(functionName) {
-        const args = Array.prototype.slice.call(arguments, 1);
+        var args = Array.prototype.slice.call(arguments, 1);
 
         if (this.isGAS) {
             return new Promise((resolve, reject) => {
-                const runner = google.script.run
+                var runner = google.script.run
                     .withSuccessHandler(resolve)
                     .withFailureHandler(function (err) {
                         console.error("GAS Error (" + functionName + "):", err);
@@ -42,51 +49,63 @@ class APIClient {
             });
         } else {
             // Mapping for External JSONP
-            const path = this.functionMap[functionName] || functionName;
-            // Convert args to params object (assuming first arg is params for JSONP)
-            const params = args[0] || {};
+            var path = this.functionMap[functionName] || functionName;
+            var params = args[0] || {};
             return this.jsonpRequest(path, params);
         }
     }
 
     /**
-     * Make JSONP request (bypass CORS) - Optimized for compatibility
+     * Make JSONP request (bypass CORS) - Primitive for maximum compatibility
      */
     async jsonpRequest(path, params) {
+        var _this = this;
         return new Promise((resolve, reject) => {
-            const callbackName = 'jsonp_callback_' + (++this.callbackCounter) + '_' + Date.now();
-            const script = document.createElement('script');
+            var cleanBaseURL = (_this.baseURL || '').trim();
+            if (!cleanBaseURL) {
+                reject(new Error('API URL (CONFIG.API_URL) belum diatur di config.js'));
+                return;
+            }
 
-            // Build URL manually for maximum compatibility (no object spread/URLSearchParams constructor with object)
-            const queryParams = new URLSearchParams();
-            queryParams.append('path', path);
-            queryParams.append('callback', callbackName);
+            // Simplified callback name (shorter, no special chars)
+            var callbackName = 'cb' + (++_this.callbackCounter) + '_' + Date.now();
+            var script = document.createElement('script');
+
+            // Manual query string building
+            var queryString = 'path=' + encodeURIComponent(path) + '&callback=' + encodeURIComponent(callbackName);
 
             if (params && typeof params === 'object') {
-                for (let key in params) {
+                for (var key in params) {
                     if (Object.prototype.hasOwnProperty.call(params, key)) {
-                        queryParams.append(key, params[key]);
+                        queryString += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
                     }
                 }
             }
 
-            script.src = this.baseURL + '?' + queryParams.toString();
+            var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString;
+            console.log('JSONP Request:', finalURL);
+            script.src = finalURL;
 
-            window[callbackName] = (response) => {
+            window[callbackName] = function (response) {
                 delete window[callbackName];
                 if (script.parentNode) script.parentNode.removeChild(script);
 
                 if (response && response.success) {
                     resolve(response);
                 } else {
-                    reject(new Error(response ? response.message : 'Request failed'));
+                    var msg = (response && response.message) ? response.message : 'Request failed at backend';
+                    reject(new Error(msg));
                 }
             };
 
-            script.onerror = () => {
+            script.onerror = function () {
                 delete window[callbackName];
                 if (script.parentNode) script.parentNode.removeChild(script);
-                reject(new Error('Script load failed - Check connectivity or API URL'));
+                console.error('Script failed to load:', finalURL);
+
+                // Detailed error for mobile debugging
+                var errorMsg = 'Script load failed.\nURL: ' + finalURL;
+                reject(new Error(errorMsg));
             };
 
             document.body.appendChild(script);
