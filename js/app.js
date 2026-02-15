@@ -671,6 +671,40 @@ function renderComputerPage() {
 // ===== FORM SUBMISSION =====
 function setupFormHandlers() {
     var form = document.getElementById('submission-form');
+    var mulaiInput = document.getElementById('mulai');
+    var akhirInput = document.getElementById('akhir');
+
+    // Real-time Date Validation
+    if (mulaiInput) {
+        mulaiInput.addEventListener('change', function () {
+            var selectedMulai = new Date(this.value);
+            selectedMulai.setHours(0, 0, 0, 0);
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (selectedMulai < today) {
+                alert('Peringatan: Tanggal mulai tidak boleh di masa lalu. Silakan pilih tanggal hari ini atau yang akan datang.');
+                this.value = ''; // Clear invalid date
+            }
+        });
+    }
+
+    if (akhirInput) {
+        akhirInput.addEventListener('change', function () {
+            var selectedAkhir = new Date(this.value);
+            selectedAkhir.setHours(0, 0, 0, 0);
+            var selectedMulaiValue = mulaiInput.value;
+
+            if (selectedMulaiValue) {
+                var selectedMulai = new Date(selectedMulaiValue);
+                selectedMulai.setHours(0, 0, 0, 0);
+                if (selectedAkhir < selectedMulai) {
+                    alert('Peringatan: Tanggal akhir tidak boleh mendahului tanggal mulai.');
+                    this.value = ''; // Clear invalid date
+                }
+            }
+        });
+    }
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
