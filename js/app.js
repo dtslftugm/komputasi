@@ -27,9 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         console.log('Initial Data extracted:', initialData);
-        console.log('Has logo?', initialData?.logo !== undefined);
-        console.log('Has qr?', initialData?.qr !== undefined);
-        console.log('Has prodiList?', initialData?.prodiList !== undefined);
+        console.log('Has logo?', initialData && initialData.logo !== undefined);
+        console.log('Has qr?', initialData && initialData.qr !== undefined);
+        console.log('Has prodiList?', initialData && initialData.prodiList !== undefined);
 
         // Setup UI Components
         setupThemeToggle();
@@ -52,7 +52,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Initialization error:', error);
         console.error('Error stack:', error.stack);
         hideLoading();
-        alert('Gagal memuat data. Silakan refresh halaman.');
+        // More descriptive alert for debugging
+        const errorMsg = error.message || error.toString();
+        alert('Gagal memuat data: ' + errorMsg + '\n\nSilakan refresh halaman atau coba browser lain.');
     }
 });
 
@@ -295,7 +297,7 @@ function checkSoftwareRestrictionsClient(softwareStr) {
     let requiresLabTotal = false;
     let requiresNetworkTotal = false;
     let needsBorrowKey = false;
-    let commonAllowedRooms = [...physicalRooms];
+    let commonAllowedRooms = physicalRooms.slice();
     let isRestricted = false;
 
     softwareArray.forEach(swName => {
@@ -314,9 +316,9 @@ function checkSoftwareRestrictionsClient(softwareStr) {
         }
 
         if (swRules) {
-            const hasCloud = swRules.some(type => type.toLowerCase().includes('cloud license'));
-            const hasServer = swRules.some(type => type.toLowerCase().includes('lisensi server'));
-            const hasBorrow = swRules.some(type => type.toLowerCase().includes('borrow license'));
+            const hasCloud = swRules.some(function (type) { return type.toLowerCase().indexOf('cloud license') !== -1; });
+            const hasServer = swRules.some(function (type) { return type.toLowerCase().indexOf('lisensi server') !== -1; });
+            const hasBorrow = swRules.some(function (type) { return type.toLowerCase().indexOf('borrow license') !== -1; });
 
             if (hasBorrow) needsBorrowKey = true;
 
@@ -770,17 +772,17 @@ function collectFormData() {
         universitas: document.getElementById('universitas').value,
         topikJudul: document.getElementById('topik').value,
         software: softwareValues.join(', '),
-        needsComputer: document.querySelector('input[name="needsComputer"]:checked')?.value === 'yes',
+        needsComputer: (document.querySelector('input[name="needsComputer"]:checked') || {}).value === 'yes',
         computerRoomPreference: document.getElementById('roomPreference').value,
         preferredComputer: selectedComputer ? selectedComputer.name : '',
         mulaiPemakaian: document.getElementById('mulai').value,
         akhirPemakaian: document.getElementById('akhir').value,
         catatan: document.getElementById('catatan').value,
-        uploadMethod: document.querySelector('input[name="uploadMethod"]:checked')?.value,
+        uploadMethod: (document.querySelector('input[name="uploadMethod"]:checked') || {}).value,
         linkSurat: document.getElementById('linkSurat').value,
         tipeAkses: document.getElementById('tipeAkses').value,
-        computerUserName: document.getElementById('computerUserName')?.value || '',
-        computerHostname: document.getElementById('computerHostname')?.value || '',
+        computerUserName: (document.getElementById('computerUserName') || {}).value || '',
+        computerHostname: (document.getElementById('computerHostname') || {}).value || '',
         isRenewal: false,
         previousRequestId: ""
     };

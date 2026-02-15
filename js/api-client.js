@@ -1,138 +1,134 @@
 /**
- * API Client - JSONP Wrapper untuk Google Apps Script backend
- * Menggunakan JSONP untuk bypass CORS restrictions
+ * API Client - Hybrid Wrapper untuk Google Apps Script 
+ * Mendukung akses via JSONP (GitHub/External) dan google.script.run (Inside GAS)
  */
 class APIClient {
     constructor() {
-        this.baseURL = CONFIG.API_URL;
+        // Detect environment
+        this.isGAS = typeof google !== 'undefined' && google.script && google.script.run;
+        this.baseURL = (typeof CONFIG !== 'undefined' && CONFIG.API_URL) ? CONFIG.API_URL : '';
         this.callbackCounter = 0;
+
+        // Map internal GAS function names to JSONP paths
+        this.functionMap = {
+            'apiGetInitialData': 'initial-data',
+            'apiGetAvailableComputers': 'computers-available',
+            'apiGetBranding': 'branding',
+            'apiCheckSoftwareRestrictions': 'check-restrictions',
+            'apiSubmitRequest': 'submit-request',
+            'apiAdminLogin': 'admin-login',
+            'apiCheckAuth': 'admin-check-auth',
+            'apiGetAdminRequests': 'admin-requests',
+            'apiApproveRequest': 'admin-approve',
+            'apiRejectRequest': 'admin-reject'
+        };
     }
 
     /**
-     * Make JSONP request (bypass CORS)
-     * @param {string} path - API endpoint path
-     * @param {object} params - Query parameters
-     * @returns {Promise} Response data
+     * Generic run method that works in both environments
      */
-    async jsonpRequest(path, params = {}) {
-        return new Promise((resolve, reject) => {
-            // Generate unique callback name
-            const callbackName = 'jsonp_callback_' + (++this.callbackCounter) + '_' + Date.now();
+    async run(functionName) {
+        const args = Array.prototype.slice.call(arguments, 1);
 
-            // Create script element
+        if (this.isGAS) {
+            return new Promise((resolve, reject) => {
+                const runner = google.script.run
+                    .withSuccessHandler(resolve)
+                    .withFailureHandler(function (err) {
+                        console.error("GAS Error (" + functionName + "):", err);
+                        reject(err);
+                    });
+                runner[functionName].apply(runner, args);
+            });
+        } else {
+            // Mapping for External JSONP
+            const path = this.functionMap[functionName] || functionName;
+            // Convert args to params object (assuming first arg is params for JSONP)
+            const params = args[0] || {};
+            return this.jsonpRequest(path, params);
+        }
+    }
+
+    /**
+     * Make JSONP request (bypass CORS) - Optimized for compatibility
+     */
+    async jsonpRequest(path, params) {
+        return new Promise((resolve, reject) => {
+            const callbackName = 'jsonp_callback_' + (++this.callbackCounter) + '_' + Date.now();
             const script = document.createElement('script');
 
-            // Build URL with callback
-            const queryParams = new URLSearchParams({
-                path: path,
-                callback: callbackName,
-                ...params
-            });
+            // Build URL manually for maximum compatibility (no object spread/URLSearchParams constructor with object)
+            const queryParams = new URLSearchParams();
+            queryParams.append('path', path);
+            queryParams.append('callback', callbackName);
 
-            script.src = `${this.baseURL}?${queryParams.toString()}`;
+            if (params && typeof params === 'object') {
+                for (let key in params) {
+                    if (Object.prototype.hasOwnProperty.call(params, key)) {
+                        queryParams.append(key, params[key]);
+                    }
+                }
+            }
 
-            // Define global callback
+            script.src = this.baseURL + '?' + queryParams.toString();
+
             window[callbackName] = (response) => {
-                // Cleanup
                 delete window[callbackName];
-                document.body.removeChild(script);
+                if (script.parentNode) script.parentNode.removeChild(script);
 
-                if (response.success) {
-                    resolve(response); // Selalu kembalikan objek lengkap agar pemanggil bisa akses .stats, etc.
+                if (response && response.success) {
+                    resolve(response);
                 } else {
-                    reject(new Error(response.message || 'Request failed'));
+                    reject(new Error(response ? response.message : 'Request failed'));
                 }
             };
 
-            // Error handling
             script.onerror = () => {
                 delete window[callbackName];
-                document.body.removeChild(script);
-                reject(new Error('Script load failed'));
+                if (script.parentNode) script.parentNode.removeChild(script);
+                reject(new Error('Script load failed - Check connectivity or API URL'));
             };
 
-            // Inject script
             document.body.appendChild(script);
         });
     }
 
-    /**
-     * Make POST request (using JSONP fallback for reading responses)
-     */
-    async postRequest(path, data) {
-        // Since GAS doesn't support CORS for POST, we use JSONP even for data-sending actions
-        // if they are within URL length limits (~2KB). For larger data (files), 
-        // we must use standard POST and accept that we might not read the response.
-        return this.jsonpRequest(path, data);
+    // ==================== WRAPPER METHODS (Backward Compatibility) ====================
+
+    async getInitialData(renewalId) {
+        return this.run('apiGetInitialData', renewalId ? { renewal_id: renewalId } : {});
     }
 
-    // ==================== PUBLIC ENDPOINTS ====================
-
-    /**
-     * Get initial data for form (dropdowns, config, renewal data)
-     */
-    async getInitialData(renewalId = null) {
-        const params = renewalId ? { renewal_id: renewalId } : {};
-        return this.jsonpRequest('initial-data', params);
+    async getAvailableComputers(room) {
+        return this.run('apiGetAvailableComputers', room ? { room: room } : {});
     }
 
-    /**
-     * Get available computers for selection
-     */
-    async getAvailableComputers(room = null) {
-        const params = room ? { room: room } : {};
-        return this.jsonpRequest('computers-available', params);
-    }
-
-    /**
-     * Get branding assets (logo, QR)
-     */
     async getBranding() {
-        return this.jsonpRequest('branding');
+        return this.run('apiGetBranding');
     }
 
-    /**
-     * Check software access restrictions
-     */
     async checkSoftwareRestrictions(softwareListStr) {
-        return this.jsonpRequest('check-restrictions', { software: softwareListStr });
+        return this.run('apiCheckSoftwareRestrictions', { software: softwareListStr });
     }
 
-    /**
-     * Submit new request
-     */
     async submitRequest(formData) {
-        return this.postRequest('submit-request', formData);
+        return this.run('apiSubmitRequest', formData);
     }
 
-    // ==================== ADMIN ENDPOINTS ====================
-
-    /**
-     * Admin login
-     */
     async adminLogin(email, password) {
-        return this.postRequest('admin-login', { email, password });
+        return this.run('apiAdminLogin', { email, password });
     }
 
-    /**
-     * Check if admin session is valid
-     */
     async checkAuth(token) {
-        return this.postRequest('admin-check-auth', { token });
+        return this.run('apiCheckAuth', { token });
     }
 
-    /**
-     * Get admin requests list
-     */
-    async getAdminRequests(status = 'Pending') {
-        return this.postRequest('admin-requests', { status });
+    async getAdminRequests(status) {
+        return this.run('apiGetAdminRequests', { status: status || 'Pending' });
     }
 
-    /**
-     * Approve a request
-     */
     async approveRequest(requestId, expirationDate, adminNotes, activationKey) {
-        return this.postRequest('admin-approve', {
+        return this.run('apiApproveRequest', {
             requestId,
             expirationDate,
             adminNotes,
@@ -140,36 +136,29 @@ class APIClient {
         });
     }
 
-    /**
-     * Reject a request
-     */
     async rejectRequest(requestId, reason) {
-        return this.postRequest('admin-reject', { requestId, reason });
+        return this.run('apiRejectRequest', { requestId, reason });
     }
 
-    /**
-     * Upload file via simple POST (bypass JSONP URL length limits)
-     * Uses simple request (no-cors) to avoid preflight issues
-     * @param {object} data - { rowIndex, fileData, mimeType, fileName }
-     * @returns {Promise}
-     */
     async uploadFile(data) {
+        if (this.isGAS) {
+            return this.run('apiUploadFile', data);
+        }
+
         const payload = JSON.stringify({
             path: 'upload-file',
-            ...data
+            rowIndex: data.rowIndex,
+            fileData: data.fileData,
+            mimeType: data.mimeType,
+            fileName: data.fileName
         });
 
-        // Use fetch with text/plain to maintain 'Simple Request' status
         return fetch(this.baseURL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: {
-                'Content-Type': 'text/plain'
-            },
+            headers: { 'Content-Type': 'text/plain' },
             body: payload
         }).then(() => {
-            // mode: 'no-cors' returns opaque response, we can't read content
-            // However, reaching here usually means the bytes were sent
             return { success: true, opaque: true };
         });
     }
@@ -177,3 +166,4 @@ class APIClient {
 
 // Create singleton instance
 const api = new APIClient();
+const GAS = api; // Alias for backward compatibility in GAS version
