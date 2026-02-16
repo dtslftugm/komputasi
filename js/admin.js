@@ -459,7 +459,7 @@ function openProcessModal(requestId) {
 
     if (req.preferredComputer && req.preferredComputer !== 'Auto Assign') {
         specContainer.classList.remove('d-none');
-        if (winUserContainer && req.requestType === 'Personal Computer') {
+        if (winUserContainer && (req.requestType && req.requestType.includes('Komputer'))) {
             winUserContainer.classList.remove('d-none');
         }
         document.getElementById('spec-name').textContent = req.preferredComputer;
