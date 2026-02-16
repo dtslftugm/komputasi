@@ -205,10 +205,13 @@ function renderActiveUsersTable(users) {
         var tr = document.createElement('tr');
         tr.innerHTML = '<td>' +
             '<div class="fw-bold">' + (user.nama || "-") + '</div>' +
-            '<div class="text-muted small">' + (user.nim || "-") + ' | ' + (user.email || "-") + '</div>' +
+            '<div class="text-muted small">' + (user.nim || "-") + '</div>' +
+            '<div class="text-muted extra-small">' + (user.email || "-") + '</div>' +
             '</td>' +
             '<td>' +
-            '<div class="small">' + (user.software || '-') + '</div>' +
+            '<div class="small fw-bold text-primary">' + (user.software || '-') + '</div>' +
+            '<div class="text-muted small"><i class="bi bi-geo-alt"></i> ' + (user.room || '-') + '</div>' +
+            '<div class="text-muted extra-small"><i class="bi bi-pc-display"></i> ' + (user.computer || '-') + '</div>' +
             '</td>' +
             '<td>' +
             '<div class="fw-bold small">' + (user.requestId || '-') + '</div>' +
