@@ -2,8 +2,9 @@
  * Maintenance Management Logic (Standardized)
  */
 
-var api = new APIClient();
-var ui = new UIHelper();
+// Instances are already created in api-client.js and ui-helper.js
+// var api = new APIClient(); 
+// var ui = (global ui object from ui-helper.js)
 var maintenanceList = [];
 var processModal;
 
