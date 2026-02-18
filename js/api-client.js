@@ -26,7 +26,9 @@ function APIClient() {
         'apiGetComputerDetails': 'admin-get-computer-details',
         'apiCompleteLicenseCleanup': 'admin-license-cleanup',
         'apiSubmitQuisioner': 'submit-quisioner',
-        'apiUpdateMaintenanceStatus': 'admin-maintenance-update'
+        'apiUpdateMaintenanceStatus': 'admin-maintenance-update',
+        'apiGetAllComputerNames': 'admin-all-computers',
+        'apiSetManualMaintenance': 'admin-maintenance-manual'
     };
     console.log('APIClient (ES5) initialized');
 }
