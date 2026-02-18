@@ -142,6 +142,9 @@
     <main class="main-content">
         <header class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold mb-0 outfit">🛠️ Manajemen Maintenance</h2>
+            <button class="btn btn-primary rounded-pill px-4 fw-bold" onclick="openManualMaintenanceModal()">
+                <i class="bi bi-plus-circle me-2"></i>Tambah Issue
+            </button>
         </header>
 
         <!-- Maintenance List -->
@@ -218,7 +221,7 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Maintenance Type</label>
                                 <select id="m-type" class="form-select rounded-pill">
-                                    <option value="Routine">Pemeliharaan Rutin</option>
+                                    <option value="Rutin">Pemeliharaan Rutin</option>
                                     <option value="Repair">Perbaikan Kerusakan</option>
                                     <option value="Update">Update Software/OS</option>
                                 </select>
@@ -259,13 +262,46 @@
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-between">
                     <button type="button" class="btn btn-warning rounded-pill px-4 fw-bold"
-                        onclick="saveMaintenanceProgress()">Sediakan (Pending Repair)</button>
+                        onclick="saveMaintenanceProgress()">Progress (Pending Repair)</button>
                     <div>
                         <button type="button" class="btn btn-light rounded-pill px-4 me-2"
                             data-bs-dismiss="modal">Batal</button>
                         <button type="button" class="btn btn-success rounded-pill px-4 fw-bold"
                             onclick="completeMaintenance()">Selesai & Ready</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Maintenance Modal -->
+    <div class="modal fade" id="manualMaintenanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="fw-bold outfit">➕ Tambah Issue</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Pilih Komputer</label>
+                        <input class="form-control rounded-pill" list="computerList" id="manual-comp-name"
+                            placeholder="Ketik nama komputer (X600-...)">
+                        <datalist id="computerList">
+                            <!-- Options injected by JS -->
+                        </datalist>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Masalah Terdeteksi / Request</label>
+                        <textarea id="manual-issue" class="form-control" rows="3" style="border-radius: 12px;"
+                            placeholder="Misal: Update AutoCAD 2025 atau Unit tidak nyala..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 me-2"
+                        data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold"
+                        onclick="submitManualMaintenance()">Tambah ke Antrean</button>
                 </div>
             </div>
         </div>

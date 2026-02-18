@@ -6,11 +6,15 @@
 // var api = new APIClient(); 
 // var ui = (global ui object from ui-helper.js)
 var maintenanceList = [];
+var allComputers = [];
 var processModal;
+var manualModal;
 
 document.addEventListener('DOMContentLoaded', function () {
     processModal = new bootstrap.Modal(document.getElementById('processMaintenanceModal'));
+    manualModal = new bootstrap.Modal(document.getElementById('manualMaintenanceModal'));
     loadMaintenanceData();
+    loadAllComputers();
 
     // Search listener
     var searchInput = document.getElementById('maintenanceSearch');
@@ -133,6 +137,58 @@ function openMaintenanceModal(name, type) {
     }
 
     processModal.show();
+}
+
+function loadAllComputers() {
+    api.run('apiGetAllComputerNames')
+        .then(function (res) {
+            if (res.success) {
+                allComputers = res.data || [];
+                var datalist = document.getElementById('computerList');
+                if (datalist) {
+                    datalist.innerHTML = '';
+                    allComputers.forEach(function (comp) {
+                        var opt = document.createElement('option');
+                        opt.value = comp.name;
+                        opt.textContent = comp.status;
+                        datalist.appendChild(opt);
+                    });
+                }
+            }
+        });
+}
+
+function openManualMaintenanceModal() {
+    document.getElementById('manual-comp-name').value = '';
+    document.getElementById('manual-issue').value = '';
+    manualModal.show();
+}
+
+function submitManualMaintenance() {
+    var compName = document.getElementById('manual-comp-name').value.trim();
+    var issue = document.getElementById('manual-issue').value.trim();
+
+    if (!compName) {
+        ui.warning("Pilih atau ketik nama komputer.", "Data Kurang lengkap");
+        return;
+    }
+
+    ui.loading("Menambahkan ke antrean...");
+    api.run('apiSetManualMaintenance', { computerName: compName, issue: issue })
+        .then(function (res) {
+            ui.hideLoading();
+            if (res.success) {
+                manualModal.hide();
+                ui.success(res.message);
+                loadMaintenanceData(); // Refresh table
+            } else {
+                ui.error(res.message);
+            }
+        })
+        .catch(function (err) {
+            ui.hideLoading();
+            ui.error("Error: " + err);
+        });
 }
 
 function saveMaintenanceProgress() {
