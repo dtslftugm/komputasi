@@ -192,22 +192,42 @@ function handleProdiChange() {
     if (prodi === 'Non-UGM') {
         // Show universitas field, use manual dosen input
         universitasContainer.style.display = 'block';
+        document.getElementById('universitas').required = true;
+
+        // Hide Select2, Show Manual
         if (select2Container.length) select2Container.hide();
         else dosenSelect.style.display = 'none';
+        dosenSelect.required = false;
+
         dosenManual.style.display = 'block';
         dosenManual.required = true;
     } else if (prodi) {
-        // Hide universitas, show dosen dropdown
+        // Hide universitas, show dosen dropdown (Select2)
         universitasContainer.style.display = 'none';
+        document.getElementById('universitas').required = false;
+
         if (select2Container.length) select2Container.show();
         else dosenSelect.style.display = 'block';
+        dosenSelect.required = true;
+
         dosenManual.style.display = 'none';
         dosenManual.required = false;
         dosenSelect.disabled = false;
     } else {
-        // No prodi selected
+        // No prodi selected - reset all
         universitasContainer.style.display = 'none';
-        dosenSelect.disabled = false;
+        document.getElementById('universitas').required = false;
+
+        if (select2Container.length) select2Container.show();
+        else dosenSelect.style.display = 'block';
+        dosenSelect.required = true;
+        dosenSelect.disabled = true;
+
+        dosenManual.style.display = 'none';
+        dosenManual.required = false;
+
+        // Clear Select2
+        $(dosenSelect).val(null).trigger('change');
     }
 }
 
@@ -843,11 +863,13 @@ function collectFormData() {
 
 function getDosenValue() {
     var prodi = document.getElementById('prodi').value;
+    var val = "";
     if (prodi === 'Non-UGM') {
-        return document.getElementById('dosenPembimbingManual').value;
+        val = document.getElementById('dosenPembimbingManual').value;
     } else {
-        return $('#dosenPembimbing').val();
+        val = $('#dosenPembimbing').val();
     }
+    return val || "";
 }
 
 function validateFormData(data) {
@@ -863,6 +885,11 @@ function validateFormData(data) {
 
     if (!data.prodi) {
         ui.warning('Pilih program studi', 'Input Belum Lengkap');
+        return false;
+    }
+
+    if (!data.dosenPembimbing) {
+        ui.warning('Pilih Dosen Pembimbing / Pengampu', 'Input Belum Lengkap');
         return false;
     }
 

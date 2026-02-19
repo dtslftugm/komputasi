@@ -343,6 +343,20 @@ function openProcessModal(requestId) {
         document.getElementById('id-check-win-user').checked = false;
     }
 
+    // Server License Configuration (Sync from GAS)
+    var serverLicenseContainer = document.getElementById('server-license-container');
+    var serverConfigInput = document.getElementById('server-license-config');
+    if (serverLicenseContainer) {
+        if (req.needsServerInfo || req.serverConfigString || (req.computerUsername && req.computerHostname)) {
+            serverLicenseContainer.classList.remove('d-none');
+            // Prioritize serverConfigString from backend (the JOIN column), fall back to manual concat if empty
+            var configStr = req.serverConfigString || ("allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ");
+            if (serverConfigInput) serverConfigInput.value = configStr;
+        } else {
+            serverLicenseContainer.classList.add('d-none');
+        }
+    }
+
     if (req.preferredComputer && req.preferredComputer !== 'Auto Assign') {
         specContainer.classList.remove('d-none');
         if (winUserContainer && (req.requestType && req.requestType.includes('Komputer'))) {
@@ -394,6 +408,14 @@ function submitApproval() {
     if (winUserContainer && !winUserContainer.classList.contains('d-none')) {
         if (!document.getElementById('id-check-win-user').checked) {
             ui.warning("Mohon verifikasi pembuatan Windows User terlebih dahulu.", "Verifikasi User");
+            return;
+        }
+    }
+
+    // Server License Info Validation
+    if (currentRequest && currentRequest.needsServerInfo) {
+        if (!currentRequest.computerUsername || !currentRequest.computerHostname) {
+            ui.error("Data Username dan Hostname wajib diisi oleh mahasiswa untuk lisensi tipe Server.", "Data Tidak Lengkap");
             return;
         }
     }
@@ -796,3 +818,18 @@ function launchAnydesk(type) {
         if (typeof Toast !== 'undefined') Toast.error("Gagal Salin", "Mohon pastikan halaman menggunakan HTTPS.");
     });
 }
+
+function copyServerConfig() {
+    var configInput = document.getElementById('server-license-config');
+    if (configInput && configInput.value) {
+        navigator.clipboard.writeText(configInput.value).then(function () {
+            if (typeof Toast !== 'undefined') {
+                Toast.success("Salin Berhasil", "Konfigurasi lisensi disalin ke clipboard.");
+            } else {
+                ui.success("Konfigurasi lisensi disalin ke clipboard.");
+            }
+        });
+    }
+}
+
+window.copyServerConfig = copyServerConfig;

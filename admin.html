@@ -402,10 +402,27 @@
                             </div>
 
                             <div id="anydesk-password-container" class="d-none">
-                                <h6 class="text-muted text-uppercase small fw-bold mb-2">AnyDesk Password (Remote Only)
+                                <h6 class="text-muted text-uppercase small fw-bold mb-2">AnyDesk Password
                                 </h6>
                                 <input type="text" id="anydesk-password-input" class="form-control mb-3"
                                     placeholder="...">
+                            </div>
+
+                            <!-- Server License Configuration (Must match GAS version for consistency) -->
+                            <div id="server-license-container" class="mt-3 p-3 bg-light rounded-4 border d-none">
+                                <h6 class="text-muted text-uppercase small fw-bold mb-2">🖥️ Server License
+                                    Configuration</h6>
+                                <div class="d-flex gap-2">
+                                    <input type="text" id="server-license-config"
+                                        class="form-control form-control-sm font-monospace" readonly
+                                        style="background-color: #f8f9fa; font-size: 0.9rem;">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="copyServerConfig()"
+                                        title="Copy to clipboard">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                                <p class="small text-muted mt-1 mb-0">Format untuk konfigurasi server license
+                                    (user@host)</p>
                             </div>
 
                             <div id="computer-specs-container" class="mt-4 p-3 bg-light rounded-4 border d-none">

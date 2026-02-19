@@ -91,7 +91,9 @@ APIClient.prototype.jsonpRequest = function (path, params) {
         if (params && typeof params === 'object') {
             for (var key in params) {
                 if (Object.prototype.hasOwnProperty.call(params, key)) {
-                    queryString += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+                    var val = params[key];
+                    if (val === null || val === undefined) val = "";
+                    queryString += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(val);
                 }
             }
         }
