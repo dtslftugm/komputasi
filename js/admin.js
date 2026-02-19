@@ -12,6 +12,10 @@ var processModalObj = null;
 var expiredModalObj = null;
 var agendaModalObj = null;
 
+// State management for process modal
+var currentRequest = null;
+var currentReassignedComputer = null;
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function () {
     setupUI();
@@ -273,101 +277,98 @@ var currentRequest = null;
 var processModalObj = null;
 
 function openProcessModal(requestId) {
-    var req = null;
-    for (var i = 0; i < pendingRequests.length; i++) {
-        if (pendingRequests[i].requestId === requestId) {
-            req = pendingRequests[i];
-            break;
-        }
-    }
+    var req = pendingRequests.find(function (r) { return r.requestId === requestId; });
     if (!req) return;
 
     currentRequest = req;
-    if (!processModalObj) {
-        processModalObj = new bootstrap.Modal(document.getElementById('processModal'));
-    }
+    currentReassignedComputer = null;
 
-    // Set UI Details
+    // Set labels
     document.getElementById('modal-request-id').textContent = requestId;
-    document.getElementById('modal-nama').textContent = req.nama;
-    document.getElementById('modal-nim').textContent = req.nim;
-    document.getElementById('modal-prodi').textContent = req.prodi;
+    document.getElementById('modal-nama').textContent = req.nama || '-';
+    document.getElementById('modal-nim').textContent = req.nim || '-';
+    document.getElementById('modal-prodi').textContent = req.prodi || '-';
     document.getElementById('modal-email').textContent = req.email || '-';
-    document.getElementById('modal-doc-link').href = req.fileUrl;
-    document.getElementById('admin-notes').value = '';
 
-    // Handle Software Badges
-    var swContainer = document.getElementById('modal-software');
-    swContainer.innerHTML = '';
-    if (req.software) {
-        req.software.split(',').forEach(function (s) {
-            var span = document.createElement('span');
-            span.className = 'badge bg-light text-dark border small';
-            span.textContent = s.trim();
-            swContainer.appendChild(span);
-        });
+    var phoneLink = document.getElementById('modal-phone');
+    if (phoneLink) {
+        if (req.phone && req.phone.includes('wa.me')) {
+            phoneLink.href = req.phone;
+        } else {
+            phoneLink.href = '#';
+            phoneLink.textContent = req.phone || '📱 WhatsApp';
+        }
     }
 
-    // Default Expiration (14 days for Research, 30 for others)
-    var days = (req.roomPreference === 'Ruang Penelitian') ? 14 : 30;
-    var expDate = new Date();
-    expDate.setDate(expDate.getDate() + days);
-    document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
+    // Render Software badges
+    var swContainer = document.getElementById('modal-software');
+    if (swContainer) {
+        swContainer.innerHTML = '';
+        if (req.software) {
+            req.software.split(',').forEach(function (s) {
+                var span = document.createElement('span');
+                span.className = 'badge bg-light text-dark border small me-1';
+                span.textContent = s.trim();
+                swContainer.appendChild(span);
+            });
+        }
+    }
 
-    // Room Preference logic
-    var activationKeyContainer = document.getElementById('activation-key-container');
-    var activationKeyLabel = document.getElementById('activation-key-label');
+    var docLink = document.getElementById('modal-doc-link');
+    if (docLink) docLink.href = req.fileUrl || '#';
+
+    // Reset inputs
+    document.getElementById('admin-notes').value = '';
+    var keyInput = document.getElementById('activation-key-input');
+    if (keyInput) keyInput.value = '';
+
+    // Visibility management
+    var keyContainer = document.getElementById('activation-key-container');
     var anydeskPasswordContainer = document.getElementById('anydesk-password-container');
     var anydeskPasswordInput = document.getElementById('anydesk-password-input');
-
-    if (activationKeyContainer) activationKeyContainer.classList.add('d-none');
-    if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
-    if (anydeskPasswordInput) anydeskPasswordInput.value = '';
-
-    if (req.needsKey) {
-        if (activationKeyContainer) activationKeyContainer.classList.remove('d-none');
-        if (activationKeyLabel) activationKeyLabel.textContent = "Borrow License Filter / Code";
-    }
-
-    if (req.roomPreference === 'Ruang Penelitian') {
-        if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
-    }
-
-    // Load Computer Specs if assigned
     var specContainer = document.getElementById('computer-specs-container');
+    var reallocateSelector = document.getElementById('reallocate-selector');
+    var specDetails = document.getElementById('spec-details-box');
     var winUserContainer = document.getElementById('check-win-user-container');
 
-    specContainer.classList.add('d-none');
+    if (keyContainer) keyContainer.classList.add('d-none');
+    if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
+    if (specContainer) specContainer.classList.add('d-none');
+    if (reallocateSelector) reallocateSelector.classList.add('d-none');
+    if (specDetails) specDetails.classList.remove('d-none');
+    document.getElementById('reallocate-btn').innerText = "🔄 Change";
+
     if (winUserContainer) {
         winUserContainer.classList.add('d-none');
         document.getElementById('id-check-win-user').checked = false;
     }
 
-    // Server License Configuration (Sync from GAS)
+    // Determine default expiration date
+    var daysToAdd = (req.roomPreference === 'Ruang Penelitian') ? 14 : 30;
+    var expDate = new Date();
+    expDate.setDate(expDate.getDate() + daysToAdd);
+    document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
+
+    // Activation Key Visibility
+    if (req.needsKey || req.requestType === 'Borrow License') {
+        if (keyContainer) keyContainer.classList.remove('d-none');
+    }
+
+    // AnyDesk Pass Visibility (Ruang Penelitian)
+    if (req.roomPreference === 'Ruang Penelitian') {
+        if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
+        updateAnydeskPasswordUI(); // Initial calculate
+    }
+
+    // Server License Configuration (STRICT VISIBILITY)
     var serverLicenseContainer = document.getElementById('server-license-container');
     var serverConfigInput = document.getElementById('server-license-config');
 
-    // DEBUG: Cek isi request untuk troubleshoot info server
-    console.log("DEBUG [openProcessModal]:", {
-        id: req.requestId,
-        type: req.requestType,
-        needsServerInfo: req.needsServerInfo,
-        serverConfigString: req.serverConfigString,
-        computerUsername: req.computerUsername,
-        computerHostname: req.computerHostname
-    });
-
     if (serverLicenseContainer) {
-        // Broad trigger: Show if rule says so, OR we have JOIN/Computer data, OR the Request Type contains "lisensi"
-        var rType = (req.requestType || "").toLowerCase();
-        var isServerType = rType.indexOf('lisensi') !== -1;
-
-        var shouldShow = req.needsServerInfo || req.serverConfigString || (req.computerUsername && req.computerHostname) || isServerType;
-        console.log("DEBUG [Server Visibility]:", { isServerType: isServerType, shouldShow: shouldShow });
-
-        if (shouldShow) {
+        // ONLY show if backend explicitly says needsServerInfo, OR the request type is 'Akses Lisensi Server'
+        var isServerType = (req.requestType || "") === 'Akses Lisensi Server';
+        if (req.needsServerInfo || isServerType) {
             serverLicenseContainer.classList.remove('d-none');
-            // Prioritize serverConfigString from backend (the JOIN column), fall back to manual concat if empty
             var configStr = req.serverConfigString || ("allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ");
             if (serverConfigInput) serverConfigInput.value = configStr;
         } else {
@@ -375,45 +376,114 @@ function openProcessModal(requestId) {
         }
     }
 
-    if (req.preferredComputer && req.preferredComputer !== 'Auto Assign') {
+    // Handle computer specs if already assigned or preferred
+    var computerToShow = req.preferredComputer;
+    if (computerToShow && computerToShow !== 'Auto Assign') {
         specContainer.classList.remove('d-none');
-        if (winUserContainer && (req.requestType && req.requestType.includes('Komputer'))) {
-            winUserContainer.classList.remove('d-none');
-        }
-        document.getElementById('spec-name').textContent = req.preferredComputer;
+        document.getElementById('spec-name').textContent = computerToShow;
 
-        api.jsonpRequest('admin-get-computer-details', { computerName: req.preferredComputer })
+        api.jsonpRequest('admin-get-computer-details', { computerName: computerToShow })
             .then(function (res) {
                 if (res.success && res.data) {
                     document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
                     document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
                     document.getElementById('spec-location').textContent = res.data.location || '-';
 
-                    // Auto-populate password if it's for Ruang Penelitian
+                    // Update AnyDesk password if Ruang Penelitian
                     if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
-                        anydeskPasswordInput.value = res.data.anydeskPassword || '';
-
-                        // If password is empty in sheet, suggest generating one
-                        if (!anydeskPasswordInput.value) {
-                            api.jsonpRequest('admin-generate-anydesk-password', {
-                                computerName: req.preferredComputer,
-                                dateStr: req.timestamp
-                            })
-                                .then(function (pRes) {
-                                    if (pRes.success && !anydeskPasswordInput.value) {
-                                        anydeskPasswordInput.value = pRes.data;
-                                    }
-                                });
+                        if (res.data.anydeskPassword) {
+                            anydeskPasswordInput.value = res.data.anydeskPassword;
                         }
                     }
                 }
-            })
-            .catch(function (e) {
-                console.warn("Failed to load computer details:", e);
             });
+    } else {
+        // Even if Auto Assign, show the container so admin can manually pick
+        specContainer.classList.remove('d-none');
+        document.getElementById('spec-name').textContent = "Belum Dialokasikan";
+        document.getElementById('spec-anydesk').textContent = '-';
+        document.getElementById('spec-ip').textContent = '-';
+        document.getElementById('spec-location').textContent = '-';
     }
 
     processModalObj.show();
+}
+
+function toggleReallocate() {
+    var selector = document.getElementById('reallocate-selector');
+    var details = document.getElementById('spec-details-box');
+    var btn = document.getElementById('reallocate-btn');
+
+    if (selector.classList.contains('d-none')) {
+        selector.classList.remove('d-none');
+        details.classList.add('d-none');
+        btn.innerText = "✖ Cancel";
+        loadAvailableComputers();
+    } else {
+        selector.classList.add('d-none');
+        details.classList.remove('d-none');
+        btn.innerText = "🔄 Change";
+    }
+}
+
+function loadAvailableComputers() {
+    var select = document.getElementById('replacement-computer-select');
+    select.innerHTML = '<option value="">Memuat...</option>';
+
+    api.jsonpRequest('admin-get-available-computers')
+        .then(function (res) {
+            select.innerHTML = '<option value="">-- Pilih unit pengganti --</option>';
+            if (res.success && res.data) {
+                res.data.forEach(function (c) {
+                    var opt = document.createElement('option');
+                    opt.value = c.name;
+                    opt.innerText = c.name + " (" + (c.location || "Lab") + ")";
+                    select.appendChild(opt);
+                });
+            }
+        });
+}
+
+function applyReallocation() {
+    var select = document.getElementById('replacement-computer-select');
+    var newComp = select.value;
+    if (!newComp) return;
+
+    currentReassignedComputer = newComp;
+    document.getElementById('spec-name').textContent = newComp + " (Manual)";
+
+    api.jsonpRequest('admin-get-computer-details', { computerName: newComp })
+        .then(function (res) {
+            if (res.success && res.data) {
+                document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
+                document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
+                document.getElementById('spec-location').textContent = res.data.location || '-';
+
+                // Toggle back to details
+                toggleReallocate();
+                // Update AnyDesk Password display
+                updateAnydeskPasswordUI();
+            }
+        });
+}
+
+function updateAnydeskPasswordUI() {
+    var computerName = currentReassignedComputer || (currentRequest ? currentRequest.preferredComputer : '');
+    var timestamp = currentRequest ? currentRequest.timestamp : '';
+
+    if (!computerName || computerName === 'Auto Assign') {
+        return;
+    }
+
+    api.jsonpRequest('admin-generate-anydesk-password', {
+        computerName: computerName,
+        dateStr: timestamp
+    }).then(function (res) {
+        if (res.success) {
+            var passInput = document.getElementById('anydesk-password-input');
+            if (passInput) passInput.value = res.data;
+        }
+    });
 }
 
 function submitApproval() {
@@ -443,7 +513,8 @@ function submitApproval() {
         customExpirationDate: document.getElementById('expiration-date-input').value,
         adminNotes: document.getElementById('admin-notes').value,
         activationKey: document.getElementById('activation-key-input').value,
-        anydeskPassword: document.getElementById('anydesk-password-input') ? document.getElementById('anydesk-password-input').value : ""
+        anydeskPassword: document.getElementById('anydesk-password-input') ? document.getElementById('anydesk-password-input').value : "",
+        newComputerName: currentReassignedComputer
     };
 
     showLoading("Memproses Approval...");

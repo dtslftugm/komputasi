@@ -402,10 +402,14 @@
                             </div>
 
                             <div id="anydesk-password-container" class="d-none">
-                                <h6 class="text-muted text-uppercase small fw-bold mb-2">AnyDesk Password
-                                </h6>
-                                <input type="text" id="anydesk-password-input" class="form-control mb-3"
-                                    placeholder="...">
+                                <h6 class="text-muted text-uppercase small fw-bold mb-2">AnyDesk Password</h6>
+                                <div class="d-flex gap-2">
+                                    <input type="text" id="anydesk-password-input" class="form-control mb-3"
+                                        placeholder="...">
+                                    <button class="btn btn-dark btn-sm mb-3" onclick="updateAnydeskPasswordUI()"
+                                        title="Generate Password">🔐</button>
+                                </div>
+                                <p class="small text-muted extra-small">Base64 encoded KomputerName#Date format.</p>
                             </div>
 
                             <!-- Server License Configuration (Must match GAS version for consistency) -->
@@ -426,23 +430,43 @@
                             </div>
 
                             <div id="computer-specs-container" class="mt-4 p-3 bg-light rounded-4 border d-none">
-                                <h6 class="text-muted text-uppercase small fw-bold mb-2">🖥️ Computer Specs</h6>
-                                <p class="mb-1 small"><strong>Name:</strong> <span id="spec-name">-</span></p>
-                                <p class="mb-1 small"><strong>AnyDesk ID:</strong> <span id="spec-anydesk">-</span></p>
-                                <p class="mb-1 small"><strong>IP Address:</strong> <span id="spec-ip">-</span></p>
-                                <p class="mb-3 small"><strong>Location:</strong> <span id="spec-location">-</span></p>
-
-                                <div class="btn-group w-100 mb-2">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="copyAnydeskCommand('id')">📋
-                                        Cmd Copy (ID)</button>
-                                    <button class="btn btn-outline-secondary btn-sm"
-                                        onclick="copyAnydeskCommand('ip')">📋 Cmd Copy (IP)</button>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="text-muted text-uppercase small fw-bold mb-0">🖥️ Computer Specs</h6>
+                                    <button class="btn btn-link btn-sm p-0 text-decoration-none"
+                                        onclick="toggleReallocate()" id="reallocate-btn">🔄 Change</button>
                                 </div>
-                                <div class="btn-group w-100">
-                                    <button class="btn btn-primary btn-sm" onclick="launchAnydesk('id')">🚀 Launch
-                                        (ID)</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="launchAnydesk('ip')">🚀 Launch
-                                        (IP)</button>
+
+                                <div id="reallocate-selector" class="mb-3 d-none">
+                                    <label class="form-label extra-small fw-bold text-muted">Pilih Pengganti:</label>
+                                    <select id="replacement-computer-select" class="form-select form-select-sm mb-2"
+                                        onchange="applyReallocation()">
+                                        <option value="">-- Pilih unit pengganti --</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary btn-sm w-100"
+                                        onclick="toggleReallocate()">Batal</button>
+                                </div>
+
+                                <div id="spec-details-box">
+                                    <p class="mb-1 small"><strong>Name:</strong> <span id="spec-name">-</span></p>
+                                    <p class="mb-1 small"><strong>AnyDesk ID:</strong> <span id="spec-anydesk">-</span>
+                                    </p>
+                                    <p class="mb-1 small"><strong>IP Address:</strong> <span id="spec-ip">-</span></p>
+                                    <p class="mb-3 small"><strong>Location:</strong> <span id="spec-location">-</span>
+                                    </p>
+
+                                    <div class="btn-group w-100 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm"
+                                            onclick="copyAnydeskCommand('id')">📋
+                                            Cmd Copy (ID)</button>
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                            onclick="copyAnydeskCommand('ip')">📋 Cmd Copy (IP)</button>
+                                    </div>
+                                    <div class="btn-group w-100">
+                                        <button class="btn btn-primary btn-sm" onclick="launchAnydesk('id')">🚀 Launch
+                                            (ID)</button>
+                                        <button class="btn btn-secondary btn-sm" onclick="launchAnydesk('ip')">🚀 Launch
+                                            (IP)</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
