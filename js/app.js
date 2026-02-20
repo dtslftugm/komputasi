@@ -940,6 +940,15 @@ function validateFormData(data) {
             ui.warning('File terlalu besar (max 3MB)', 'File Terlalu Besar');
             return false;
         }
+
+        // Validate Extension
+        var allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+        var fileName = file.name || "";
+        var ext = fileName.split('.').pop().toLowerCase();
+        if (allowedExtensions.indexOf(ext) === -1) {
+            ui.warning('Format file tidak didukung. Harap gunakan PDF atau Gambar (JPG/PNG).', 'Format Tidak Sesuai');
+            return false;
+        }
     } else if (data.uploadMethod === 'link') {
         if (!data.linkSurat) {
             ui.warning('Sertakan link surat keterangan', 'Link Diperlukan');
