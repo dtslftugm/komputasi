@@ -273,12 +273,14 @@ window.handleFinishLicenseCleanup = handleFinishLicenseCleanup;
 /**
  * --- REQUEST PROCESSING LOGIC ---
  */
-var currentRequest = null;
-var processModalObj = null;
 
 function openProcessModal(requestId) {
     var req = pendingRequests.find(function (r) { return r.requestId === requestId; });
     if (!req) return;
+
+    if (!processModalObj) {
+        processModalObj = new bootstrap.Modal(document.getElementById('processModal'));
+    }
 
     currentRequest = req;
     currentReassignedComputer = null;
@@ -585,7 +587,6 @@ window.submitRejection = submitRejection;
 /**
  * --- EXPIRED USAGE LOGIC ---
  */
-var expiredModalObj = null;
 
 function showExpiredModal() {
     if (!expiredModalObj) {
@@ -665,7 +666,6 @@ window.handleRevoke = handleRevoke;
 /**
  * --- AGENDA MANAGEMENT ---
  */
-var agendaModalObj = null;
 
 function openAgendaModal() {
     if (!agendaModalObj) {
