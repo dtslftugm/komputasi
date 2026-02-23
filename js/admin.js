@@ -672,14 +672,20 @@ function renderExpiredTable(data) {
             '</td>' +
             '<td class="text-danger fw-bold small">' + item.expirationDate + '</td>' +
             '<td class="text-center">' +
-            '<button class="btn btn-outline-danger btn-sm" onclick="handleRevoke(\'' + item.requestId + '\', \'' + item.nama + '\', ' + item.rowIndex + ')">Revoke</button>' +
+            '<button class="btn btn-outline-danger btn-sm" onclick="handleRevoke(\'' + item.requestId + '\', \'' + item.nama + '\', ' + item.rowIndex + ', \'' + item.type + '\')">Revoke</button>' +
             '</td>';
         tbody.appendChild(tr);
     });
 }
 
-function handleRevoke(requestId, name, rowIndex) {
-    ui.confirm("Cabut akses untuk " + name + "? Komputer akan dijadwalkan maintenance.", "Cabut Akses")
+function handleRevoke(requestId, name, rowIndex, requestType) {
+    var needsComputer = requestType === "Lisensi + Komputer" || requestType === "Komputer";
+    var confirmMsg = "Cabut akses untuk " + name + "?";
+    if (needsComputer) {
+        confirmMsg += " Komputer akan dijadwalkan maintenance.";
+    }
+
+    ui.confirm(confirmMsg, "Cabut Akses")
         .then(function (confirmed) {
             if (!confirmed) return;
 
