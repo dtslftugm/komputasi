@@ -475,7 +475,7 @@ function loadAvailableComputers() {
     var select = document.getElementById('replacement-computer-select');
     select.innerHTML = '<option value="">Memuat...</option>';
 
-    api.jsonpRequest('admin-get-available-computers')
+    api.getAvailableComputers()
         .then(function (res) {
             select.innerHTML = '<option value="">-- Pilih unit pengganti --</option>';
             if (res.success && res.data) {
