@@ -547,8 +547,9 @@ function submitApproval() {
 
     // Server License Info Validation
     if (currentRequest && currentRequest.needsServerInfo) {
-        if (!currentRequest.computerUsername || !currentRequest.computerHostname) {
-            ui.error("Data Username dan Hostname wajib diisi oleh mahasiswa untuk lisensi tipe Server.", "Data Tidak Lengkap");
+        var isLabPC = currentRequest.requestType === "Lisensi + Komputer" || currentRequest.requestType === "Komputer";
+        if (!isLabPC && (!currentRequest.computerUsername || !currentRequest.computerHostname)) {
+            ui.error("Data Username dan Hostname wajib diisi oleh mahasiswa untuk lisensi tipe Server (Perangkat Pribadi).", "Data Tidak Lengkap");
             return;
         }
     }
