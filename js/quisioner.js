@@ -96,7 +96,7 @@ function handleSubmit(e) {
         administrasi: document.getElementsByName('administrasi')[0].value,
         software: document.getElementsByName('software')[0].value,
         web_portal: document.getElementsByName('web_portal')[0].value,
-        saran: document.getElementById('saran').value
+        saran: document.getElementsByName('saran')[0] ? document.getElementsByName('saran')[0].value : ''
     };
 
     // Submit
