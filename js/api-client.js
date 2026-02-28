@@ -28,7 +28,10 @@ function APIClient() {
         'apiSubmitQuisioner': 'submit-quisioner',
         'apiUpdateMaintenanceStatus': 'admin-maintenance-update',
         'apiGetAllComputerNames': 'admin-all-computers',
-        'apiSetManualMaintenance': 'admin-maintenance-manual'
+        'apiSetManualMaintenance': 'admin-maintenance-manual',
+        'apiGetReportingFilters': 'admin-reporting-filters',
+        'apiGetStatisticsData': 'admin-statistics',
+        'apiLogout': 'admin-logout'
     };
     console.log('APIClient (ES5) initialized');
 }
@@ -175,6 +178,14 @@ APIClient.prototype.approveRequest = function (data) {
 
 APIClient.prototype.rejectRequest = function (data) {
     return this.run('apiRejectRequest', data);
+};
+
+APIClient.prototype.getReportingFilters = function () {
+    return this.run('apiGetReportingFilters', {});
+};
+
+APIClient.prototype.getStatisticsData = function (filters) {
+    return this.run('apiGetStatisticsData', filters);
 };
 
 APIClient.prototype.uploadFile = function (data) {
