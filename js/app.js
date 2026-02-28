@@ -151,8 +151,6 @@ function setupBranding() {
 
 // ===== ANNOUNCEMENT =====
 function showAnnouncement() {
-    if (!initialData || !initialData.announcementText) return;
-
     var alertEl = document.getElementById('announcement-alert');
     var textEl = document.getElementById('announcement-text');
     var headerEl = document.getElementById('announcement-header');
@@ -160,25 +158,43 @@ function showAnnouncement() {
     var chevronEl = document.getElementById('announcement-chevron');
     var statusEl = document.getElementById('announcement-status-text');
 
-    if (initialData.announcementText.trim()) {
-        textEl.innerHTML = initialData.announcementText;
-        alertEl.classList.remove('d-none');
+    fetch('announcement.html')
+        .then(function (response) {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.text();
+        })
+        .then(function (htmlText) {
+            if (htmlText.trim()) {
+                textEl.innerHTML = htmlText;
+                alertEl.classList.remove('d-none');
 
-        // Toggle logic
-        var isExpanded = false;
-        headerEl.addEventListener('click', function () {
-            isExpanded = !isExpanded;
-            $(bodyEl).slideToggle();
-            chevronEl.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
-            statusEl.textContent = isExpanded ? '- Klik untuk menutup' : '- Klik untuk detail';
-        });
+                // Toggle logic
+                var isExpanded = false;
+                headerEl.addEventListener('click', function () {
+                    isExpanded = !isExpanded;
+                    // Standard slide toggle alternative for ES5/jQuery
+                    if (typeof $ !== 'undefined') {
+                        $(bodyEl).slideToggle();
+                    } else {
+                        bodyEl.style.display = isExpanded ? 'block' : 'none';
+                    }
+                    chevronEl.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+                    statusEl.textContent = isExpanded ? '- Klik untuk menutup' : '- Klik untuk detail';
+                });
 
-        // Auto-collapse timer (optional, like original)
-        setTimeout(function () {
-            if (!isExpanded) {
+                // Auto-collapse timer
+                setTimeout(function () {
+                    if (!isExpanded && typeof $ !== 'undefined') {
+                        $(bodyEl).slideUp();
+                    } else if (!isExpanded) {
+                        bodyEl.style.display = 'none';
+                    }
+                }, 5000);
             }
-        }, 5000);
-    }
+        })
+        .catch(function (error) {
+            console.warn('Failed to load announcement:', error);
+        });
 }
 
 // ===== THEME TOGGLE =====
