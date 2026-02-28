@@ -1031,9 +1031,21 @@ function showSuccessModal(requestId) {
         if (document.activeElement && modalEl.contains(document.activeElement)) {
             document.activeElement.blur();
         }
+
+        // Ensure we are at the top when modal closes
+        setTimeout(function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            try { window.parent.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
+        }, 50);
     }, { once: true });
 
     modalInstance.show();
+
+    // Smooth scroll to top when showing success modal
+    setTimeout(function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        try { window.parent.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
+    }, 100);
 }
 
 // ===== LOADING OVERLAY =====
@@ -1095,6 +1107,12 @@ function resetForm() {
     if (dosenManual) dosenManual.style.display = 'none';
 
     console.log('Form reset completed');
+
+    // Fix scroll issue: use smooth scrolling and a slight delay to ensure DOM is ready
+    setTimeout(function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        try { window.parent.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
+    }, 100);
 }
 
 // ===== HELPERS =====

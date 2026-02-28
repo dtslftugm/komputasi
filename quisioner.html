@@ -149,12 +149,25 @@
             font-size: 2.5rem;
             width: 60px;
             text-align: center;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             user-select: none;
         }
 
+        @keyframes emojiPop {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.4);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
         .emoji-display.bounce {
-            transform: scale(1.3);
+            animation: emojiPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .rating-text {
