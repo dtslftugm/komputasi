@@ -240,49 +240,58 @@ function handleProdiChange() {
     var universitasContainer = document.getElementById('universitas-container');
     var dosenSelect = document.getElementById('dosenPembimbing');
     var dosenManual = document.getElementById('dosenPembimbingManual');
-    var select2Container = $(dosenSelect).next('.select2-container');
 
-    if (prodi === 'Non-UGM') {
-        // Hide Select2, Show Manual
-        if (select2Container.length) select2Container.hide();
-        else dosenSelect.style.display = 'none';
-        dosenSelect.required = false;
+    // Run in a slight delay to allow Select2 to completely render if it hasn't
+    setTimeout(function () {
+        var select2Container = $(dosenSelect).next('.select2-container');
 
-        dosenManual.style.display = 'block';
-        dosenManual.required = true;
+        if (prodi === 'Non-UGM') {
+            // Hide Select2, Show Manual
+            if (select2Container.length) select2Container.hide();
+            dosenSelect.style.display = 'none'; // Ensure the original select is also hidden
+            dosenSelect.required = false;
 
-        // Show universitas field, use manual dosen input
-        universitasContainer.style.display = 'block';
-        document.getElementById('universitas').required = true;
+            dosenManual.style.display = 'block';
+            dosenManual.required = true;
+            dosenManual.disabled = false; // Enable for typing
+            dosenManual.placeholder = "Nama Dosen (Lengkap dengan gelar)";
 
-    } else if (prodi) {
-        // Hide universitas, show dosen dropdown (Select2)
-        universitasContainer.style.display = 'none';
-        document.getElementById('universitas').required = false;
+            // Show universitas field, use manual dosen input
+            universitasContainer.style.display = 'block';
+            document.getElementById('universitas').required = true;
 
-        if (select2Container.length) select2Container.show();
-        else dosenSelect.style.display = 'block';
-        dosenSelect.required = true;
+        } else if (prodi) {
+            // Hide universitas, show dosen dropdown (Select2)
+            universitasContainer.style.display = 'none';
+            document.getElementById('universitas').required = false;
 
-        dosenManual.style.display = 'none';
-        dosenManual.required = false;
-        dosenSelect.disabled = false;
-    } else {
-        // No prodi selected - reset all
-        universitasContainer.style.display = 'none';
-        document.getElementById('universitas').required = false;
+            if (select2Container.length) select2Container.show();
+            else dosenSelect.style.display = 'block'; // Fallback to show original select
+            dosenSelect.required = true;
 
-        if (select2Container.length) select2Container.show();
-        else dosenSelect.style.display = 'block';
-        dosenSelect.required = true;
-        dosenSelect.disabled = true;
+            dosenManual.style.display = 'none';
+            dosenManual.required = false;
+            dosenSelect.disabled = false;
+        } else {
+            // No prodi selected - reset all
+            universitasContainer.style.display = 'none';
+            document.getElementById('universitas').required = false;
 
-        dosenManual.style.display = 'none';
-        dosenManual.required = false;
+            if (select2Container.length) select2Container.hide();
+            dosenSelect.style.display = 'none'; // Hide Select2 on empty prodi
+            dosenSelect.required = false;
+            dosenSelect.disabled = true;
 
-        // Clear Select2
-        $(dosenSelect).val(null).trigger('change');
-    }
+            dosenManual.style.display = 'block';
+            dosenManual.required = false;
+            dosenManual.disabled = true; // Disable on empty prodi
+            dosenManual.placeholder = "Pilih Prodi dahulu...";
+            dosenManual.value = ""; // Clear its value
+
+            // Clear Select2
+            $(dosenSelect).val(null).trigger('change');
+        }
+    }, 50);
 }
 
 // ===== DOSEN DROPDOWN =====
@@ -310,15 +319,16 @@ function setupDosenDropdown() {
             // Enable element
             selectEl.disabled = false;
 
-            // Initialize Select2 with a slight delay to ensure container width is available
-            setTimeout(function () {
-                $('#dosenPembimbing').select2({
-                    placeholder: 'Pilih Dosen Pembimbing / Pengampu',
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#dosenPembimbing').parent()
-                });
-            }, 100);
+            // Initialize Select2 directly without arbitrary delay
+            $('#dosenPembimbing').select2({
+                placeholder: 'Pilih Dosen Pembimbing / Pengampu',
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#dosenPembimbing').parent()
+            });
+
+            // Signal that Dosen Select2 is fully initialized and ready
+            document.dispatchEvent(new Event('Select2DosenReady'));
         } else {
             console.warn('Dosen list missing in initialData');
             document.getElementById('dosenPembimbing').innerHTML = '<option value="">-- Dosen Tidak Ditemukan --</option>';
@@ -1121,7 +1131,10 @@ function resetForm() {
     if (universitasContainer) universitasContainer.style.display = 'none';
 
     var dosenManual = document.getElementById('dosenPembimbingManual');
-    if (dosenManual) dosenManual.style.display = 'none';
+    // Removed forceful hide here because handleProdiChange handles the new default state
+
+    // Trigger UI synchronization for Prodi-dependent fields
+    handleProdiChange();
 
     console.log('Form reset completed');
 
@@ -1182,11 +1195,19 @@ function prefillRenewalForm(data) {
         if (prodi === 'Non-UGM') {
             document.getElementById('dosenPembimbingManual').value = data.dosenPembimbing;
         } else {
-            // Need a slight delay to ensure Select2 is ready after the Prodi dropdown change
-            setTimeout(function () {
+            // Function to perform injection
+            var injectDosen = function () {
                 var newOption = new Option(data.dosenPembimbing, data.dosenPembimbing, true, true);
                 $('#dosenPembimbing').append(newOption).trigger('change');
-            }, 100);
+            };
+
+            // Check if Select2 container already exists
+            if ($('#dosenPembimbing').next('.select2-container').length > 0) {
+                injectDosen();
+            } else {
+                // Wait for the custom ready event
+                document.addEventListener('Select2DosenReady', injectDosen, { once: true });
+            }
         }
     }
 
