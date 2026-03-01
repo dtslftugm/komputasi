@@ -1215,11 +1215,36 @@ function prefillRenewalForm(data) {
         var needsYes = document.getElementById('needsComputerYes');
         if (needsYes) {
             needsYes.checked = true;
-            setupComputerToggle();
-            document.getElementById('roomPreference').value = data.computerRoomPreference || '';
+
+            // Show the computer section manually
+            var computerSection = document.getElementById('computer-section');
+            if (computerSection) computerSection.style.display = 'block';
+
+            // Select Room and lock it
+            var roomSelect = document.getElementById('roomPreference');
+            if (roomSelect) {
+                roomSelect.value = data.computerRoomPreference || '';
+                roomSelect.disabled = true; // Lock room during renewal
+            }
+
+            // Mark the selected computer
+            selectedComputer = { name: data.preferredComputer };
+
+            // Show the renewal banner
+            var banner = document.getElementById('renewalInfoBanner');
+            if (banner) {
+                banner.classList.remove('d-none');
+                var rnName = document.getElementById('renewalComputerName');
+                if (rnName) rnName.textContent = data.preferredComputer;
+            }
         }
     }
 
     if (data.computerUserName) document.getElementById('computerUserName').value = data.computerUserName;
     if (data.computerHostname) document.getElementById('computerHostname').value = data.computerHostname;
+
+    // Evaluate access type based on newly filled form data (hides/shows server fields)
+    setTimeout(function () {
+        autoSetTipeAkses();
+    }, 200);
 }
