@@ -243,10 +243,6 @@ function handleProdiChange() {
     var select2Container = $(dosenSelect).next('.select2-container');
 
     if (prodi === 'Non-UGM') {
-        // Show universitas field, use manual dosen input
-        universitasContainer.style.display = 'block';
-        document.getElementById('universitas').required = true;
-
         // Hide Select2, Show Manual
         if (select2Container.length) select2Container.hide();
         else dosenSelect.style.display = 'none';
@@ -254,6 +250,11 @@ function handleProdiChange() {
 
         dosenManual.style.display = 'block';
         dosenManual.required = true;
+
+        // Show universitas field, use manual dosen input
+        universitasContainer.style.display = 'block';
+        document.getElementById('universitas').required = true;
+
     } else if (prodi) {
         // Hide universitas, show dosen dropdown (Select2)
         universitasContainer.style.display = 'none';
