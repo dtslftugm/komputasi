@@ -720,6 +720,20 @@ window.handleRevoke = handleRevoke;
 function openAgendaModal() {
     if (!agendaModalObj) {
         agendaModalObj = new bootstrap.Modal(document.getElementById('agendaModal'));
+
+        // Setup 24-hour flatpickr format for agenda times
+        if (typeof flatpickr !== 'undefined') {
+            flatpickr("#agenda-mulai", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                time_24hr: true
+            });
+            flatpickr("#agenda-selesai", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                time_24hr: true
+            });
+        }
     }
     refreshAgendaList();
     agendaModalObj.show();
