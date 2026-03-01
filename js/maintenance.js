@@ -167,7 +167,7 @@ function openMaintenanceModal(name, type) {
         }
 
         document.getElementById('m-issues').value = issueText;
-        document.getElementById('m-notes').value = noteText;
+        document.getElementById('m-resolution').value = noteText;
     }
 
     processModal.show();
@@ -237,7 +237,7 @@ function saveMaintenanceProgress() {
     var data = {
         computerName: name,
         issues: issues,
-        notes: document.getElementById('m-notes').value,
+        resolution: document.getElementById('m-resolution').value,
         storage: document.getElementById('m-storage').value,
         mType: document.getElementById('m-type').value,
         checkStorage: document.getElementById('check-storage').checked,
@@ -261,7 +261,7 @@ function completeMaintenance() {
     var data = {
         computerName: name,
         issues: document.getElementById('m-issues').value,
-        notes: document.getElementById('m-notes').value,
+        resolution: document.getElementById('m-resolution').value,
         storage: document.getElementById('m-storage').value,
         mType: document.getElementById('m-type').value,
         checkStorage: document.getElementById('check-storage').checked,
