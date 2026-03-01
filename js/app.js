@@ -1243,6 +1243,21 @@ function prefillRenewalForm(data) {
     if (data.computerUserName) document.getElementById('computerUserName').value = data.computerUserName;
     if (data.computerHostname) document.getElementById('computerHostname').value = data.computerHostname;
 
+    // Populate Attachment Link if exists
+    if (data.linkSurat) {
+        var methodLink = document.getElementById('methodLink');
+        if (methodLink) {
+            methodLink.checked = true;
+            // Trigger change event to fire the UI toggle logic bound in setupUploadMethodToggle
+            var event = new Event('change');
+            methodLink.dispatchEvent(event);
+        }
+        var linkInput = document.getElementById('linkSuratKeterangan') || document.getElementById('linkSurat');
+        if (linkInput) {
+            linkInput.value = data.linkSurat;
+        }
+    }
+
     // Evaluate access type based on newly filled form data (hides/shows server fields)
     setTimeout(function () {
         autoSetTipeAkses();
