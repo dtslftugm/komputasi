@@ -1160,7 +1160,7 @@ function prefillRenewalForm(data) {
 
     if (data.prodi) {
         document.getElementById('prodi').value = data.prodi;
-        handleProdiChange();
+        handleProdiChange(); // Force UI update (Select2 vs Manual)
     }
 
     if (data.universitas) document.getElementById('universitas').value = data.universitas;
@@ -1181,7 +1181,11 @@ function prefillRenewalForm(data) {
         if (prodi === 'Non-UGM') {
             document.getElementById('dosenPembimbingManual').value = data.dosenPembimbing;
         } else {
-            $('#dosenPembimbing').val(data.dosenPembimbing).trigger('change');
+            // Need a slight delay to ensure Select2 is ready after the Prodi dropdown change
+            setTimeout(function () {
+                var newOption = new Option(data.dosenPembimbing, data.dosenPembimbing, true, true);
+                $('#dosenPembimbing').append(newOption).trigger('change');
+            }, 100);
         }
     }
 
