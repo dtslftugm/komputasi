@@ -136,6 +136,40 @@ function openMaintenanceModal(name, type) {
         document.getElementById('m-storage').placeholder = 'Misal: 1400GB Free / OK';
     }
 
+    // Pre-fill issues and notes if available
+    if (item.notes) {
+        var rawNotes = item.notes;
+        var issueText = "";
+        var noteText = "";
+
+        // Specifically handled the logic created by apiUpdateMaintenanceStatus or apiSetManualMaintenance
+        if (rawNotes.indexOf('[ISSUE]') !== -1 || rawNotes.indexOf('[NOTE]') !== -1 || rawNotes.indexOf('[MANUAL]') !== -1) {
+
+            if (rawNotes.indexOf('[MANUAL]') !== -1) {
+                // If it's a manual entry without explicit tags
+                issueText = rawNotes.replace('[MANUAL]', '').trim();
+            } else {
+                // Parse [ISSUE] and [NOTE] tags
+                var splitIssue = rawNotes.split('[NOTE]');
+
+                var issuePart = splitIssue[0];
+                var notePart = splitIssue.length > 1 ? splitIssue[1] : "";
+
+                if (issuePart.indexOf('[ISSUE]') !== -1) {
+                    issueText = issuePart.replace('[ISSUE]', '').trim();
+                }
+
+                noteText = notePart.trim();
+            }
+        } else if (item.status.indexOf('Pending Repair') !== -1 || item.status.indexOf('Maintenance') !== -1) {
+            // Fallback for older notes without tags
+            issueText = rawNotes;
+        }
+
+        document.getElementById('m-issues').value = issueText;
+        document.getElementById('m-notes').value = noteText;
+    }
+
     processModal.show();
 }
 
