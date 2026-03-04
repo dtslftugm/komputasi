@@ -226,7 +226,57 @@
                                     <option value="Update">Update Software/OS</option>
                                 </select>
                             </div>
-                            <div class="col-12">
+
+                            <!-- Remote Access Info -->
+                            <div class="col-12 mt-3" id="m-anydesk-section" style="display: none;">
+                                <div class="p-3 bg-light rounded" style="border: 1px dashed #dee2e6;">
+                                    <h6 class="fw-bold outfit text-primary mb-3">
+                                        <i class="bi bi-pc-display me-2"></i>Remote Access (AnyDesk)
+                                    </h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-5">
+                                            <label class="form-label extra-small fw-bold text-muted mb-1">AnyDesk
+                                                ID</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" id="m-anydesk-id"
+                                                    class="form-control bg-white font-monospace" readonly>
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                    onclick="Utils.copyToClipboard(document.getElementById('m-anydesk-id').value, 'AnyDesk ID disalin!')">
+                                                    <i class="bi bi-clipboard"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-primary"
+                                                    onclick="launchMaintenanceAnydesk()" title="Buka Aplikasi AnyDesk">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label
+                                                class="form-label extra-small fw-bold text-muted mb-1">Password</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" id="m-anydesk-pass"
+                                                    class="form-control bg-white font-monospace" readonly>
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                    onclick="Utils.copyToClipboard(document.getElementById('m-anydesk-pass').value, 'Password disalin!')">
+                                                    <i class="bi bi-clipboard"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 d-flex align-items-end">
+                                            <button type="button" class="btn btn-dark btn-sm w-100 fw-bold shadow-sm"
+                                                onclick="copyMaintenanceAnydeskCommand()">
+                                                <i class="bi bi-terminal me-1"></i>Copy CMD
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="form-text mt-2 extra-small text-muted"><i
+                                            class="bi bi-info-circle me-1"></i>Gunakan Copy CMD untuk mendapatkan script
+                                        login otomatis via Command Prompt.</div>
+                                </div>
+                            </div>
+                            <!-- End Remote Access Info -->
+
+                            <div class="col-12 mt-3">
                                 <label class="form-label small fw-bold">Checklist Selesai</label>
                                 <div class="d-flex flex-wrap gap-3 p-3 bg-light rounded" style="border-radius: 16px;">
                                     <div class="form-check">

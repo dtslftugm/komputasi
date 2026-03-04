@@ -129,11 +129,21 @@ function openMaintenanceModal(name, type) {
         lblJunk.textContent = 'Verifikasi Status Revoked';
         lblAnydesk.textContent = 'Email Konfirmasi (Optional)';
         document.getElementById('m-storage').placeholder = 'ID Lisensi / Key';
+
+        var anydeskSection = document.getElementById('m-anydesk-section');
+        if (anydeskSection) anydeskSection.style.display = 'none';
     } else {
         lblStorage.textContent = 'Cek Storage';
         lblJunk.textContent = 'Hapus File Sampah';
         lblAnydesk.textContent = 'Cek Koneksi AnyDesk';
         document.getElementById('m-storage').placeholder = 'Misal: 1400GB Free / OK';
+
+        var anydeskSection = document.getElementById('m-anydesk-section');
+        if (anydeskSection) {
+            anydeskSection.style.display = 'block';
+            document.getElementById('m-anydesk-id').value = item.anydeskId && item.anydeskId !== "-" ? item.anydeskId : '-';
+            document.getElementById('m-anydesk-pass').value = item.anydeskPassword || '';
+        }
     }
 
     // Pre-fill issues and notes if available
@@ -300,4 +310,41 @@ function updateStatus(data, apiMethod) {
             ui.hideLoading();
             ui.error("Error: " + err);
         });
+}
+
+function copyMaintenanceAnydeskCommand() {
+    var pass = document.getElementById('m-anydesk-pass').value;
+    var target = document.getElementById('m-anydesk-id').value;
+
+    if (!target || target === '-') {
+        if (typeof ui !== 'undefined') ui.warning("ID AnyDesk tidak ditemukan.", "Data Kurang");
+        return;
+    }
+
+    if (!pass) pass = "N/A";
+
+    var cmd = 'echo ' + pass + ' | "C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe" ' + target + ' --with-password';
+
+    if (typeof Utils !== 'undefined') {
+        Utils.copyToClipboard(cmd, "Command AnyDesk berhasil disalin ke clipboard.");
+    }
+}
+
+function launchMaintenanceAnydesk() {
+    var target = document.getElementById('m-anydesk-id').value;
+    var pass = document.getElementById('m-anydesk-pass').value;
+
+    if (!target || target === '-') {
+        if (typeof ui !== 'undefined') ui.warning("ID AnyDesk tidak ditemukan.", "Data Kurang");
+        return;
+    }
+
+    if (pass && typeof Utils !== 'undefined') {
+        Utils.copyToClipboard(pass);
+    }
+
+    setTimeout(function () {
+        window.location.assign('anydesk:' + target);
+        if (typeof ui !== 'undefined') ui.success("Password telah disalin ke clipboard.");
+    }, 300);
 }
