@@ -168,11 +168,19 @@ function showAnnouncement() {
                 textEl.innerHTML = htmlText;
                 alertEl.classList.remove('d-none');
 
+                // Initial state: explicitly OPEN
+                var isExpanded = true;
+                if (typeof $ !== 'undefined') {
+                    $(bodyEl).show();
+                } else {
+                    bodyEl.style.display = 'block';
+                }
+                chevronEl.style.transform = 'rotate(180deg)';
+                statusEl.textContent = '- Klik untuk menutup';
+
                 // Toggle logic
-                var isExpanded = false;
                 headerEl.addEventListener('click', function () {
                     isExpanded = !isExpanded;
-                    // Standard slide toggle alternative for ES5/jQuery
                     if (typeof $ !== 'undefined') {
                         $(bodyEl).slideToggle();
                     } else {
@@ -184,12 +192,17 @@ function showAnnouncement() {
 
                 // Auto-collapse timer
                 setTimeout(function () {
-                    if (!isExpanded && typeof $ !== 'undefined') {
-                        $(bodyEl).slideUp();
-                    } else if (!isExpanded) {
-                        bodyEl.style.display = 'none';
+                    if (isExpanded) {
+                        isExpanded = false;
+                        if (typeof $ !== 'undefined') {
+                            $(bodyEl).slideUp();
+                        } else {
+                            bodyEl.style.display = 'none';
+                        }
+                        chevronEl.style.transform = 'rotate(0deg)';
+                        statusEl.textContent = '- Klik untuk detail';
                     }
-                }, 5000);
+                }, 10000);
             }
         })
         .catch(function (error) {
