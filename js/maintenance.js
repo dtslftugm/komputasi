@@ -119,6 +119,12 @@ function openMaintenanceModal(name, type) {
     document.getElementById('m-target-type').value = type;
     document.getElementById('maintenanceForm').reset();
 
+    // Vendor Specific Variables
+    var vendorSection = document.getElementById('m-vendor-instructions-section');
+    var vendorManualSearch = document.getElementById('vendor-manual-search');
+    var vendorAllowlistGen = document.getElementById('vendor-allowlist-generation');
+    var vendorAllowlistResult = document.getElementById('vendor-allowlist-result');
+
     // Context-aware labels
     var lblStorage = document.querySelector('label[for="check-storage"]');
     var lblJunk = document.querySelector('label[for="check-junk"]');
@@ -132,6 +138,28 @@ function openMaintenanceModal(name, type) {
 
         var anydeskSection = document.getElementById('m-anydesk-section');
         if (anydeskSection) anydeskSection.style.display = 'none';
+
+        // Show Vendor Instructions
+        if (vendorSection) {
+            vendorSection.style.display = 'block';
+            var vendorName = (item.vendor || "").toString().toLowerCase();
+
+            if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1) {
+                vendorManualSearch.style.display = 'block';
+                vendorAllowlistGen.style.display = 'none';
+                document.getElementById('m-vendor-name').value = item.userName || "";
+                document.getElementById('m-vendor-email').value = item.userEmail || "";
+            } else if (vendorName.indexOf('fine') !== -1 || vendorName.indexOf('rocscience') !== -1) {
+                vendorManualSearch.style.display = 'none';
+                vendorAllowlistGen.style.display = 'block';
+                vendorAllowlistResult.style.display = 'none'; // hidden until generated
+
+                // Store software name on the button for the generator
+                document.getElementById('btnGenerateAllowlist').dataset.software = item.targetName;
+            } else {
+                vendorSection.style.display = 'none'; // fallback
+            }
+        }
     } else {
         lblStorage.textContent = 'Cek Storage';
         lblJunk.textContent = 'Hapus File Sampah';
@@ -144,6 +172,8 @@ function openMaintenanceModal(name, type) {
             document.getElementById('m-anydesk-id').value = item.anydeskId && item.anydeskId !== "-" ? item.anydeskId : '-';
             document.getElementById('m-anydesk-pass').value = item.anydeskPassword || '';
         }
+
+        if (vendorSection) vendorSection.style.display = 'none';
     }
 
     // Pre-fill issues and notes if available
@@ -171,7 +201,7 @@ function openMaintenanceModal(name, type) {
 
                 noteText = notePart.trim();
             }
-        } else if (item.status.indexOf('Pending Repair') !== -1 || item.status.indexOf('Maintenance') !== -1) {
+        } else if (item.status && (item.status.indexOf('Pending Repair') !== -1 || item.status.indexOf('Maintenance') !== -1)) {
             // Fallback for older notes without tags
             issueText = rawNotes;
         }

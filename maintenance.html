@@ -264,7 +264,7 @@
                             </div>
                             <!-- End Remote Access Info -->
 
-                            <div class="col-12 mt-3">
+                            <div class="col-12 mt-3" id="m-checklist-section">
                                 <label class="form-label small fw-bold">Checklist Selesai</label>
                                 <div class="d-flex flex-wrap gap-3 p-3 bg-light rounded" style="border-radius: 16px;">
                                     <div class="form-check">
@@ -282,6 +282,69 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Vendor Specific Instructions Section -->
+                            <div class="col-12 mt-3" id="m-vendor-instructions-section" style="display: none;">
+                                <div class="p-3 rounded" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+                                    <h6 class="fw-bold outfit text-primary mb-3">
+                                        <i class="bi bi-shield-lock me-2"></i>Instruksi Vendor
+                                    </h6>
+
+                                    <!-- Geoslope & Bentley Logic -->
+                                    <div id="vendor-manual-search" style="display: none;">
+                                        <p class="small text-muted mb-2">Silakan cari akun pengguna ini pada dashboard
+                                            vendor untuk dihapus aksesnya.</p>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label extra-small fw-bold text-muted mb-1">Nama
+                                                    Pengguna</label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" id="m-vendor-name" class="form-control bg-white"
+                                                        readonly>
+                                                    <button class="btn btn-outline-secondary" type="button"
+                                                        onclick="copyVendorInput('m-vendor-name')"><i
+                                                            class="bi bi-clipboard"></i></button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label extra-small fw-bold text-muted mb-1">Email
+                                                    Pengguna</label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" id="m-vendor-email" class="form-control bg-white"
+                                                        readonly>
+                                                    <button class="btn btn-outline-secondary" type="button"
+                                                        onclick="copyVendorInput('m-vendor-email')"><i
+                                                            class="bi bi-clipboard"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Fine GEO5 & Rocscience Logic -->
+                                    <div id="vendor-allowlist-generation" style="display: none;">
+                                        <p class="small text-muted mb-2">Vendor ini menggunakan daftar *allowlist*.
+                                            Silakan klik tombol di bawah untuk men-generate daftar *User* serta *Dosen*
+                                            aktif.</p>
+                                        <button type="button" class="btn btn-primary btn-sm mb-3"
+                                            id="btnGenerateAllowlist" onclick="generateVendorAllowlist()">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Generate Active Allowlist
+                                        </button>
+                                        <div id="vendor-allowlist-result" style="display: none;">
+                                            <label class="form-label extra-small fw-bold text-muted mb-1">Copy & Paste
+                                                ke Dashboard Vendor:</label>
+                                            <div class="input-group input-group-sm">
+                                                <textarea id="m-vendor-allowlist-text"
+                                                    class="form-control bg-white font-monospace" rows="5"
+                                                    readonly></textarea>
+                                                <button class="btn btn-secondary" type="button"
+                                                    onclick="copyVendorInput('m-vendor-allowlist-text')"><i
+                                                        class="bi bi-clipboard"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- End Vendor Specific Instructions -->
                             <div class="col-12">
                                 <label class="form-label small fw-bold">Masalah Ditemukan (Optional)</label>
                                 <textarea id="m-issues" class="form-control" rows="2" style="border-radius: 12px;"
