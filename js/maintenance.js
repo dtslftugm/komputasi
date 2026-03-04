@@ -314,7 +314,7 @@ function updateStatus(data, apiMethod) {
 
 function copyMaintenanceAnydeskCommand() {
     var pass = document.getElementById('m-anydesk-pass').value;
-    var target = document.getElementById('m-anydesk-id').value;
+    var target = document.getElementById('m-anydesk-id').value.replace(/\s/g, '');
 
     if (!target || target === '-') {
         if (typeof ui !== 'undefined') ui.warning("ID AnyDesk tidak ditemukan.", "Data Kurang");
