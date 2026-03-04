@@ -325,26 +325,9 @@ function copyMaintenanceAnydeskCommand() {
 
     var cmd = 'echo ' + pass + ' | "C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe" ' + target + ' --with-password';
 
-    if (typeof Utils !== 'undefined') {
-        Utils.copyToClipboard(cmd, "Command AnyDesk berhasil disalin ke clipboard.");
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(cmd).then(function () {
+            if (typeof ui !== 'undefined') ui.success("Command AnyDesk berhasil disalin ke clipboard.");
+        });
     }
-}
-
-function launchMaintenanceAnydesk() {
-    var target = document.getElementById('m-anydesk-id').value;
-    var pass = document.getElementById('m-anydesk-pass').value;
-
-    if (!target || target === '-') {
-        if (typeof ui !== 'undefined') ui.warning("ID AnyDesk tidak ditemukan.", "Data Kurang");
-        return;
-    }
-
-    if (pass && typeof Utils !== 'undefined') {
-        Utils.copyToClipboard(pass);
-    }
-
-    setTimeout(function () {
-        window.location.assign('anydesk:' + target);
-        if (typeof ui !== 'undefined') ui.success("Password telah disalin ke clipboard.");
-    }, 300);
 }
