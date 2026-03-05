@@ -413,7 +413,7 @@ function openProcessModal(requestId) {
                     serverConfigInput.value = "Menarik data Dosen & User aktif dari server...";
 
                     // Fetch active users + dosen rules
-                    api.run('apiGetActiveSoftwareUsers', { softwareName: req.software })
+                    api.run('admin-active-software-users', { softwareName: req.software })
                         .then(function (res) {
                             if (res.success && res.data && res.data.allowlist) {
                                 // Combine existing rules with the new applicant
@@ -423,7 +423,7 @@ function openProcessModal(requestId) {
                             }
                         })
                         .catch(function (err) {
-                            serverConfigInput.value = applicantConfigStr + "\n(Error: " + err + ")";
+                            serverConfigInput.value = applicantConfigStr + "\n(" + err + ")";
                         });
                 } else {
                     // Fallback for non-server type (or if software name is missing)

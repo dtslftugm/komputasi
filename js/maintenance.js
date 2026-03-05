@@ -361,3 +361,56 @@ function copyMaintenanceAnydeskCommand() {
         });
     }
 }
+
+// Vendor Maintenance Functions
+function copyVendorInput(elementId) {
+    var elem = document.getElementById(elementId);
+    if (!elem) return;
+
+    var text = elem.value || elem.textContent;
+    if (!text || text === "-") return;
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function () {
+            if (typeof ui !== 'undefined') ui.success("Berhasil disalin: " + text.substring(0, 20) + (text.length > 20 ? "..." : ""));
+        }).catch(function (err) {
+            console.error('Copy failed: ', err);
+        });
+    } else {
+        elem.select();
+        document.execCommand('copy');
+        if (typeof ui !== 'undefined') ui.success("Disalin.");
+    }
+}
+
+function generateVendorAllowlist() {
+    var btn = document.getElementById('btnGenerateAllowlist');
+    var softwareName = btn.dataset.software;
+    if (!softwareName) return;
+
+    if (typeof ui !== 'undefined') ui.loading("Sedang menarik data wildcard dosen & pengguna aktif...");
+    var resultDiv = document.getElementById('vendor-allowlist-result');
+    var textArea = document.getElementById('m-vendor-allowlist-text');
+
+    btn.disabled = true;
+
+    // Fixed endpoint name below:
+    api.run('admin-active-software-users', { softwareName: softwareName })
+        .then(function (res) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            btn.disabled = false;
+
+            if (res.success) {
+                textArea.value = res.data.allowlist;
+                resultDiv.style.display = 'block';
+                if (typeof ui !== 'undefined') ui.success("Berhasil men-generate daftar Allowlist.");
+            } else {
+                if (typeof ui !== 'undefined') ui.error("Gagal generate: " + res.message);
+            }
+        })
+        .catch(function (err) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            btn.disabled = false;
+            if (typeof ui !== 'undefined') ui.error("Error mengambil list dari server: " + err);
+        });
+}
