@@ -403,12 +403,33 @@ function openProcessModal(requestId) {
     // Server License Configuration
     if (serverLicenseContainer) {
         var isServerType = (req.requestType || "") === 'Akses Lisensi Server';
-        // Construct config even if backend JOIN is empty, if we have the component data
         if (req.needsServerInfo || isServerType || (req.computerUsername && req.computerHostname)) {
             serverLicenseContainer.classList.remove('d-none');
-            var configStr = req.serverConfigString || ("allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ");
             var serverConfigInput = document.getElementById('server-license-config');
-            if (serverConfigInput) serverConfigInput.value = configStr;
+            var applicantConfigStr = "allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ";
+
+            if (serverConfigInput) {
+                if (isServerType && req.software) {
+                    serverConfigInput.value = "Menarik data Dosen & User aktif dari server...";
+
+                    // Fetch active users + dosen rules
+                    api.run('apiGetActiveSoftwareUsers', { softwareName: req.software })
+                        .then(function (res) {
+                            if (res.success && res.data && res.data.allowlist) {
+                                // Combine existing rules with the new applicant
+                                serverConfigInput.value = res.data.allowlist + "\n" + applicantConfigStr;
+                            } else {
+                                serverConfigInput.value = applicantConfigStr + "\n(Gagal menarik data list aktif: " + (res.message || "Unknown Error") + ")";
+                            }
+                        })
+                        .catch(function (err) {
+                            serverConfigInput.value = applicantConfigStr + "\n(Error: " + err + ")";
+                        });
+                } else {
+                    // Fallback for non-server type (or if software name is missing)
+                    serverConfigInput.value = applicantConfigStr;
+                }
+            }
         }
     }
 
