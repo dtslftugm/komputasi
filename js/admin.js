@@ -406,7 +406,7 @@ function openProcessModal(requestId) {
         if (req.needsServerInfo || isServerType || (req.computerUsername && req.computerHostname)) {
             serverLicenseContainer.classList.remove('d-none');
             var serverConfigInput = document.getElementById('server-license-config');
-            var applicantConfigStr = "allow = " + (req.computerUsername || "") + "@" + (req.computerHostname || "") + " ";
+            var applicantConfigStr = "allow=" + (req.computerUsername || "") + "@" + (req.computerHostname || "");
 
             if (serverConfigInput) {
                 if (isServerType && req.software) {
