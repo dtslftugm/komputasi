@@ -278,9 +278,13 @@ function handleProdiChange() {
             universitasContainer.style.display = 'none';
             document.getElementById('universitas').required = false;
 
-            if (select2Container.length) select2Container.show();
-            else dosenSelect.style.display = 'block'; // Fallback to show original select
-            dosenSelect.required = true;
+            if (select2Container.length) {
+                select2Container.show();
+                dosenSelect.required = false; // Never require hidden original select
+            } else {
+                dosenSelect.style.display = 'block'; // Fallback to show original select
+                dosenSelect.required = true;
+            }
 
             dosenManual.style.display = 'none';
             dosenManual.required = false;
