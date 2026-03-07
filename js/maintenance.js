@@ -77,6 +77,7 @@ function renderMaintenanceTable(query) {
         var cleanStatus = statusText.toLowerCase();
         if (cleanStatus.indexOf('maintenance') !== -1) { statusClass = 'bg-warning text-dark'; }
         else if (cleanStatus.indexOf('repair') !== -1) { statusClass = 'bg-danger'; }
+        else if (cleanStatus.indexOf('revoked') !== -1) { statusClass = 'bg-warning text-dark'; }
         else if (cleanStatus.indexOf('available') !== -1) { statusClass = 'bg-success'; }
 
         tr.innerHTML = '<td>' +
