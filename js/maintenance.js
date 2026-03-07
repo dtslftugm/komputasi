@@ -84,7 +84,7 @@ function renderMaintenanceTable(query) {
             '<span class="badge ' + (item.type === 'PC' ? 'bg-primary' : 'bg-info') + ' mb-1" style="font-size: 10px;">' + item.type + '</span><br>' +
             '<span class="fw-bold">' + item.targetName + '</span>' +
             '</td>' +
-            '<td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td>' +
+            '<td><span class="status-badge ' + statusClass + '">' + statusText.toUpperCase() + '</span></td>' +
             '<td>' +
             '<div class="small fw-bold">' + (item.lastUser || '-') + '</div>' +
             '<div class="text-muted extra-small">ID: ' + (item.requestId || '-') + '</div>' +
