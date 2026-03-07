@@ -128,7 +128,7 @@ function loadRequests() {
 
                     // New Stats (Synced from GAS)
                     if (document.getElementById('count-maintenance')) {
-                        document.getElementById('count-maintenance').textContent = res.stats.labMaintenance || 0;
+                        document.getElementById('count-maintenance').textContent = (res.stats.labMaintenance || 0) + (res.stats.licenseMaintenance || 0);
                     }
                     if (document.getElementById('count-total-requests')) {
                         document.getElementById('count-total-requests').textContent =
