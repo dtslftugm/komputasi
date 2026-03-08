@@ -373,6 +373,9 @@ function completeMaintenance() {
     // Include the requestId
     data.requestId = document.getElementById('m-target-name').dataset.reqid || "";
 
+    console.log("[DEBUG] completeMaintenance: payload", data);
+    console.log("[DEBUG] isPcPlusLicense", isPcPlusLicense, "requestId", data.requestId);
+
     // Use specific API for standalone licenses if needed
     var apiMethod = (type === 'License') ? 'apiCompleteLicenseCleanup' : 'apiCompleteMaintenance';
 
@@ -384,6 +387,7 @@ function updateStatus(data, apiMethod) {
 
     api.run(apiMethod, data)
         .then(function (res) {
+            console.log("[DEBUG] updateStatus res", res);
             ui.hideLoading();
             if (res.success) {
                 processModal.hide();
