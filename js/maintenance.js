@@ -94,7 +94,8 @@ function renderMaintenanceTable(query) {
             '<div class="text-muted extra-small">' + (item.daysAgo || 0) + ' hari lalu</div>' +
             '</td>' +
             '<td class="text-center pe-4">' +
-            '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openMaintenanceModal(\'' + item.targetName + '\', \'' + item.type + '\')">Proses</button>' +
+            // Use rowIndex + requestId as a pseudo-unique identifier so identical software names don't clash
+            '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openMaintenanceModal(\'' + (item.requestId || 'N/A') + '\', \'' + item.type + '\', \'' + item.targetName.replace(/'/g, "\\'") + '\')">Proses</button>' +
             '</td>';
         tbody.appendChild(tr);
     });
@@ -112,11 +113,23 @@ function renderLogTable(logs) {
     }
 }
 
-function openMaintenanceModal(name, type) {
-    var item = maintenanceList.find(function (i) { return i.targetName === name; });
+function openMaintenanceModal(reqId, type, originalName) {
+    // Find item precisely by requestId AND name
+    var item = maintenanceList.find(function (i) {
+        var idMatch = reqId === 'N/A' ? (!i.requestId || i.requestId === 'N/A') : (i.requestId === reqId);
+        return idMatch && i.type === type && i.targetName === originalName;
+    });
+
+    // Fallback if exact match fails (e.g. legacy data)
+    if (!item) {
+        item = maintenanceList.find(function (i) { return i.targetName === originalName && i.type === type; });
+    }
     if (!item) return;
 
-    document.getElementById('m-target-name').textContent = name;
+    document.getElementById('m-target-name').textContent = item.targetName;
+    // We attach the unique requestId onto the modal element as a dataset so `completeMaintenance` can use it safely
+    document.getElementById('m-target-name').dataset.reqid = item.requestId || "";
+
     document.getElementById('m-target-type').value = type;
     document.getElementById('maintenanceForm').reset();
 
@@ -143,6 +156,11 @@ function openMaintenanceModal(name, type) {
         // Show Vendor Instructions
         if (vendorSection) {
             vendorSection.style.display = 'block';
+
+            // Hide the unified check-vendor for standalone licenses to avoid double-checkboxes
+            var checkVendorWrapper = document.getElementById('check-vendor').closest('.form-check');
+            if (checkVendorWrapper) checkVendorWrapper.style.display = 'none';
+
             var vendorName = (item.vendor || "").toString().toLowerCase();
 
             if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1) {
@@ -174,7 +192,40 @@ function openMaintenanceModal(name, type) {
             document.getElementById('m-anydesk-pass').value = item.anydeskPassword || '';
         }
 
-        if (vendorSection) vendorSection.style.display = 'none';
+        // Feature: Consolidated License + PC card support
+        if (vendorSection) {
+            if (item.pendingLicenseCleanup && item.pendingLicenses && item.pendingLicenses.length > 0) {
+                vendorSection.style.display = 'block';
+
+                var checkVendorWrapper = document.getElementById('check-vendor').closest('.form-check');
+                if (checkVendorWrapper) checkVendorWrapper.style.display = 'block';
+                document.getElementById('check-vendor').checked = false;
+
+                // For simplicity in the UI, we take the primary/first license vendor rules
+                var primaryLicense = item.pendingLicenses[0];
+                var vendorName = (primaryLicense.vendor || "").toString().toLowerCase();
+
+                if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1) {
+                    vendorManualSearch.style.display = 'block';
+                    vendorAllowlistGen.style.display = 'none';
+                    document.getElementById('m-vendor-name').value = item.licenseUserName || "";
+                    document.getElementById('m-vendor-email').value = item.licenseUserEmail || "";
+                    document.getElementById('lbl-vendor').textContent = '✅ Saya telah menghapus user dari Dashboard Vendor (' + primaryLicense.vendor + ')';
+                } else if (vendorName.indexOf('fine') !== -1 || vendorName.indexOf('rocscience') !== -1) {
+                    vendorManualSearch.style.display = 'none';
+                    vendorAllowlistGen.style.display = 'block';
+                    vendorAllowlistResult.style.display = 'none'; // hidden until generated
+
+                    // Store software name on the button for the generator
+                    document.getElementById('btnGenerateAllowlist').dataset.software = primaryLicense.name;
+                    document.getElementById('lbl-vendor').textContent = '✅ Saya telah menerapkan Allowlist baru di Server';
+                } else {
+                    vendorSection.style.display = 'none'; // fallback
+                }
+            } else {
+                vendorSection.style.display = 'none';
+            }
+        }
     }
 
     // Pre-fill issues and notes if available
@@ -293,9 +344,16 @@ function saveMaintenanceProgress() {
 function completeMaintenance() {
     var name = document.getElementById('m-target-name').textContent;
     var type = document.getElementById('m-target-type').value;
+    var typeBadge = document.getElementById('m-target-type-badge') ? document.getElementById('m-target-type-badge').textContent : type;
+    var isPcPlusLicense = (type === 'PC' && document.getElementById('m-vendor-instructions-section').style.display === 'block');
 
     if (!document.getElementById('check-storage').checked || !document.getElementById('check-junk').checked) {
         ui.warning("Pastikan tugas utama sudah dicentang.", "Ceklis Belum Lengkap");
+        return;
+    }
+
+    if (isPcPlusLicense && !document.getElementById('check-vendor').checked) {
+        ui.warning("Pastikan Anda sudah mencentang konfirmasi pengelolaan Lisensi.", "Aksi Lisensi Belum Selesai");
         return;
     }
 
@@ -308,17 +366,15 @@ function completeMaintenance() {
         checkStorage: document.getElementById('check-storage').checked,
         checkJunk: document.getElementById('check-junk').checked,
         checkAnydesk: document.getElementById('check-anydesk').checked,
+        hasLicenseCleanup: isPcPlusLicense,
         status: 'Available'
     };
 
-    // Use specific API for licenses if needed
-    var apiMethod = (type === 'License') ? 'apiCompleteLicenseCleanup' : 'apiCompleteMaintenance';
+    // Include the requestId
+    data.requestId = document.getElementById('m-target-name').dataset.reqid || "";
 
-    // For licenses, we might need requestId instead of computerName
-    if (type === 'License') {
-        var item = maintenanceList.find(function (i) { return i.targetName === name; });
-        data.requestId = item ? item.requestId : "";
-    }
+    // Use specific API for standalone licenses if needed
+    var apiMethod = (type === 'License') ? 'apiCompleteLicenseCleanup' : 'apiCompleteMaintenance';
 
     updateStatus(data, apiMethod);
 }
