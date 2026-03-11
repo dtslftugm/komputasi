@@ -1334,9 +1334,6 @@ function checkLabAgendas(isManualCheck) {
 
     if (!roomEl || !mulaiEl || !warningEl) return { isBlocked: false };
 
-    // --- LOG FOR DEBUGGING ---
-    console.log("Checking Agenda for Room:", roomEl.value, "on Date:", mulaiEl.value);
-
     var room = roomEl.value;
     var startStr = mulaiEl.value;
     var endStr = akhirEl.value;
@@ -1375,8 +1372,6 @@ function checkLabAgendas(isManualCheck) {
     if (conflict) {
         var userCode = (kodePesertaInput.value || "").trim().toUpperCase();
         var agendaCode = (conflict.kodePeserta || "").trim().toUpperCase();
-
-        console.log("Agenda Conflict Found:", conflict.kegiatan, "| Required Code:", agendaCode, "| User Code:", userCode);
 
         if (agendaCode && userCode === agendaCode) {
             warningEl.classList.remove('alert-danger');

@@ -299,6 +299,16 @@ function openProcessModal(requestId) {
 
     var dosenEl = document.getElementById('modal-dosen');
     if (dosenEl) dosenEl.textContent = req.dosen || '-';
+    
+    // Renewal Identification & Badge
+    var renewalBadge = document.getElementById('modal-renewal-badge');
+    if (renewalBadge) {
+        if (req.isRenewal) {
+            renewalBadge.classList.remove('d-none');
+        } else {
+            renewalBadge.classList.add('d-none');
+        }
+    }
 
     var topikEl = document.getElementById('modal-topik');
     if (topikEl) topikEl.textContent = req.topik || '-';
@@ -373,7 +383,20 @@ function openProcessModal(requestId) {
 
     // Default expiration date
     var daysToAdd = (req.roomPreference === 'Ruang Penelitian') ? 14 : 30;
-    var expDate = new Date();
+    var baseDate = new Date();
+    
+    // Logic: If renewal, use prevExpirationDate as base if it's still in the future or recently expired
+    if (req.isRenewal && req.prevExpirationDate) {
+        var prevDate = new Date(req.prevExpirationDate);
+        if (!isNaN(prevDate.getTime())) {
+            // Use prevDate as base, but if it's already older than Today, use Today
+            if (prevDate > baseDate) {
+                baseDate = prevDate;
+            }
+        }
+    }
+    
+    var expDate = new Date(baseDate.getTime());
     expDate.setDate(expDate.getDate() + daysToAdd);
     document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
 
