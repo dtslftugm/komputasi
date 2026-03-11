@@ -781,9 +781,13 @@ function refreshAgendaList() {
             }
 
             tbody.innerHTML = agendas.map(function (a) {
+                var kodeBadge = a.kodePeserta ? '<div class="extra-small mt-1"><span class="badge bg-warning-subtle text-dark border-warning border">🔑 ' + a.kodePeserta + '</span></div>' : '';
                 return '<tr>' +
                     '<td class="fw-bold text-primary">' + a.ruangan + '</td>' +
-                    '<td>' + a.kegiatan + '</td>' +
+                    '<td>' +
+                    '<div>' + a.kegiatan + '</div>' +
+                    kodeBadge +
+                    '</td>' +
                     '<td><div class="small">' + a.mulai + ' - ' + a.selesai + '</div></td>' +
                     '<td class="text-center">' +
                     '<div class="d-flex justify-content-center gap-1">' +
@@ -805,7 +809,8 @@ function handleSimpanAgenda() {
         kegiatan: document.getElementById('agenda-kegiatan').value,
         mulai: document.getElementById('agenda-mulai').value,
         selesai: document.getElementById('agenda-selesai').value,
-        deskripsi: document.getElementById('agenda-deskripsi').value
+        deskripsi: document.getElementById('agenda-deskripsi').value,
+        kodePeserta: document.getElementById('agenda-kode').value
     };
 
     showLoading("Menyimpan Agenda...");
