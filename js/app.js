@@ -664,8 +664,11 @@ function setupComputerToggle() {
     var btnCheck = document.getElementById('btn-check-kode');
     if (btnCheck) {
         btnCheck.addEventListener('click', function () {
-            var result = checkLabAgendas();
-            if (!result.isBlocked) loadAvailableComputers();
+            var result = checkLabAgendas(true); // Pass true to show explicit feedback
+            if (!result.isBlocked) {
+                ui.success("Akses lab berhasil dibuka!");
+                loadAvailableComputers();
+            }
         });
     }
 
@@ -1321,7 +1324,7 @@ function prefillRenewalForm(data) {
 }
 
 // ===== AGENDA CONFLICT CHECK =====
-function checkLabAgendas() {
+function checkLabAgendas(isManualCheck) {
     var roomEl = document.getElementById('roomPreference');
     var mulaiEl = document.getElementById('mulai');
     var akhirEl = document.getElementById('akhir');
@@ -1330,6 +1333,9 @@ function checkLabAgendas() {
     var kodePesertaInput = document.getElementById('kodePeserta');
 
     if (!roomEl || !mulaiEl || !warningEl) return { isBlocked: false };
+
+    // --- LOG FOR DEBUGGING ---
+    console.log("Checking Agenda for Room:", roomEl.value, "on Date:", mulaiEl.value);
 
     var room = roomEl.value;
     var startStr = mulaiEl.value;
@@ -1341,8 +1347,8 @@ function checkLabAgendas() {
         return { isBlocked: false };
     }
 
-    var clientStart = new Date(startStr);
-    var clientEnd = endStr ? new Date(endStr) : new Date(startStr);
+    var clientStart = parseAppDate(startStr);
+    var clientEnd = endStr ? parseAppDate(endStr) : parseAppDate(startStr);
     if (!endStr) {
         clientEnd.setHours(23, 59, 59);
     }
@@ -1354,8 +1360,11 @@ function checkLabAgendas() {
     for (var i = 0; i < agendas.length; i++) {
         var a = agendas[i];
         if (a.ruangan === room || a.ruangan === "Semua Ruangan" || room === "Semua Ruangan") {
-            var exStart = new Date(a.mulaiRaw || a.mulai);
-            var exEnd = new Date(a.selesaiRaw || a.selesai);
+            var exStart = parseAppDate(a.mulaiRaw || a.mulai);
+            var exEnd = parseAppDate(a.selesaiRaw || a.selesai);
+
+            if (!exStart || !exEnd || isNaN(exStart.getTime())) continue;
+
             if (clientStart <= exEnd && clientEnd >= exStart) {
                 conflict = a;
                 break;
@@ -1367,6 +1376,8 @@ function checkLabAgendas() {
         var userCode = (kodePesertaInput.value || "").trim().toUpperCase();
         var agendaCode = (conflict.kodePeserta || "").trim().toUpperCase();
 
+        console.log("Agenda Conflict Found:", conflict.kegiatan, "| Required Code:", agendaCode, "| User Code:", userCode);
+
         if (agendaCode && userCode === agendaCode) {
             warningEl.classList.remove('alert-danger');
             warningEl.classList.add('alert-success');
@@ -1374,6 +1385,11 @@ function checkLabAgendas() {
             warningEl.classList.remove('d-none');
             kodePesertaContainer.classList.remove('d-none');
             return { isBlocked: false };
+        }
+
+        // --- EXPLICIT FEEDBACK ON MANUAL CHECK ---
+        if (isManualCheck && userCode !== "" && userCode !== agendaCode) {
+            ui.error("Kode Peserta tidak sesuai. Silakan hubungi admin atau asisten lab.");
         }
 
         var mulaiDisp = new Date(conflict.mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
@@ -1392,4 +1408,38 @@ function checkLabAgendas() {
         kodePesertaContainer.classList.add('d-none');
         return { isBlocked: false };
     }
+}
+
+/**
+ * Robust Date Parser for App (Handles ISO, Date Objects, and DD-MMM-YYYY)
+ */
+function parseAppDate(dateInput) {
+    if (!dateInput) return null;
+    if (dateInput instanceof Date) return dateInput;
+
+    // Try standard parsing first
+    var d = new Date(dateInput);
+    if (!isNaN(d.getTime())) return d;
+
+    // Handle DD-MMM-YYYY (e.g., 11-Mar-2026)
+    if (typeof dateInput === 'string' && dateInput.indexOf('-') !== -1) {
+        var parts = dateInput.split('-');
+        if (parts.length === 3) {
+            var day = parseInt(parts[0], 10);
+            var monthStr = parts[1].toLowerCase().substring(0, 3);
+            var year = parseInt(parts[2], 10);
+
+            var monthMap = {
+                'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'mei': 4, 'may': 4,
+                'jun': 5, 'jul': 6, 'agt': 7, 'aug': 7, 'sep': 8, 'okt': 9,
+                'oct': 9, 'nov': 10, 'des': 11, 'dec': 11
+            };
+
+            if (monthMap[monthStr] !== undefined) {
+                return new Date(year, monthMap[monthStr], day);
+            }
+        }
+    }
+
+    return null;
 }
