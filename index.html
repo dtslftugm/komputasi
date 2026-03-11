@@ -210,6 +210,28 @@
                 <!-- HIDDEN: Tipe Akses auto-determined based on software + room -->
                 <input type="hidden" id="requestType" value="">
 
+                <!-- Moved Dates Section here for early conflict detection (Milestone 12) -->
+                <div class="col-md-12 mb-3 mt-3">
+                    <div class="card shadow-sm"
+                        style="background-color: var(--card-bg); border-color: var(--border-color);">
+                        <div class="card-body p-3">
+                            <label class="form-label fw-bold mb-2">📅 Rencana Waktu Penggunaan</label>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label required-label small">Mulai</label>
+                                    <input type="date" class="form-control" id="mulai" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Akhir</label>
+                                    <input type="date" class="form-control" id="akhir">
+                                </div>
+                            </div>
+                            <div class="form-text mt-2 small text-muted">Tentukan tanggal mulai dan akhir rencana
+                                penggunaan Anda agar sistem dapat memvalidasi ketersediaan lab.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Computer Lab Request Section -->
                 <div class="col-12 mt-3">
                     <div class="card shadow-sm"
@@ -315,20 +337,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dates -->
-                <div class="col-md-6 mb-3 mt-3">
-                    <div class="row g-4">
-                        <div class="col-6">
-                            <label class="form-label required-label">Mulai</label>
-                            <input type="date" class="form-control" id="mulai" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Akhir</label>
-                            <input type="date" class="form-control" id="akhir">
                         </div>
                     </div>
                 </div>
