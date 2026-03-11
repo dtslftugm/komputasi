@@ -651,6 +651,32 @@ function setupComputerToggle() {
     // Search listener
     computerSearch.addEventListener('input', filterComputers);
 
+    // Agenda check listeners
+    var checkInputs = ['roomPreference', 'mulai', 'akhir'];
+    checkInputs.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', function () {
+            var result = checkLabAgendas();
+            if (id === 'roomPreference' || !result.isBlocked) loadAvailableComputers();
+        });
+    });
+
+    var btnCheck = document.getElementById('btn-check-kode');
+    if (btnCheck) {
+        btnCheck.addEventListener('click', function () {
+            var result = checkLabAgendas();
+            if (!result.isBlocked) loadAvailableComputers();
+        });
+    }
+
+    var kodeInput = document.getElementById('kodePeserta');
+    if (kodeInput) {
+        kodeInput.addEventListener('input', function () {
+            var result = checkLabAgendas();
+            if (!result.isBlocked) loadAvailableComputers();
+        });
+    }
+
     // Pagination listeners
     document.getElementById('prev-page').addEventListener('click', function (e) {
         e.preventDefault();
@@ -683,10 +709,23 @@ function loadAvailableComputers() {
         return;
     }
 
+    // --- BLOCK IF AGENDA CONFLICT EXISTS ---
+    var conflictResult = checkLabAgendas();
+    if (conflictResult.isBlocked) {
+        loading.style.display = 'none';
+        list.innerHTML = '';
+        noComputers.classList.remove('d-none');
+        noComputers.innerHTML = '<div class="alert alert-warning fw-bold mb-0">🔒 Ruangan Terkunci: Silakan masukkan "Kode Peserta" yang benar di atas untuk mengikuti kegiatan.</div>';
+        pagination.classList.add('d-none');
+        container.style.display = 'block';
+        return;
+    }
+
     container.style.display = 'block';
     loading.style.display = 'block';
     list.innerHTML = '';
     noComputers.classList.add('d-none');
+    noComputers.innerHTML = '<div class="text-muted mb-2">Tidak ada komputer tersedia di ruangan ini.</div>';
     pagination.classList.add('d-none');
 
     api.getAvailableComputers(room)
@@ -1279,4 +1318,78 @@ function prefillRenewalForm(data) {
     setTimeout(function () {
         autoSetTipeAkses();
     }, 200);
+}
+
+// ===== AGENDA CONFLICT CHECK =====
+function checkLabAgendas() {
+    var roomEl = document.getElementById('roomPreference');
+    var mulaiEl = document.getElementById('mulai');
+    var akhirEl = document.getElementById('akhir');
+    var warningEl = document.getElementById('agendaConflictWarning');
+    var kodePesertaContainer = document.getElementById('kodePesertaContainer');
+    var kodePesertaInput = document.getElementById('kodePeserta');
+
+    if (!roomEl || !mulaiEl || !warningEl) return { isBlocked: false };
+
+    var room = roomEl.value;
+    var startStr = mulaiEl.value;
+    var endStr = akhirEl.value;
+
+    if (!room || !startStr) {
+        warningEl.classList.add('d-none');
+        kodePesertaContainer.classList.add('d-none');
+        return { isBlocked: false };
+    }
+
+    var clientStart = new Date(startStr);
+    var clientEnd = endStr ? new Date(endStr) : new Date(startStr);
+    if (!endStr) {
+        clientEnd.setHours(23, 59, 59);
+    }
+
+    // Check against agendas from initialData
+    var agendas = (initialData && initialData.agendas) ? initialData.agendas : [];
+    var conflict = null;
+
+    for (var i = 0; i < agendas.length; i++) {
+        var a = agendas[i];
+        if (a.ruangan === room || a.ruangan === "Semua Ruangan" || room === "Semua Ruangan") {
+            var exStart = new Date(a.mulaiRaw || a.mulai);
+            var exEnd = new Date(a.selesaiRaw || a.selesai);
+            if (clientStart <= exEnd && clientEnd >= exStart) {
+                conflict = a;
+                break;
+            }
+        }
+    }
+
+    if (conflict) {
+        var userCode = (kodePesertaInput.value || "").trim().toUpperCase();
+        var agendaCode = (conflict.kodePeserta || "").trim().toUpperCase();
+
+        if (agendaCode && userCode === agendaCode) {
+            warningEl.classList.remove('alert-danger');
+            warningEl.classList.add('alert-success');
+            warningEl.innerHTML = '✅ <strong>Kode Diterima:</strong> Anda sedang meminjam unit dalam sesi acara <strong>' + conflict.kegiatan + '</strong>.';
+            warningEl.classList.remove('d-none');
+            kodePesertaContainer.classList.remove('d-none');
+            return { isBlocked: false };
+        }
+
+        var mulaiDisp = new Date(conflict.mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        var selesaiDisp = new Date(conflict.selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        var rangeDisp = mulaiDisp;
+        if (mulaiDisp !== selesaiDisp) rangeDisp = mulaiDisp + ' s.d ' + selesaiDisp;
+
+        warningEl.innerHTML = '⚠️ <strong>Lab Terbatas/Tutup:</strong> Ada agenda <strong>' + conflict.kegiatan + '</strong> pada ' + rangeDisp + '. Silakan pilih tanggal atau ruangan lain.';
+        warningEl.classList.remove('alert-success');
+        warningEl.classList.add('alert-danger');
+        warningEl.classList.remove('d-none');
+        kodePesertaContainer.classList.remove('d-none');
+        return { isBlocked: true };
+    } else {
+        warningEl.classList.add('d-none');
+        kodePesertaContainer.classList.add('d-none');
+        return { isBlocked: false };
+    }
 }

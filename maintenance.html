@@ -65,11 +65,27 @@
             display: flex;
             flex-direction: column;
             z-index: 1001;
+            transition: all 0.3s ease;
         }
 
         .main-content {
             margin-left: 280px;
             padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
         }
 
         .nav-link {
@@ -123,7 +139,7 @@
     </div>
 
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="mb-4 text-center">
             <h5 class="fw-bold mb-0 outfit">Komputasi DTSL</h5>
         </div>
@@ -141,7 +157,15 @@
     <!-- Main Content -->
     <main class="main-content">
         <header class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold mb-0 outfit">🛠️ Manajemen Maintenance</h2>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-lg-none">
+                    <button class="btn btn-white shadow-sm"
+                        onclick="document.getElementById('sidebar').classList.toggle('show')">
+                        <i class="bi bi-list fs-4"></i>
+                    </button>
+                </div>
+                <h2 class="fw-bold mb-0 outfit">🛠️ Manajemen Maintenance</h2>
+            </div>
             <button class="btn btn-primary rounded-pill px-4 fw-bold" onclick="openManualMaintenanceModal()">
                 <i class="bi bi-plus-circle me-2"></i>Tambah Issue
             </button>

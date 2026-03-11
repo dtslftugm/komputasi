@@ -239,6 +239,26 @@
                                 <hr class="my-3">
                                 <div class="row g-3">
                                     <div class="col-md-6">
+                                        <div id="agendaConflictWarning"
+                                            class="alert alert-danger d-none mb-3 small py-2 fw-bold" role="alert"
+                                            style="border-radius: 12px;"></div>
+
+                                        <!-- Kode Peserta Input (Hidden by default) -->
+                                        <div id="kodePesertaContainer" class="mb-3 d-none">
+                                            <label class="form-label fw-bold" style="color: var(--accent-warning);">🔑
+                                                Kode Peserta (Khusus Acara)</label>
+                                            <div class="input-group">
+                                                <input type="text" id="kodePeserta" class="form-control"
+                                                    placeholder="Masukkan kode untuk membuka akses..."
+                                                    style="text-transform: uppercase;">
+                                                <button class="btn btn-warning" type="button" id="btn-check-kode">Cek
+                                                    Kode</button>
+                                            </div>
+                                            <div class="form-text mt-1 text-warning" style="font-size: 0.7rem;">Ruangan
+                                                terkunci karena ada agenda. Masukkan kode peserta untuk mengikuti
+                                                kegiatan.</div>
+                                        </div>
+
                                         <label class="form-label fw-bold">Pilih Ruangan</label>
                                         <select class="form-select" id="roomPreference">
                                             <option value="">-- Pilih Ruangan --</option>
