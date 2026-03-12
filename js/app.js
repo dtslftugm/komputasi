@@ -1000,128 +1000,150 @@ function getDosenValue() {
 
 function validateFormData(data) {
     if (!data.keperluanPenggunaan) {
-        var card = document.getElementById('keperluan-card');
-        if (card) {
-            card.classList.add('invalid-selection');
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // Remove invalid class when user finally picks something
-            var radios = document.getElementsByName('keperluan');
-            for(var i=0; i<radios.length; i++) {
-                radios[i].addEventListener('change', function() {
-                    card.classList.remove('invalid-selection');
-                }, { once: true });
-            }
-        }
-        ui.alert('Pilih salah satu Keperluan Penggunaan (TA, Penelitian, Lomba, atau Tugas) untuk melanjutkan.', 'Pilihan Diperlukan', 'warning');
+        ui.alert('Pilih salah satu Keperluan Penggunaan (TA, Penelitian, Lomba, atau Tugas) untuk melanjutkan.', 'Pilihan Diperlukan', 'warning')
+            .then(function() {
+                var card = document.getElementById('keperluan-card');
+                if (card) {
+                    card.classList.add('invalid-selection');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    var radios = document.getElementsByName('keperluan');
+                    for(var i=0; i<radios.length; i++) {
+                        radios[i].addEventListener('change', function() {
+                            card.classList.remove('invalid-selection');
+                        }, { once: true });
+                    }
+                }
+            });
         return false;
     }
 
     if (!data.emailAddress || !data.nama || !data.nim) {
         var firstMissing = !data.emailAddress ? 'email' : (!data.nama ? 'nama' : 'nim');
-        var el = document.getElementById(firstMissing);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(function() { el.focus(); }, 500);
-        }
-        ui.alert('Harap lengkapi data personal (Email, Nama, dan NIM) Anda.', 'Data Belum Lengkap', 'warning');
+        ui.alert('Harap lengkapi data personal (Email, Nama, dan NIM) Anda.', 'Data Belum Lengkap', 'warning')
+            .then(function() {
+                var el = document.getElementById(firstMissing);
+                if (el) {
+                    el.classList.add('is-invalid'); // Add visual cue
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(function() { el.focus(); }, 300);
+                    $(el).one('input change', function() { el.classList.remove('is-invalid'); });
+                }
+            });
         return false;
     }
 
     if (!data.prodi) {
-        var el = document.getElementById('prodi');
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(function() { el.focus(); }, 500);
-        }
-        ui.alert('Silakan pilih Program Studi Anda.', 'Prodi Diperlukan', 'warning');
+        ui.alert('Silakan pilih Program Studi Anda.', 'Prodi Diperlukan', 'warning')
+            .then(function() {
+                var el = document.getElementById('prodi');
+                if (el) {
+                    el.classList.add('is-invalid');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(function() { el.focus(); }, 300);
+                    $(el).one('change', function() { el.classList.remove('is-invalid'); });
+                }
+            });
         return false;
     }
 
     if (!data.dosenPembimbing) {
-        var prodi = document.getElementById('prodi').value;
-        if (prodi === 'Non-UGM') {
-            var el = document.getElementById('dosenPembimbingManual');
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(function() { el.focus(); }, 500);
-            }
-        } else {
-            var el = document.getElementById('dosenPembimbing');
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.classList.add('invalid-select2');
-                // Open select2 after a short delay
-                setTimeout(function() { 
-                    $('#dosenPembimbing').select2('open'); 
-                }, 500);
-                
-                // Remove invalid class on change
-                $('#dosenPembimbing').one('change', function() {
-                    el.classList.remove('invalid-select2');
-                });
-            }
-        }
-        ui.alert('Harap pilih atau isi nama Dosen Pembimbing / Pengampu Anda.', 'Dosen Diperlukan', 'warning');
+        var prodiVal = document.getElementById('prodi').value;
+        ui.alert('Harap pilih atau isi nama Dosen Pembimbing / Pengampu Anda.', 'Dosen Diperlukan', 'warning')
+            .then(function() {
+                if (prodiVal === 'Non-UGM') {
+                    var el = document.getElementById('dosenPembimbingManual');
+                    if (el) {
+                        el.classList.add('is-invalid');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(function() { el.focus(); }, 300);
+                        $(el).one('input', function() { el.classList.remove('is-invalid'); });
+                    }
+                } else {
+                    var el = document.getElementById('dosenPembimbing');
+                    if (el) {
+                        el.classList.add('invalid-select2');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(function() { $('#dosenPembimbing').select2('open'); }, 300);
+                        $('#dosenPembimbing').one('change', function() {
+                            el.classList.remove('invalid-select2');
+                        });
+                    }
+                }
+            });
         return false;
     }
 
     if (!data.topikJudul) {
-        var el = document.getElementById('topik');
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(function() { el.focus(); }, 500);
-        }
-        ui.alert('Isi topik atau judul penelitian/tugas Anda.', 'Topik Diperlukan', 'warning');
+        ui.alert('Isi topik atau judul penelitian/tugas Anda.', 'Topik Diperlukan', 'warning')
+            .then(function() {
+                var el = document.getElementById('topik');
+                if (el) {
+                    el.classList.add('is-invalid');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(function() { el.focus(); }, 300);
+                    $(el).one('input', function() { el.classList.remove('is-invalid'); });
+                }
+            });
         return false;
     }
 
     if (!data.software || data.software === '') {
-        var el = document.getElementById('software');
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.classList.add('invalid-select2');
-            setTimeout(function() { $('#software').select2('open'); }, 500);
-            
-            $('#software').one('change', function() {
-                el.classList.remove('invalid-select2');
+        ui.alert('Harap pilih minimal satu software yang akan digunakan.', 'Software Diperlukan', 'warning')
+            .then(function() {
+                var el = document.getElementById('software');
+                if (el) {
+                    el.classList.add('invalid-select2');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(function() { $('#software').select2('open'); }, 300);
+                    $('#software').one('change', function() {
+                        el.classList.remove('invalid-select2');
+                    });
+                }
             });
-        }
-        ui.alert('Harap pilih minimal satu software yang akan digunakan.', 'Software Diperlukan', 'warning');
         return false;
     }
 
     if (!data.mulaiPemakaian) {
-        var el = document.getElementById('mulai');
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(function() { el.focus(); }, 500);
-        }
-        ui.alert('Silakan tentukan tanggal mulai rencana penggunaan Anda.', 'Tanggal Diperlukan', 'warning');
+        ui.alert('Silakan tentukan tanggal mulai rencana penggunaan Anda.', 'Tanggal Diperlukan', 'warning')
+            .then(function() {
+                var el = document.getElementById('mulai');
+                if (el) {
+                    el.classList.add('is-invalid');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(function() { el.focus(); }, 300);
+                    $(el).one('change input', function() { el.classList.remove('is-invalid'); });
+                }
+            });
         return false;
     }
 
     // --- NEW VALIDATION: COMPUTER LAB REQUIREMENTS ---
     if (data.needsComputer) {
         if (!data.computerRoomPreference) {
-            var el = document.getElementById('roomPreference');
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(function() { el.focus(); }, 500);
-            }
-            ui.alert('Anda memilih menggunakan komputer lab, silakan pilih ruangan terlebih dahulu.', 'Ruangan Diperlukan', 'warning');
+            ui.alert('Anda memilih menggunakan komputer lab, silakan pilih ruangan terlebih dahulu.', 'Ruangan Diperlukan', 'warning')
+                .then(function() {
+                    var el = document.getElementById('roomPreference');
+                    if (el) {
+                        el.classList.add('is-invalid');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(function() { el.focus(); }, 300);
+                        $(el).one('change', function() { el.classList.remove('is-invalid'); });
+                    }
+                });
             return false;
         }
         
         if (!data.preferredComputer) {
-            var container = document.getElementById('computer-selection-container');
-            if (container) {
-                container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Shake the list if possible
-                container.classList.add('invalid-selection');
-                setTimeout(function() { container.classList.remove('invalid-selection'); }, 2000);
-            }
-            ui.alert('Silakan pilih salah satu unit komputer yang tersedia di daftar.', 'Unit Diperlukan', 'warning');
+            ui.alert('Silakan pilih salah satu unit komputer yang tersedia di daftar.', 'Unit Diperlukan', 'warning')
+                .then(function() {
+                    var container = document.getElementById('computer-selection-container');
+                    if (container) {
+                        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        container.classList.add('invalid-selection');
+                        setTimeout(function() { container.classList.remove('invalid-selection'); }, 2000);
+                    }
+                });
             return false;
         }
     }
