@@ -1018,33 +1018,112 @@ function validateFormData(data) {
     }
 
     if (!data.emailAddress || !data.nama || !data.nim) {
-        ui.warning('Lengkapi data personal', 'Input Belum Lengkap');
+        var firstMissing = !data.emailAddress ? 'email' : (!data.nama ? 'nama' : 'nim');
+        var el = document.getElementById(firstMissing);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(function() { el.focus(); }, 500);
+        }
+        ui.alert('Harap lengkapi data personal (Email, Nama, dan NIM) Anda.', 'Data Belum Lengkap', 'warning');
         return false;
     }
 
     if (!data.prodi) {
-        ui.warning('Pilih program studi', 'Input Belum Lengkap');
+        var el = document.getElementById('prodi');
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(function() { el.focus(); }, 500);
+        }
+        ui.alert('Silakan pilih Program Studi Anda.', 'Prodi Diperlukan', 'warning');
         return false;
     }
 
     if (!data.dosenPembimbing) {
-        ui.warning('Pilih Dosen Pembimbing / Pengampu', 'Input Belum Lengkap');
+        var prodi = document.getElementById('prodi').value;
+        if (prodi === 'Non-UGM') {
+            var el = document.getElementById('dosenPembimbingManual');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(function() { el.focus(); }, 500);
+            }
+        } else {
+            var el = document.getElementById('dosenPembimbing');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('invalid-select2');
+                // Open select2 after a short delay
+                setTimeout(function() { 
+                    $('#dosenPembimbing').select2('open'); 
+                }, 500);
+                
+                // Remove invalid class on change
+                $('#dosenPembimbing').one('change', function() {
+                    el.classList.remove('invalid-select2');
+                });
+            }
+        }
+        ui.alert('Harap pilih atau isi nama Dosen Pembimbing / Pengampu Anda.', 'Dosen Diperlukan', 'warning');
         return false;
     }
 
     if (!data.topikJudul) {
-        ui.warning('Isi topik/judul', 'Input Belum Lengkap');
+        var el = document.getElementById('topik');
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(function() { el.focus(); }, 500);
+        }
+        ui.alert('Isi topik atau judul penelitian/tugas Anda.', 'Topik Diperlukan', 'warning');
         return false;
     }
 
     if (!data.software || data.software === '') {
-        ui.warning('Pilih minimal 1 software', 'Input Belum Lengkap');
+        var el = document.getElementById('software');
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('invalid-select2');
+            setTimeout(function() { $('#software').select2('open'); }, 500);
+            
+            $('#software').one('change', function() {
+                el.classList.remove('invalid-select2');
+            });
+        }
+        ui.alert('Harap pilih minimal satu software yang akan digunakan.', 'Software Diperlukan', 'warning');
         return false;
     }
 
     if (!data.mulaiPemakaian) {
-        ui.warning('Tentukan tanggal mulai', 'Input Belum Lengkap');
+        var el = document.getElementById('mulai');
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(function() { el.focus(); }, 500);
+        }
+        ui.alert('Silakan tentukan tanggal mulai rencana penggunaan Anda.', 'Tanggal Diperlukan', 'warning');
         return false;
+    }
+
+    // --- NEW VALIDATION: COMPUTER LAB REQUIREMENTS ---
+    if (data.needsComputer) {
+        if (!data.computerRoomPreference) {
+            var el = document.getElementById('roomPreference');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(function() { el.focus(); }, 500);
+            }
+            ui.alert('Anda memilih menggunakan komputer lab, silakan pilih ruangan terlebih dahulu.', 'Ruangan Diperlukan', 'warning');
+            return false;
+        }
+        
+        if (!data.preferredComputer) {
+            var container = document.getElementById('computer-selection-container');
+            if (container) {
+                container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Shake the list if possible
+                container.classList.add('invalid-selection');
+                setTimeout(function() { container.classList.remove('invalid-selection'); }, 2000);
+            }
+            ui.alert('Silakan pilih salah satu unit komputer yang tersedia di daftar.', 'Unit Diperlukan', 'warning');
+            return false;
+        }
     }
 
     // Date Validation (ES5)
@@ -1059,12 +1138,12 @@ function validateFormData(data) {
     selectedDate.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
-        ui.warning('Tanggal mulai tidak boleh di masa lalu. Silakan pilih tanggal hari ini atau yang akan datang.', 'Validasi Tanggal');
+        ui.alert('Tanggal mulai tidak boleh di masa lalu. Silakan pilih tanggal hari ini atau yang akan datang.', 'Validasi Tanggal', 'warning');
         return false;
     }
 
     if (selectedDate > maxStartDate) {
-        ui.warning('Tanggal mulai maksimal adalah 7 hari dari sekarang.', 'Validasi Tanggal');
+        ui.alert('Tanggal mulai maksimal adalah 7 hari dari sekarang.', 'Validasi Tanggal', 'warning');
         return false;
     }
 
@@ -1072,7 +1151,7 @@ function validateFormData(data) {
         var endDate = new Date(data.akhirPemakaian);
         endDate.setHours(0, 0, 0, 0);
         if (endDate < selectedDate) {
-            ui.warning('Tanggal akhir tidak boleh mendahului tanggal mulai.', 'Validasi Tanggal');
+            ui.alert('Tanggal akhir tidak boleh mendahului tanggal mulai.', 'Validasi Tanggal', 'warning');
             return false;
         }
     }
@@ -1082,11 +1161,11 @@ function validateFormData(data) {
         var fileList = document.getElementById('uploadSurat').files;
         var file = fileList ? fileList[0] : null;
         if (!file) {
-            ui.warning('Upload file surat keterangan', 'File Diperlukan');
+            ui.alert('Harap unggah file surat keterangan yang diperlukan.', 'File Diperlukan', 'warning');
             return false;
         }
         if (file.size > 3 * 1024 * 1024) {
-            ui.warning('File terlalu besar (max 3MB)', 'File Terlalu Besar');
+            ui.alert('Ukuran file terlalu besar (maksimal 3MB).', 'File Terlalu Besar', 'warning');
             return false;
         }
 
@@ -1095,12 +1174,12 @@ function validateFormData(data) {
         var fileName = file.name || "";
         var ext = fileName.split('.').pop().toLowerCase();
         if (allowedExtensions.indexOf(ext) === -1) {
-            ui.warning('Format file tidak didukung. Harap gunakan PDF atau Gambar (JPG/PNG).', 'Format Tidak Sesuai');
+            ui.alert('Format file tidak didukung. Harap gunakan PDF atau Gambar (JPG/PNG).', 'Format Tidak Sesuai', 'warning');
             return false;
         }
     } else if (data.uploadMethod === 'link') {
         if (!data.linkSurat) {
-            ui.warning('Sertakan link surat keterangan', 'Link Diperlukan');
+            ui.alert('Silakan sertakan link surat keterangan Anda.', 'Link Diperlukan', 'warning');
             return false;
         }
     }
