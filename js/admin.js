@@ -383,31 +383,31 @@ function openProcessModal(requestId) {
     // Milestone 17 Fix: STRICT equality check for room consistency
     var isRuangPenelitian = (req.roomPreference === 'Ruang Penelitian');
     var daysToAdd = isRuangPenelitian ? 14 : 30;
-    
+
     // Normalize Today to Midnight Local for calculation base
     var baseDate = new Date();
     baseDate.setHours(0, 0, 0, 0);
-    
+
     // Logic: If renewal, use prevExpirationDate (standard Date parsing)
     if (req.isRenewal && req.prevExpirationDate) {
         // Parse the ISO string or Date object passed from backend
         var prevDate = new Date(req.prevExpirationDate);
-        
+
         if (!isNaN(prevDate.getTime())) {
             // Ensure we only use the date part for comparison (prevent time-of-day edge cases)
             var normalizedPrev = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
-            
+
             // If previous date is in the future, use it as building block
             if (normalizedPrev > baseDate) {
                 baseDate = normalizedPrev;
             }
         }
     }
-    
+
     // Final Calculation Result
     var expDate = new Date(baseDate.getTime());
     expDate.setDate(expDate.getDate() + daysToAdd);
-    
+
     // Milestone 17: Format using project-standard method (adhering to local time)
     // toISOString() uses UTC, so we adjust by the timezone offset to keep it "Local"
     var tzOffset = expDate.getTimezoneOffset() * 60000; // in ms

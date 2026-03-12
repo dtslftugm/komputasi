@@ -1000,7 +1000,20 @@ function getDosenValue() {
 
 function validateFormData(data) {
     if (!data.keperluanPenggunaan) {
-        ui.warning('Pilih keperluan penggunaan', 'Input Belum Lengkap');
+        var card = document.getElementById('keperluan-card');
+        if (card) {
+            card.classList.add('invalid-selection');
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Remove invalid class when user finally picks something
+            var radios = document.getElementsByName('keperluan');
+            for(var i=0; i<radios.length; i++) {
+                radios[i].addEventListener('change', function() {
+                    card.classList.remove('invalid-selection');
+                }, { once: true });
+            }
+        }
+        ui.alert('Pilih salah satu Keperluan Penggunaan (TA, Penelitian, Lomba, atau Tugas) untuk melanjutkan.', 'Pilihan Diperlukan', 'warning');
         return false;
     }
 
