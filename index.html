@@ -254,6 +254,17 @@
                                 </div>
                             </div>
 
+                            <!-- Renewal Info Banner (Hidden by default) -->
+                            <div id="renewalInfoBanner" class="alert d-none mb-3 shadow-sm border-0" style="background-color: #e8f4fd;">
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-4 me-2">🔄</span>
+                                    <div>
+                                        <strong>Data Perpanjangan:</strong><br>
+                                        <span class="small" id="renewalComputerName"></span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Computer Selection (Initially Hidden) -->
                             <div id="computer-section" style="display:none;">
                                 <hr class="my-3">
@@ -279,19 +290,21 @@
                                                 kegiatan.</div>
                                         </div>
 
-                                        <label class="form-label fw-bold">Pilih Ruangan</label>
-                                        <select class="form-select" id="roomPreference">
-                                            <option value="">-- Pilih Ruangan --</option>
-                                            <option value="Ruang Penelitian">🔬 Ruang Penelitian (akses 14 hari,
-                                                dapat diperpanjang, akses remote 24 jam)</option>
-                                            <option value="Ruang Komputer 1">🖥️ Ruang Komputer 1 (prioritas
-                                                perkuliahan)</option>
-                                            <option value="Ruang Komputer 2">🖥️ Ruang Komputer 2 (prioritas
-                                                perkuliahan)</option>
-                                        </select>
-                                        <div class="mt-2" style="font-size: 0.75rem; color: var(--secondary);">
-                                            <strong style="color: var(--info-text);">Note:</strong> Akses remote
-                                            (AnyDesk) hanya tersedia untuk <strong>Ruang Penelitian</strong>.
+                                        <div id="roomPreferenceContainer">
+                                            <label class="form-label fw-bold">Pilih Ruangan</label>
+                                            <select class="form-select" id="roomPreference">
+                                                <option value="">-- Pilih Ruangan --</option>
+                                                <option value="Ruang Penelitian">🔬 Ruang Penelitian (akses 14 hari,
+                                                    dapat diperpanjang, akses remote 24 jam)</option>
+                                                <option value="Ruang Komputer 1">🖥️ Ruang Komputer 1 (prioritas
+                                                    perkuliahan)</option>
+                                                <option value="Ruang Komputer 2">🖥️ Ruang Komputer 2 (prioritas
+                                                    perkuliahan)</option>
+                                            </select>
+                                            <div class="mt-2" style="font-size: 0.75rem; color: var(--secondary);">
+                                                <strong style="color: var(--info-text);">Note:</strong> Akses remote
+                                                (AnyDesk) hanya tersedia untuk <strong>Ruang Penelitian</strong>.
+                                            </div>
                                         </div>
                                     </div>
 

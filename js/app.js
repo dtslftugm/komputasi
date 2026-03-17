@@ -89,6 +89,9 @@ function setupDateRestrictions() {
     if (mulaiEl) {
         mulaiEl.setAttribute('min', todayStr);
         mulaiEl.setAttribute('max', maxDateStr);
+        if (!mulaiEl.value) {
+            mulaiEl.value = todayStr; // Set default to today
+        }
     }
     if (akhirEl) akhirEl.setAttribute('min', todayStr);
 
@@ -829,8 +832,12 @@ function setupFormHandlers() {
             today.setHours(0, 0, 0, 0);
 
             if (selectedMulai < today) {
-                ui.warning('Tanggal mulai tidak boleh di masa lalu. Silakan pilih tanggal hari ini atau yang akan datang.', 'Validasi Tanggal');
-                this.value = ''; // Clear invalid date
+                ui.warning('Tanggal mulai tidak boleh di masa lalu. Telah dikembalikan ke tanggal hari ini.', 'Validasi Tanggal');
+                
+                var yyyy = today.getFullYear();
+                var mm = String(today.getMonth() + 1).padStart(2, '0');
+                var dd = String(today.getDate()).padStart(2, '0');
+                this.value = yyyy + '-' + mm + '-' + dd;
             }
         });
     }
@@ -1384,33 +1391,64 @@ function prefillRenewalForm(data) {
         }
     }
 
+    // 1. Handle Computer Selection State
     if (data.preferredComputer) {
         var needsYes = document.getElementById('needsComputerYes');
-        if (needsYes) {
-            needsYes.checked = true;
+        if (needsYes) needsYes.checked = true;
 
-            // Show the computer section manually
-            var computerSection = document.getElementById('computer-section');
-            if (computerSection) computerSection.style.display = 'block';
+        // Show the computer section manually
+        var computerSection = document.getElementById('computer-section');
+        if (computerSection) computerSection.style.display = 'block';
 
-            // Select Room and lock it
-            var roomSelect = document.getElementById('roomPreference');
-            if (roomSelect) {
-                roomSelect.value = data.computerRoomPreference || '';
-                roomSelect.disabled = true; // Lock room during renewal
-            }
-
-            // Mark the selected computer
-            selectedComputer = { name: data.preferredComputer };
-
-            // Show the renewal banner
-            var banner = document.getElementById('renewalInfoBanner');
-            if (banner) {
-                banner.classList.remove('d-none');
-                var rnName = document.getElementById('renewalComputerName');
-                if (rnName) rnName.textContent = data.preferredComputer;
-            }
+        // Select Room but HIDE the entire Room Picker container as per user request
+        var roomSelect = document.getElementById('roomPreference');
+        var roomContainer = document.getElementById('roomPreferenceContainer');
+        if (roomSelect) {
+            roomSelect.value = data.computerRoomPreference || '';
+            roomSelect.disabled = true; // Lock room during renewal
+            if (roomContainer) roomContainer.style.display = 'none'; // Hide picker
         }
+
+        // Mark the selected computer
+        selectedComputer = { name: data.preferredComputer };
+
+        // Hide the entire computer search/grid section so user isn't distracted
+        var pList = document.getElementById('computer-selection-container');
+        if (pList) pList.style.display = 'none';
+    } else {
+        var needsNo = document.getElementById('needsComputerNo');
+        if (needsNo) needsNo.checked = true;
+    }
+
+    // 2. Construct Combined Renewal Info Banner
+    var banner = document.getElementById('renewalInfoBanner');
+    var rnName = document.getElementById('renewalComputerName');
+    
+    if (banner && rnName) {
+        banner.classList.remove('d-none');
+        var htmlParts = [];
+        
+        // Add Computer Info
+        if (data.preferredComputer) {
+            banner.classList.add('alert-info');
+            banner.style.backgroundColor = '#e8f4fd';
+            htmlParts.push('Unit Komputer: <strong>' + data.preferredComputer + '</strong> <small class="text-muted">(Ruangan: ' + (data.computerRoomPreference || '-') + ')</small>');
+        } else {
+            banner.classList.add('alert-success');
+            banner.style.backgroundColor = '#e8fdf2';
+            htmlParts.push('Perangkat Utama: <strong>Laptop / PC Pribadi</strong>');
+        }
+
+        // Add Software Info
+        if (data.software) {
+            htmlParts.push('Lisensi & Software: <strong style="color: var(--bs-primary);">' + data.software + '</strong>');
+        } else {
+            console.error("Critical Backend Error: Software array is empty or undefined for Renewal ID.");
+            ui.error("Kesalahan Data Kritis: Data Lisensi/Software sebelumnya tidak ditemukan atau kosong. Mohon hubungi Administrator Lab atau buat permohonan baru secara manual.", "Data Incomplete");
+            htmlParts.push('<span class="text-danger fw-bold">⚠️ Data Software/Lisensi Hilang!</span>');
+        }
+
+        rnName.innerHTML = htmlParts.join('<br>');
     }
 
     if (data.computerUserName) document.getElementById('computerUserName').value = data.computerUserName;
@@ -1436,6 +1474,7 @@ function prefillRenewalForm(data) {
         var mulaiEl = document.getElementById('mulai');
         if (mulaiEl) {
             mulaiEl.value = data.previousExpirationDate;
+            
             // Trigger change event so end-date constraints and related logic evaluate correctly
             var dateEvent = new Event('change');
             mulaiEl.dispatchEvent(dateEvent);
