@@ -254,9 +254,12 @@ function renderActiveUsersTable(filterText) {
         var reqComputer = user.computer || '-';
         var tr = document.createElement('tr');
 
-        // Make row clickable
-        tr.style.cursor = 'pointer';
-        tr.onclick = function () { openActiveUserModal(user.nama, user.nim, reqComputer); };
+        // Make row clickable only if they have an assigned computer
+        var hasComputer = (reqComputer && reqComputer !== '-' && reqComputer !== 'Auto Assign' && reqComputer !== 'Belum Dialokasikan');
+        if (hasComputer) {
+            tr.style.cursor = 'pointer';
+            tr.onclick = function () { openActiveUserModal(user.nama, user.nim, reqComputer); };
+        }
 
         tr.innerHTML = '<td>' +
             '<div class="fw-bold">' + (user.nama || "-") + '</div>' +
@@ -847,13 +850,21 @@ function openActiveUserModal(nama, nim, computerName) {
     document.getElementById('active-spec-ip').textContent = 'Memuat...';
     document.getElementById('active-anydesk-password-input').value = '';
 
-    activeUserModalObj.show();
+    var hasComputer = (computerName && computerName !== '-' && computerName !== 'Auto Assign' && computerName !== 'Belum Dialokasikan');
+    var infoCard = document.getElementById('active-computer-info-card');
+    var noComputerCard = document.getElementById('active-no-computer-card');
 
-    if (!computerName || computerName === '-') {
-        document.getElementById('active-spec-anydesk').textContent = '-';
-        document.getElementById('active-spec-ip').textContent = '-';
+    if (hasComputer) {
+        if (infoCard) infoCard.classList.remove('d-none');
+        if (noComputerCard) noComputerCard.classList.add('d-none');
+    } else {
+        if (infoCard) infoCard.classList.add('d-none');
+        if (noComputerCard) noComputerCard.classList.remove('d-none');
+        activeUserModalObj.show();
         return;
     }
+
+    activeUserModalObj.show();
 
     api.jsonpRequest('admin-get-computer-details', { computerName: computerName })
         .then(function (res) {
