@@ -4,6 +4,7 @@
  */
 
 var pendingRequests = [];
+var activeUsersList = [];
 var currentUser = null;
 var sessionToken = localStorage.getItem('adminAuthToken');
 
@@ -30,11 +31,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function setupUI() {
-    // Search filter
+    // Search filter (Now targeting Active Users, Milestone 18)
     var searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', function (e) {
-            renderTable(e.target.value);
+            renderActiveUsersTable(e.target.value);
         });
     }
 }
@@ -140,7 +141,11 @@ function loadRequests() {
 
                 // Render Active Users
                 if (res.activeUsers) {
-                    renderActiveUsersTable(res.activeUsers);
+                    activeUsersList = res.activeUsers;
+                    renderActiveUsersTable();
+                } else {
+                    activeUsersList = [];
+                    renderActiveUsersTable();
                 }
 
                 // Load Maintenance if stats show some
@@ -194,17 +199,36 @@ function renderTable(filter) {
     });
 }
 
-function renderActiveUsersTable(users) {
+function renderActiveUsersTable(filterText) {
     var tbody = document.getElementById('activeUsersTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (!users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Tidak ada user aktif.</td></tr>';
+    var query = (filterText || "").toLowerCase();
+    
+    // Default to the global list we saved during loadRequests
+    var usersToRender = activeUsersList;
+
+    // Apply filter if search input is active
+    if (query !== "") {
+        usersToRender = usersToRender.filter(function(u) {
+            var nama = (u.nama || "").toLowerCase();
+            var nim = (u.nim || "").toLowerCase();
+            var rid = (u.requestId || "").toLowerCase();
+            return nama.indexOf(query) !== -1 || nim.indexOf(query) !== -1 || rid.indexOf(query) !== -1;
+        });
+    }
+
+    if (!usersToRender || usersToRender.length === 0) {
+        if (query !== "") {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Filter: Tidak ada user aktif yang cocok dengan "'+ filterText +'".</td></tr>';
+        } else {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Tidak ada user aktif.</td></tr>';
+        }
         return;
     }
 
-    users.forEach(function (user) {
+    usersToRender.forEach(function (user) {
         var tr = document.createElement('tr');
         tr.innerHTML = '<td>' +
             '<div class="fw-bold">' + (user.nama || "-") + '</div>' +
