@@ -254,8 +254,8 @@ function renderActiveUsersTable(filterText) {
         var reqComputer = user.computer || '-';
         var tr = document.createElement('tr');
 
-        // Make row clickable only if they have an assigned computer
-        var hasComputer = (reqComputer && reqComputer !== '-' && reqComputer !== 'Auto Assign' && reqComputer !== 'Belum Dialokasikan');
+        // Make row clickable only if they need a computer AND it is assigned
+        var hasComputer = user.needsComputer === true && (reqComputer && reqComputer !== '-');
         if (hasComputer) {
             tr.style.cursor = 'pointer';
             tr.onclick = function () { openActiveUserModal(user.nama, user.nim, reqComputer); };
