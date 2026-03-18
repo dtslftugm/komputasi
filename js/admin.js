@@ -141,7 +141,29 @@ function loadRequests() {
 
                 // Render Active Users
                 if (res.activeUsers) {
-                    activeUsersList = res.activeUsers;
+                    activeUsersList = res.activeUsers.sort(function(a, b) {
+                        // 1. Sort by Nama (Alphabetical Ascending)
+                        var nameA = (a.nama || "").toLowerCase();
+                        var nameB = (b.nama || "").toLowerCase();
+                        if (nameA < nameB) return -1;
+                        if (nameA > nameB) return 1;
+                        
+                        // 2. Sort by Expired On (Ascending)
+                        var dateA = new Date(a.expiredOn || 0).getTime();
+                        var dateB = new Date(b.expiredOn || 0).getTime();
+                        
+                        // If standard parse is successful, compare numerically
+                        if (!isNaN(dateA) && !isNaN(dateB)) {
+                            return dateA - dateB;
+                        }
+                        
+                        // Fallback: String Compare
+                        var strA = a.expiredOn || "";
+                        var strB = b.expiredOn || "";
+                        if (strA < strB) return -1;
+                        if (strA > strB) return 1;
+                        return 0;
+                    });
                     renderActiveUsersTable();
                 } else {
                     activeUsersList = [];
