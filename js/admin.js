@@ -141,22 +141,22 @@ function loadRequests() {
 
                 // Render Active Users
                 if (res.activeUsers) {
-                    activeUsersList = res.activeUsers.sort(function(a, b) {
+                    activeUsersList = res.activeUsers.sort(function (a, b) {
                         // 1. Sort by Nama (Alphabetical Ascending)
                         var nameA = (a.nama || "").toLowerCase();
                         var nameB = (b.nama || "").toLowerCase();
                         if (nameA < nameB) return -1;
                         if (nameA > nameB) return 1;
-                        
+
                         // 2. Sort by Expired On (Ascending)
                         var dateA = new Date(a.expiredOn || 0).getTime();
                         var dateB = new Date(b.expiredOn || 0).getTime();
-                        
+
                         // If standard parse is successful, compare numerically
                         if (!isNaN(dateA) && !isNaN(dateB)) {
                             return dateA - dateB;
                         }
-                        
+
                         // Fallback: String Compare
                         var strA = a.expiredOn || "";
                         var strB = b.expiredOn || "";
@@ -227,13 +227,13 @@ function renderActiveUsersTable(filterText) {
     tbody.innerHTML = '';
 
     var query = (filterText || "").toLowerCase();
-    
+
     // Default to the global list we saved during loadRequests
     var usersToRender = activeUsersList;
 
     // Apply filter if search input is active
     if (query !== "") {
-        usersToRender = usersToRender.filter(function(u) {
+        usersToRender = usersToRender.filter(function (u) {
             var nama = (u.nama || "").toLowerCase();
             var nim = (u.nim || "").toLowerCase();
             var rid = (u.requestId || "").toLowerCase();
@@ -243,7 +243,7 @@ function renderActiveUsersTable(filterText) {
 
     if (!usersToRender || usersToRender.length === 0) {
         if (query !== "") {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Filter: Tidak ada user aktif yang cocok dengan "'+ filterText +'".</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Filter: Tidak ada user aktif yang sesuai dengan "' + filterText + '".</td></tr>';
         } else {
             tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Tidak ada user aktif.</td></tr>';
         }
@@ -251,7 +251,13 @@ function renderActiveUsersTable(filterText) {
     }
 
     usersToRender.forEach(function (user) {
+        var reqComputer = user.computer || '-';
         var tr = document.createElement('tr');
+
+        // Make row clickable
+        tr.style.cursor = 'pointer';
+        tr.onclick = function () { openActiveUserModal(user.nama, user.nim, reqComputer); };
+
         tr.innerHTML = '<td>' +
             '<div class="fw-bold">' + (user.nama || "-") + '</div>' +
             '<div class="text-muted small">' + (user.nim || "-") + '</div>' +
@@ -824,6 +830,72 @@ window.showExpiredModal = showExpiredModal;
 window.handleRevoke = handleRevoke;
 
 /**
+ * --- ACTIVE USER DETAIL LOGIC ---
+ */
+
+var activeUserModalObj = null;
+
+function openActiveUserModal(nama, nim, computerName) {
+    if (!activeUserModalObj) {
+        activeUserModalObj = new bootstrap.Modal(document.getElementById('activeUserModal'));
+    }
+
+    document.getElementById('active-modal-nama').textContent = nama || '-';
+    document.getElementById('active-modal-nim').textContent = nim || '-';
+    document.getElementById('active-spec-name').textContent = computerName || '-';
+    document.getElementById('active-spec-anydesk').textContent = 'Memuat...';
+    document.getElementById('active-spec-ip').textContent = 'Memuat...';
+    document.getElementById('active-anydesk-password-input').value = '';
+
+    activeUserModalObj.show();
+
+    if (!computerName || computerName === '-') {
+        document.getElementById('active-spec-anydesk').textContent = '-';
+        document.getElementById('active-spec-ip').textContent = '-';
+        return;
+    }
+
+    api.jsonpRequest('admin-get-computer-details', { computerName: computerName })
+        .then(function (res) {
+            if (res.success && res.data) {
+                document.getElementById('active-spec-anydesk').textContent = res.data.anydeskId || '-';
+                document.getElementById('active-spec-ip').textContent = res.data.ipAddress || '-';
+                document.getElementById('active-anydesk-password-input').value = res.data.anydeskPassword || '';
+            } else {
+                document.getElementById('active-spec-anydesk').textContent = 'Gagal memuat';
+                document.getElementById('active-spec-ip').textContent = 'Gagal memuat';
+            }
+        });
+}
+
+function copyActiveAnydeskCommand(type) {
+    var pass = document.getElementById('active-anydesk-password-input').value.trim();
+    var targetEl = document.getElementById(type === 'id' ? 'active-spec-anydesk' : 'active-spec-ip');
+    var target = targetEl ? targetEl.textContent.replace(/\s/g, '') : '';
+
+    if (!target || target === '-') {
+        ui.warning("ID AnyDesk atau IP Address tidak ditemukan/belum termuat.");
+        return;
+    }
+
+    var cmd = 'echo ' + pass + ' | "C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe" ' + target + ' --with-password';
+
+    if (typeof Utils !== 'undefined' && Utils.copyToClipboard) {
+        Utils.copyToClipboard(cmd, "Command AnyDesk berhasil disalin ke clipboard.");
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(cmd).then(function () {
+            ui.success("Command CMD berhasil disalin ke clipboard.");
+        });
+    } else {
+        ui.error("Clipboard API tidak didukung di browser ini.");
+    }
+}
+
+window.openActiveUserModal = openActiveUserModal;
+window.copyActiveAnydeskCommand = copyActiveAnydeskCommand;
+
+
+/**
  * --- AGENDA MANAGEMENT ---
  */
 
@@ -1067,25 +1139,6 @@ function copyAnydeskCommand(type) {
     }
 }
 
-function launchAnydesk(type) {
-    var passInput = document.getElementById('anydesk-password-input');
-    var pass = passInput ? passInput.value.trim() : '';
-    var targetEl = document.getElementById(type === 'id' ? 'spec-anydesk' : 'spec-ip');
-    var target = targetEl ? targetEl.textContent.replace(/\s/g, '') : '';
-
-    if (!target || target === '-') {
-        if (typeof Toast !== 'undefined') Toast.warn("Data Kurang", "ID AnyDesk atau IP Address tidak ditemukan.");
-        return;
-    }
-
-    // Copy password to clipboard first
-    navigator.clipboard.writeText(pass).then(function () {
-        window.location.assign('anydesk:' + target);
-        if (typeof Toast !== 'undefined') Toast.info("Membuka AnyDesk", "Password telah disalin ke clipboard.");
-    }).catch(function (err) {
-        if (typeof Toast !== 'undefined') Toast.error("Gagal Salin", "Mohon pastikan halaman menggunakan HTTPS.");
-    });
-}
 
 function copyServerConfig() {
     var configInput = document.getElementById('server-license-config');
