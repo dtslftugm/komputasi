@@ -1391,9 +1391,15 @@ function prefillRenewalForm(data) {
         }
     }
 
-    // 1. Handle Computer Selection State
+    // 1. Handle Computer Selection State & LOCK The Options
+    var needsYes = document.getElementById('needsComputerYes');
+    var needsNo = document.getElementById('needsComputerNo');
+
+    // Prevent user from changing the renewal mode and breaking the banner logic
+    if (needsYes) needsYes.disabled = true;
+    if (needsNo) needsNo.disabled = true;
+
     if (data.preferredComputer) {
-        var needsYes = document.getElementById('needsComputerYes');
         if (needsYes) needsYes.checked = true;
 
         // Show the computer section manually
@@ -1416,7 +1422,6 @@ function prefillRenewalForm(data) {
         var pList = document.getElementById('computer-selection-container');
         if (pList) pList.style.display = 'none';
     } else {
-        var needsNo = document.getElementById('needsComputerNo');
         if (needsNo) needsNo.checked = true;
     }
 
