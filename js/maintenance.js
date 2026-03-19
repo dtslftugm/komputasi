@@ -254,8 +254,15 @@ function openMaintenanceModal(reqId, type, originalName) {
                 noteText = notePart.trim();
             }
         } else if (item.status && (item.status.indexOf('Pending Repair') !== -1 || item.status.indexOf('Maintenance') !== -1)) {
-            // Fallback for older notes without tags
-            issueText = rawNotes;
+            // Milestone 19 Fix: Automated maintenance messages should NOT be treated as hardware issues
+            var lowerNotes = rawNotes.toLowerCase();
+            if (lowerNotes.indexOf('maintenance required') !== -1 || lowerNotes.indexOf('license/session expired') !== -1) {
+                noteText = rawNotes; // Put in Resolution box
+                issueText = "";      // Keep issues empty
+            } else {
+                // Fallback for older notes/actual issues without tags
+                issueText = rawNotes;
+            }
         }
 
         document.getElementById('m-issues').value = issueText;
