@@ -283,7 +283,7 @@
                                                 <input type="text" id="kodePeserta" class="form-control"
                                                     placeholder="Masukkan kode untuk membuka akses..."
                                                     style="text-transform: uppercase;">
-                                                <button class="btn btn-warning" type="button" id="btn-check-kode">Cek
+                                                <button class="btn btn-warning" type="button" id="btn-check-kode" onclick="var res = checkLabAgendas(true); if(!res.isBlocked) loadAvailableComputers();">Cek
                                                     Kode</button>
                                             </div>
                                             <div class="form-text mt-1 text-warning" style="font-size: 0.7rem;">Ruangan
