@@ -1514,14 +1514,18 @@ function checkLabAgendas(isManualCheck) {
     }
 
     var clientStart = parseAppDate(startStr);
+    if (!isNaN(clientStart.getTime())) {
+        clientStart.setHours(0, 0, 0, 0); // Pastikan mulai dihitung dari jam 00:00
+    }
+
     var clientEnd = endStr ? parseAppDate(endStr) : parseAppDate(startStr);
-    if (!endStr) {
-        clientEnd.setHours(23, 59, 59);
+    if (!isNaN(clientEnd.getTime())) {
+        clientEnd.setHours(23, 59, 59, 999); // Pastikan berakhirnya mencakup sampai penghujung hari 23:59
     }
 
     // Check against agendas from initialData
     var agendas = (initialData && initialData.agendas) ? initialData.agendas : [];
-    var conflict = null;
+    var conflicts = [];
 
     for (var i = 0; i < agendas.length; i++) {
         var a = agendas[i];
@@ -1532,37 +1536,45 @@ function checkLabAgendas(isManualCheck) {
             if (!exStart || !exEnd || isNaN(exStart.getTime())) continue;
 
             if (clientStart <= exEnd && clientEnd >= exStart) {
-                conflict = a;
-                break;
+                conflicts.push(a);
             }
         }
     }
 
-    if (conflict) {
+    if (conflicts.length > 0) {
         var userCode = (kodePesertaInput.value || "").trim().toUpperCase();
-        var agendaCode = (conflict.kodePeserta || "").trim().toUpperCase();
+        
+        console.log("DEBUG Kode Peserta: Ditemukan " + conflicts.length + " jadwal overlapping.");
 
-        console.log("DEBUG Kode Peserta:", { 
-            userInput: userCode, 
-            agendaRequiredCode: agendaCode,
-            room: room,
-            conflictEvent: conflict.kegiatan
-        });
+        // Jika user memasukkan kode, periksa apakah cocok dengan SALAH SATU agenda yang bentrok
+        var matchedConflict = null;
+        if (userCode !== "") {
+            for (var c = 0; c < conflicts.length; c++) {
+                var agendaCode = (conflicts[c].kodePeserta || "").trim().toUpperCase();
+                if (agendaCode && userCode === agendaCode) {
+                    matchedConflict = conflicts[c];
+                    break;
+                }
+            }
+        }
 
-        if (agendaCode && userCode === agendaCode) {
+        if (matchedConflict) {
             warningEl.classList.remove('alert-danger');
             warningEl.classList.add('alert-success');
-            warningEl.innerHTML = '✅ <strong>Kode Diterima:</strong> Anda sedang meminjam unit dalam sesi acara <strong>' + conflict.kegiatan + '</strong>.';
+            warningEl.innerHTML = '✅ <strong>Kode Diterima:</strong> Anda sedang meminjam unit untuk sesi <strong>' + matchedConflict.kegiatan + '</strong>.';
             warningEl.classList.remove('d-none');
             kodePesertaContainer.classList.remove('d-none');
             return { isBlocked: false };
         }
 
         // --- EXPLICIT FEEDBACK ON MANUAL CHECK ---
-        if (isManualCheck && userCode !== "" && userCode !== agendaCode) {
+        if (isManualCheck && userCode !== "") {
             ui.error("Kode Peserta tidak sesuai. Silakan hubungi admin atau asisten lab.");
         }
 
+        // Bila kode salah atau belum diisi, tampilkan peringatan dari konflik utama (pertama)
+        var conflict = conflicts[0];
+        
         var mulaiDisp = new Date(conflict.mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         var selesaiDisp = new Date(conflict.selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         var rangeDisp = mulaiDisp;
@@ -1579,7 +1591,6 @@ function checkLabAgendas(isManualCheck) {
             kodePesertaInput.addEventListener('input', function() {
                 var res = checkLabAgendas();
                 if (!res.isBlocked) {
-                    console.log("Reactive Unlock: Code matched via input.");
                     loadAvailableComputers();
                 }
             });
@@ -1588,7 +1599,6 @@ function checkLabAgendas(isManualCheck) {
 
         return { isBlocked: true };
     } else {
-        console.log("DEBUG Kode Peserta: No conflict found for", { room: room, startStr: startStr });
         warningEl.classList.add('d-none');
         kodePesertaContainer.classList.add('d-none');
         return { isBlocked: false };
