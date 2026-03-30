@@ -1542,6 +1542,13 @@ function checkLabAgendas(isManualCheck) {
         var userCode = (kodePesertaInput.value || "").trim().toUpperCase();
         var agendaCode = (conflict.kodePeserta || "").trim().toUpperCase();
 
+        console.log("DEBUG Kode Peserta:", { 
+            userInput: userCode, 
+            agendaRequiredCode: agendaCode,
+            room: room,
+            conflictEvent: conflict.kegiatan
+        });
+
         if (agendaCode && userCode === agendaCode) {
             warningEl.classList.remove('alert-danger');
             warningEl.classList.add('alert-success');
@@ -1566,8 +1573,22 @@ function checkLabAgendas(isManualCheck) {
         warningEl.classList.add('alert-danger');
         warningEl.classList.remove('d-none');
         kodePesertaContainer.classList.remove('d-none');
+
+        // Add real-time listener if not already added
+        if (kodePesertaInput && !kodePesertaInput.dataset.hasListener) {
+            kodePesertaInput.addEventListener('input', function() {
+                var res = checkLabAgendas();
+                if (!res.isBlocked) {
+                    console.log("Reactive Unlock: Code matched via input.");
+                    loadAvailableComputers();
+                }
+            });
+            kodePesertaInput.dataset.hasListener = "true";
+        }
+
         return { isBlocked: true };
     } else {
+        console.log("DEBUG Kode Peserta: No conflict found for", { room: room, startStr: startStr });
         warningEl.classList.add('d-none');
         kodePesertaContainer.classList.add('d-none');
         return { isBlocked: false };
