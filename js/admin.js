@@ -508,25 +508,19 @@ function openProcessModal(requestId) {
                 if (isServerType && req.software) {
                     serverConfigInput.value = "Menarik data Dosen & User aktif dari server...";
 
-                    console.log("RUNNING api.run for software:", req.software);
-
                     // Fetch active users + dosen rules
                     api.run('admin-active-software-users', { softwareName: req.software })
                         .then(function (res) {
-                            console.log("SERVER LICENSE API RESULT:", res); // Cek hasil di Console (F12)
                             if (res.success && res.data && res.data.allowlist) {
                                 serverConfigInput.value = res.data.allowlist + "\n" + applicantConfigStr;
                             } else {
-                                console.warn("API SUCCESS BUT NO ALLOWLIST:", res);
                                 serverConfigInput.value = applicantConfigStr + "\n(Gagal menarik data list aktif: " + (res.message || "Unknown Error") + ")";
                             }
                         })
                         .catch(function (err) {
-                            console.error("SERVER LICENSE API ERROR:", err);
                             serverConfigInput.value = applicantConfigStr + "\n(" + err + ")";
                         });
                 } else {
-                    console.log("SKIPPING api.run. Reason:", { isServerType: isServerType, software: req.software });
                     serverConfigInput.value = applicantConfigStr;
                 }
             }
