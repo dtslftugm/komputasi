@@ -494,7 +494,11 @@ function openProcessModal(requestId) {
 
     // Server License Configuration
     if (serverLicenseContainer) {
-        var isServerType = (req.requestType || "") === 'Akses Lisensi Server';
+        var reqTypeStr = (req.requestType || "");
+        var isServerType = reqTypeStr.indexOf('Akses Lisensi Server') !== -1;
+        
+        console.log("SERVER LICENSE CHECK:", { reqType: reqTypeStr, isServerType: isServerType, software: req.software });
+
         if (req.needsServerInfo || isServerType || (req.computerUsername && req.computerHostname)) {
             serverLicenseContainer.classList.remove('d-none');
             var serverConfigInput = document.getElementById('server-license-config');
@@ -504,21 +508,25 @@ function openProcessModal(requestId) {
                 if (isServerType && req.software) {
                     serverConfigInput.value = "Menarik data Dosen & User aktif dari server...";
 
+                    console.log("RUNNING api.run for software:", req.software);
+
                     // Fetch active users + dosen rules
                     api.run('admin-active-software-users', { softwareName: req.software })
                         .then(function (res) {
+                            console.log("SERVER LICENSE API RESULT:", res); // Cek hasil di Console (F12)
                             if (res.success && res.data && res.data.allowlist) {
-                                // Combine existing rules with the new applicant
                                 serverConfigInput.value = res.data.allowlist + "\n" + applicantConfigStr;
                             } else {
+                                console.warn("API SUCCESS BUT NO ALLOWLIST:", res);
                                 serverConfigInput.value = applicantConfigStr + "\n(Gagal menarik data list aktif: " + (res.message || "Unknown Error") + ")";
                             }
                         })
                         .catch(function (err) {
+                            console.error("SERVER LICENSE API ERROR:", err);
                             serverConfigInput.value = applicantConfigStr + "\n(" + err + ")";
                         });
                 } else {
-                    // Fallback for non-server type (or if software name is missing)
+                    console.log("SKIPPING api.run. Reason:", { isServerType: isServerType, software: req.software });
                     serverConfigInput.value = applicantConfigStr;
                 }
             }

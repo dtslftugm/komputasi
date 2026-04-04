@@ -9,7 +9,7 @@ var CONFIG = {
   //URL live
   API_URL: 'https://script.google.com/macros/s/AKfycbx_RUqGy45N86NYWCCrXs8Cuq1ITkNBxBUtSwoJQjMpKjKb0vx_yWfDhRybp7rlm0_m/exec',
   APP_NAME: 'Layanan Komputasi DTSL FT UGM',
-  APP_VERSION: '17.2',
+  APP_VERSION: '20.0',
   ENVIRONMENT: 'production'
 };
 window.CONFIG = CONFIG;
