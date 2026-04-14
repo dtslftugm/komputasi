@@ -8,6 +8,7 @@ window.appState = {
 
     init: function () {
         this.validateSession();
+        this.loadAppBranding();
     },
 
     validateSession: function () {
@@ -115,6 +116,16 @@ window.appState = {
                             sSel.appendChild(opt);
                         });
                     }
+
+                    var ySel = document.getElementById('filter-year');
+                    ySel.innerHTML = '<option value="Semua">Semua Tahun</option>';
+                    if (res.yearList) {
+                        res.yearList.forEach(function (y) {
+                            var opt = document.createElement('option');
+                            opt.value = y; opt.innerText = y;
+                            ySel.appendChild(opt);
+                        });
+                    }
                 }
             })
             .catch(function (err) {
@@ -150,37 +161,54 @@ window.appState = {
 
     renderStats: function (res) {
         document.getElementById('total-req-display').textContent = res.totalRequests || 0;
+        
+        // --- 1. Render Software Table ---
         var tbody = document.getElementById('report-table-body');
         tbody.innerHTML = '';
 
         if (!res.data || res.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5">Tidak ada data untuk filter ini.</td></tr>';
-            return;
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5">Tidak ada data software untuk filter ini.</td></tr>';
+        } else {
+            var maxCount = 0;
+            res.data.forEach(function (d) {
+                if (d.count > maxCount) maxCount = d.count;
+            });
+
+            var totalUnits = res.totalRequests || 1; 
+
+            res.data.forEach(function (item) {
+                var percent = (item.count / maxCount) * 100;
+                var ratio = Math.round((item.count / totalUnits) * 100);
+
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td class="fw-bold">' + item.software + '</td>' +
+                    '<td class="text-center fw-bold text-primary">' + item.count + '</td>' +
+                    '<td>' +
+                    '<div class="extra-small text-muted mb-1 text-end">' + ratio + '% dari lisensi terpakai</div>' +
+                    '<div class="bar-container">' +
+                    '<div class="bar-fill" style="width: ' + percent + '%"></div>' +
+                    '</div>' +
+                    '</td>';
+                tbody.appendChild(tr);
+            });
         }
 
-        var maxCount = 0;
-        res.data.forEach(function (d) {
-            if (d.count > maxCount) maxCount = d.count;
-        });
-
-        var totalReqs = res.totalRequests || 1; // Prevent div by zero
-
-        res.data.forEach(function (item) {
-            var percent = (item.count / maxCount) * 100;
-            var ratio = Math.round((item.count / totalReqs) * 100);
-
-            var tr = document.createElement('tr');
-            tr.innerHTML =
-                '<td class="fw-bold">' + item.software + '</td>' +
-                '<td class="text-center fw-bold text-primary">' + item.count + '</td>' +
-                '<td>' +
-                '<div class="extra-small text-muted mb-1 text-end">' + ratio + '% dari total</div>' +
-                '<div class="bar-container">' +
-                '<div class="bar-fill" style="width: ' + percent + '%"></div>' +
-                '</div>' +
-                '</td>';
-            tbody.appendChild(tr);
-        });
+        // --- 2. Render Prodi Distribution Table ---
+        var pbody = document.getElementById('prodi-table-body');
+        pbody.innerHTML = '';
+        
+        if (!res.prodiBreakdown || res.prodiBreakdown.length === 0) {
+            pbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-muted">Tidak ada data prodi.</td></tr>';
+        } else {
+            res.prodiBreakdown.forEach(function(pitem) {
+                var ptr = document.createElement('tr');
+                ptr.innerHTML = 
+                    '<td>' + pitem.prodi + '</td>' +
+                    '<td class="text-center fw-bold text-success">' + pitem.count + ' <span class="text-muted small fw-normal">unit</span></td>';
+                pbody.appendChild(ptr);
+            });
+        }
 
         // Set print text
         var f = {
@@ -190,6 +218,34 @@ window.appState = {
             sem: document.getElementById('filter-semester').value
         };
         document.getElementById('print-period-label').innerText = 'Filter: Prodi ' + f.p + ', Software ' + f.s + ', Tahun ' + f.y + ', Semester ' + f.sem;
+    },
+
+    loadAppBranding: function () {
+        api.getBranding()
+            .then(function (res) {
+                if (res.success && res.data) {
+                    window.appState.setupBranding(res.data);
+                }
+            })
+            .catch(function (e) {
+                console.warn('Error loading branding:', e);
+            });
+    },
+
+    setupBranding: function (data) {
+        if (!data) return;
+
+        var logoEls = document.querySelectorAll('#app-logo, #login-logo');
+        if (data.logo) {
+            var logoSrc = data.logo;
+            // Add prefix if missing and it's likely base64
+            if (logoSrc.trim() && logoSrc.indexOf('http') !== 0 && logoSrc.indexOf('data:') !== 0) {
+                logoSrc = 'data:image/png;base64,' + logoSrc;
+            }
+            for (var i = 0; i < logoEls.length; i++) {
+                logoEls[i].src = logoSrc;
+            }
+        }
     }
 };
 

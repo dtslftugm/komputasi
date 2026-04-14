@@ -1,5 +1,5 @@
 /**
- * Admin Dashboard Logic for GitHub Pages
+ * Admin Dashboard Logic untuk GitHub Pages
  * Menghubungkan UI admin.html dengan APIClient
  */
 
@@ -496,7 +496,7 @@ function openProcessModal(requestId) {
     if (serverLicenseContainer) {
         var reqTypeStr = (req.requestType || "");
         var isServerType = reqTypeStr.indexOf('Akses Lisensi Server') !== -1;
-        
+
         console.log("SERVER LICENSE CHECK:", { reqType: reqTypeStr, isServerType: isServerType, software: req.software });
 
         if (req.needsServerInfo || isServerType || (req.computerUsername && req.computerHostname)) {
