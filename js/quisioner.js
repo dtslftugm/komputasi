@@ -21,7 +21,7 @@ function initQuisioner() {
         if (pair[0]) params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
     }
 
-    var requestId = params.id;
+    var requestId = params.reqid;
     if (requestId) {
         document.getElementById('requestId').value = requestId;
     }
