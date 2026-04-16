@@ -107,6 +107,16 @@ window.appState = {
                         });
                     }
 
+                    var vSel = document.getElementById('filter-vendor');
+                    vSel.innerHTML = '<option value="Semua">Semua Vendor</option>';
+                    if (res.vendorList) {
+                        res.vendorList.forEach(function (v) {
+                            var opt = document.createElement('option');
+                            opt.value = v; opt.innerText = v;
+                            vSel.appendChild(opt);
+                        });
+                    }
+
                     var sSel = document.getElementById('filter-software');
                     sSel.innerHTML = '<option value="Semua">Semua Software</option>';
                     if (res.softwareList) {
@@ -136,6 +146,7 @@ window.appState = {
     refreshReport: function () {
         var filters = {
             prodi: document.getElementById('filter-prodi').value,
+            vendor: document.getElementById('filter-vendor').value,
             software: document.getElementById('filter-software').value,
             year: document.getElementById('filter-year').value,
             semester: document.getElementById('filter-semester').value
@@ -213,11 +224,12 @@ window.appState = {
         // Set print text
         var f = {
             p: document.getElementById('filter-prodi').value,
+            v: document.getElementById('filter-vendor').value,
             s: document.getElementById('filter-software').value,
             y: document.getElementById('filter-year').value,
             sem: document.getElementById('filter-semester').value
         };
-        document.getElementById('print-period-label').innerText = 'Filter: Prodi ' + f.p + ', Software ' + f.s + ', Tahun ' + f.y + ', Semester ' + f.sem;
+        document.getElementById('print-period-label').innerText = 'Filter: Vendor ' + f.v + ', Prodi ' + f.p + ', Software ' + f.s + ', Tahun ' + f.y + ', Semester ' + f.sem;
     },
 
     loadAppBranding: function () {
