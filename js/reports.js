@@ -229,23 +229,17 @@ window.appState = {
             var topV = res.topVendor || '-';
 
             chartBox.innerHTML = 
-                '<div class="col-md-4">' +
-                    '<div class="p-2 border rounded-3 bg-light h-100">' +
-                        '<div class="extra-small text-muted mb-1">🏆 Software Teraktif</div>' +
-                        '<div class="fw-bold small text-truncate" title="'+topSW+'">' + topSW + '</div>' +
-                    '</div>' +
+                '<div class="flex-fill p-2 border rounded-3 bg-light shadow-sm" style="min-width: 200px;">' +
+                    '<div class="extra-small text-muted mb-1">🏆 Software Teraktif</div>' +
+                    '<div class="fw-bold small text-truncate" title="'+topSW+'">' + topSW + '</div>' +
                 '</div>' +
-                '<div class="col-md-4">' +
-                    '<div class="p-2 border rounded-3 bg-light h-100">' +
-                        '<div class="extra-small text-muted mb-1">🏢 Prodi Teraktif</div>' +
-                        '<div class="fw-bold small text-truncate" title="'+topP+'">' + topP + '</div>' +
-                    '</div>' +
+                '<div class="flex-fill p-2 border rounded-3 bg-light shadow-sm" style="min-width: 200px;">' +
+                    '<div class="extra-small text-muted mb-1">🏢 Prodi Teraktif</div>' +
+                    '<div class="fw-bold small text-truncate" title="'+topP+'">' + topP + '</div>' +
                 '</div>' +
-                '<div class="col-md-4">' +
-                    '<div class="p-2 border rounded-3 bg-light h-100">' +
-                        '<div class="extra-small text-muted mb-1">🏷️ Vendor Teratas</div>' +
-                        '<div class="fw-bold small text-truncate" title="'+topV+'">' + topV + '</div>' +
-                    '</div>' +
+                '<div class="flex-fill p-2 border rounded-3 bg-light shadow-sm" style="min-width: 200px;">' +
+                    '<div class="extra-small text-muted mb-1">🏷️ Vendor Teratas</div>' +
+                    '<div class="fw-bold small text-truncate" title="'+topV+'">' + topV + '</div>' +
                 '</div>';
         }
 
