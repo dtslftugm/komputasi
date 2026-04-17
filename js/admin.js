@@ -121,6 +121,18 @@ function loadRequests() {
             if (res.success) {
                 pendingRequests = res.data || [];
 
+                // --- SMART SORTING (Milestone 18: Urgency + FCFS) ---
+                pendingRequests.sort(function (a, b) {
+                    var dateA = parseDateIndo(a.mulaiPemakaian);
+                    var dateB = parseDateIndo(b.mulaiPemakaian);
+                    
+                    if (dateA.getTime() !== dateB.getTime()) {
+                        return dateA - dateB; // 1. Urgency (Primary: Earlier start date)
+                    }
+                    // 2. FCFS (Secondary: Earlier timestamp for same start date)
+                    return new Date(a.timestamp) - new Date(b.timestamp);
+                });
+
                 // Update stats
                 if (res.stats) {
                     document.getElementById('count-pending').textContent = res.stats.pending || 0;
@@ -208,15 +220,26 @@ function renderTable(filter) {
         var statusClass = req.status === 'ANTREAN' ? 'bg-warning text-dark' : 'bg-light text-dark';
         var statusLabel = req.status === 'ANTREAN' ? 'ANTREAN' : req.requestType;
         
+        // Urgency Badge Logic
+        var startDt = parseDateIndo(req.mulaiPemakaian);
+        var today = new Date(); today.setHours(0,0,0,0);
+        var tomorrow = new Date(); tomorrow.setDate(today.getDate() + 1); tomorrow.setHours(0,0,0,0);
+        
+        var urgencyBadge = '';
+        if (startDt.getTime() === today.getTime()) urgencyBadge = '<span class="badge bg-danger ms-1" style="font-size:0.6rem;">Hari Ini</span>';
+        else if (startDt.getTime() === tomorrow.getTime()) urgencyBadge = '<span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem;">Besok</span>';
+
         tr.innerHTML = '<td>' +
             '<div class="fw-bold d-flex align-items-center">' + 
             req.nama + 
             (req.periodCount > 1 ? '<span class="badge bg-info ms-2" title="Sedang jalan periode ke-' + req.periodCount + '">Period ' + req.periodCount + '</span>' : '') +
             '</div>' +
+            '<div class="text-muted extra-small outfit">' + (req.timestamp || "") + '</div>' +
             '<div class="text-muted small">' + req.nim + ' | ID: ' + req.requestId + '</div>' +
             '</td>' +
             '<td>' +
             '<div class="small">' + req.software + '</div>' +
+            '<div class="small fw-bold mt-1" style="color:var(--accent-color);">📅 Mulai: ' + req.mulaiPemakaian + urgencyBadge + '</div>' +
             '<div class="text-muted extra-small">' + (req.status === 'ANTREAN' ? '<span class="text-warning fw-bold">⚠️ WAITING LIST</span>' : req.roomPreference) + '</div>' +
             '</td>' +
             '<td><span class="badge ' + statusClass + ' border">' + statusLabel + '</span></td>' +
@@ -1185,3 +1208,26 @@ function copyServerConfig() {
 }
 
 window.copyServerConfig = copyServerConfig;
+
+/**
+ * --- UTILS ---
+ */
+function parseDateIndo(dateStr) {
+    if (!dateStr || dateStr === "-") return new Date(9999, 0, 1); // Future for empty
+    
+    // Format is dd-MMM-yyyy
+    var parts = dateStr.split('-');
+    if (parts.length !== 3) return new Date();
+    
+    var monthMap = {
+        'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'mei': 4, 'jun': 5,
+        'jul': 6, 'agt': 7, 'sep': 8, 'okt': 9, 'nov': 10, 'des': 11,
+        'may': 4, 'aug': 7, 'oct': 9, 'dec': 11
+    };
+    
+    var day = parseInt(parts[0], 10);
+    var month = monthMap[parts[1].toLowerCase()] || 0;
+    var year = parseInt(parts[2], 10);
+    
+    return new Date(year, month, day);
+}
