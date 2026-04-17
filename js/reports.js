@@ -229,17 +229,23 @@ window.appState = {
             var topV = res.topVendor || '-';
 
             chartBox.innerHTML = 
-                '<div class="flex-fill p-2 border rounded-3 bg-light shadow-sm" style="min-width: 200px;">' +
-                    '<div class="extra-small text-muted mb-1">🏆 Software Teraktif</div>' +
-                    '<div class="fw-bold small text-truncate" title="'+topSW+'">' + topSW + '</div>' +
+                '<div class="col">' +
+                    '<div class="p-2 border rounded-3 bg-light h-100">' +
+                        '<div class="extra-small text-muted mb-1 text-truncate">🏆 Software Teraktif</div>' +
+                        '<div class="fw-bold extra-small text-dark text-truncate" title="'+topSW+'">' + topSW + '</div>' +
+                    '</div>' +
                 '</div>' +
-                '<div class="flex-fill p-2 border rounded-3 bg-light shadow-sm" style="min-width: 200px;">' +
-                    '<div class="extra-small text-muted mb-1">🏢 Prodi Teraktif</div>' +
-                    '<div class="fw-bold small text-truncate" title="'+topP+'">' + topP + '</div>' +
+                '<div class="col">' +
+                    '<div class="p-2 border rounded-3 bg-light h-100">' +
+                        '<div class="extra-small text-muted mb-1 text-truncate">🏢 Prodi Teraktif</div>' +
+                        '<div class="fw-bold extra-small text-dark text-truncate" title="'+topP+'">' + topP + '</div>' +
+                    '</div>' +
                 '</div>' +
-                '<div class="flex-fill p-2 border rounded-3 bg-light shadow-sm" style="min-width: 200px;">' +
-                    '<div class="extra-small text-muted mb-1">🏷️ Vendor Teratas</div>' +
-                    '<div class="fw-bold small text-truncate" title="'+topV+'">' + topV + '</div>' +
+                '<div class="col">' +
+                    '<div class="p-2 border rounded-3 bg-light h-100">' +
+                        '<div class="extra-small text-muted mb-1 text-truncate">🏷️ Vendor Teratas</div>' +
+                        '<div class="fw-bold extra-small text-dark text-truncate" title="'+topV+'">' + topV + '</div>' +
+                    '</div>' +
                 '</div>';
         }
 
