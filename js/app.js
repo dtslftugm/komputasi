@@ -472,6 +472,32 @@ function checkSoftwareRestrictionsClient(softwareStr) {
     };
 }
 
+function selectPenelitianMandiri() {
+    var swSelect = $('#software');
+    var target = 'DTSL - Penelitian Mandiri';
+    
+    // Check if option exists
+    var exists = false;
+    swSelect.find('option').each(function() {
+        if ($(this).val() === target) {
+            exists = true;
+            return false;
+        }
+    });
+
+    if (exists) {
+        // Multi-select: we want to append or just set if it's the only one
+        var current = swSelect.val() || [];
+        if (current.indexOf(target) === -1) {
+            current.push(target);
+            swSelect.val(current).trigger('change');
+        }
+        ui.success('Berhasil memilih Penelitian Mandiri. Silahkan pilih unit komputer di bawah.', 'Input Otomatis');
+    } else {
+        ui.error('Software "DTSL - Penelitian Mandiri" tidak ditemukan di daftar. Hubungi admin.', 'Error');
+    }
+}
+
 function handleSoftwareChange() {
     var selectedSoftware = $('#software').val() || [];
     var warningDiv = document.getElementById('labOnlyWarning');
