@@ -475,10 +475,10 @@ function checkSoftwareRestrictionsClient(softwareStr) {
 function selectPenelitianMandiri() {
     var swSelect = $('#software');
     var target = 'DTSL - Penelitian Mandiri';
-    
+
     // Check if option exists
     var exists = false;
-    swSelect.find('option').each(function() {
+    swSelect.find('option').each(function () {
         if ($(this).val() === target) {
             exists = true;
             return false;
@@ -757,7 +757,6 @@ function loadAvailableComputers() {
     loading.style.display = 'block';
     list.innerHTML = '';
     noComputers.classList.add('d-none');
-    noComputers.innerHTML = '<div class="text-muted mb-2">Tidak ada komputer tersedia di ruangan ini.</div>';
     pagination.classList.add('d-none');
 
     api.getAvailableComputers(room)
@@ -859,7 +858,7 @@ function setupFormHandlers() {
 
             if (selectedMulai < today) {
                 ui.warning('Tanggal mulai tidak boleh di masa lalu. Telah dikembalikan ke tanggal hari ini.', 'Validasi Tanggal');
-                
+
                 var yyyy = today.getFullYear();
                 var mm = String(today.getMonth() + 1).padStart(2, '0');
                 var dd = String(today.getDate()).padStart(2, '0');
@@ -1167,7 +1166,7 @@ function validateFormData(data) {
             return false;
         }
 
-        if (!data.preferredComputer) {
+        if (!data.preferredComputer || data.preferredComputer === "") {
             ui.alert('Silakan pilih salah satu unit komputer yang tersedia di daftar.', 'Unit Diperlukan', 'warning')
                 .then(function () {
                     var container = document.getElementById('computer-selection-container');
@@ -1454,11 +1453,11 @@ function prefillRenewalForm(data) {
     // 2. Construct Combined Renewal Info Banner
     var banner = document.getElementById('renewalInfoBanner');
     var rnName = document.getElementById('renewalComputerName');
-    
+
     if (banner && rnName) {
         banner.classList.remove('d-none');
         var htmlParts = [];
-        
+
         // Add Computer Info
         if (data.preferredComputer) {
             banner.classList.add('alert-info');
@@ -1505,7 +1504,7 @@ function prefillRenewalForm(data) {
         var mulaiEl = document.getElementById('mulai');
         if (mulaiEl) {
             mulaiEl.value = data.previousExpirationDate;
-            
+
             // Trigger change event so end-date constraints and related logic evaluate correctly
             var dateEvent = new Event('change');
             mulaiEl.dispatchEvent(dateEvent);
@@ -1516,6 +1515,33 @@ function prefillRenewalForm(data) {
     setTimeout(function () {
         autoSetTipeAkses();
     }, 200);
+
+    // --- QUEUE WARNING (Resource Monopoly Fix) ---
+    if (window.initialData && window.initialData.hasActiveQueue) {
+        var queueWarn = document.getElementById('queue-warning');
+        if (queueWarn) queueWarn.classList.remove('d-none');
+    }
+}
+
+// Global handler for Join Queue
+function handleJoinQueue() {
+    selectedComputer = {
+        name: 'ANTREAN',
+        location: document.getElementById('roomPreference').value,
+        softwareInstalled: 'Semua'
+    };
+
+    ui.success('Berhasil memilih pendaftaran via Antrean. Silakan lengkapi form dan kirim permohonon Anda.', 'Antrean Terpilih');
+
+    // Feedback in UI
+    var noComputers = document.getElementById('no-computers');
+    if (noComputers) {
+        noComputers.innerHTML = '<div class="alert alert-info py-4 mb-0 shadow-sm border-0" style="border-radius: 12px; background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);">' +
+            '<div class="mb-2 fs-3">✅</div>' +
+            '<h6 class="fw-bold mb-1" style="color: #1864ab;">Mode Antrean Aktif</h6>' +
+            '<p class="small mb-0" style="color: #1971c2;">Anda akan didaftarkan ke dalam antrean <strong>' + selectedComputer.location + '</strong>. Unit komputer akan ditentukan oleh Admin setelah meninjau antrean. Tambahkan pada catatan jika ada preferensi unit.</p>' +
+            '</div>';
+    }
 }
 
 // ===== AGENDA CONFLICT CHECK =====
@@ -1569,7 +1595,7 @@ function checkLabAgendas(isManualCheck) {
 
     if (conflicts.length > 0) {
         var userCode = (kodePesertaInput.value || "").trim().toUpperCase();
-        
+
         console.log("DEBUG Kode Peserta: Ditemukan " + conflicts.length + " jadwal overlapping.");
 
         // Jika user memasukkan kode, periksa apakah cocok dengan SALAH SATU agenda yang bentrok
@@ -1600,7 +1626,7 @@ function checkLabAgendas(isManualCheck) {
 
         // Bila kode salah atau belum diisi, tampilkan peringatan dari konflik utama (pertama)
         var conflict = conflicts[0];
-        
+
         var mulaiDisp = new Date(conflict.mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         var selesaiDisp = new Date(conflict.selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         var rangeDisp = mulaiDisp;
@@ -1614,7 +1640,7 @@ function checkLabAgendas(isManualCheck) {
 
         // Add real-time listener if not already added
         if (kodePesertaInput && !kodePesertaInput.dataset.hasListener) {
-            kodePesertaInput.addEventListener('input', function() {
+            kodePesertaInput.addEventListener('input', function () {
                 var res = checkLabAgendas();
                 if (!res.isBlocked) {
                     loadAvailableComputers();

@@ -205,15 +205,21 @@ function renderTable(filter) {
 
     filtered.forEach(function (req) {
         var tr = document.createElement('tr');
+        var statusClass = req.status === 'ANTREAN' ? 'bg-warning text-dark' : 'bg-light text-dark';
+        var statusLabel = req.status === 'ANTREAN' ? 'ANTREAN' : req.requestType;
+        
         tr.innerHTML = '<td>' +
-            '<div class="fw-bold">' + req.nama + '</div>' +
+            '<div class="fw-bold d-flex align-items-center">' + 
+            req.nama + 
+            (req.periodCount > 1 ? '<span class="badge bg-info ms-2" title="Sedang jalan periode ke-' + req.periodCount + '">Period ' + req.periodCount + '</span>' : '') +
+            '</div>' +
             '<div class="text-muted small">' + req.nim + ' | ID: ' + req.requestId + '</div>' +
             '</td>' +
             '<td>' +
             '<div class="small">' + req.software + '</div>' +
-            '<div class="text-muted extra-small">' + req.roomPreference + '</div>' +
+            '<div class="text-muted extra-small">' + (req.status === 'ANTREAN' ? '<span class="text-warning fw-bold">⚠️ WAITING LIST</span>' : req.roomPreference) + '</div>' +
             '</td>' +
-            '<td><span class="badge bg-light text-dark border">' + req.requestType + '</span></td>' +
+            '<td><span class="badge ' + statusClass + ' border">' + statusLabel + '</span></td>' +
             '<td class="text-center">' +
             '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openProcessModal(\'' + req.requestId + '\')">Proses</button>' +
             '</td>';
@@ -262,7 +268,10 @@ function renderActiveUsersTable(filterText) {
         }
 
         tr.innerHTML = '<td>' +
-            '<div class="fw-bold">' + (user.nama || "-") + '</div>' +
+            '<div class="fw-bold d-flex align-items-center">' + 
+            (user.nama || "-") + 
+            (user.periodCount > 1 ? '<span class="badge bg-info ms-2" style="font-size:0.6rem;">P' + user.periodCount + '</span>' : '') +
+            '</div>' +
             '<div class="text-muted small">' + (user.nim || "-") + '</div>' +
             '<div class="text-muted extra-small">' + (user.email || "-") + '</div>' +
             '</td>' +
@@ -358,11 +367,20 @@ function openProcessModal(requestId) {
     // Renewal Identification & Badge
     var renewalBadge = document.getElementById('modal-renewal-badge');
     if (renewalBadge) {
-        if (req.isRenewal) {
-            renewalBadge.classList.remove('d-none');
-        } else {
-            renewalBadge.classList.add('d-none');
-        }
+                if (req.isRenewal) {
+                    renewalBadge.classList.remove('d-none');
+                    if (req.periodCount > 1) {
+                        renewalBadge.innerHTML = '🔄 <strong>Data Perpanjangan (Periode ke-' + req.periodCount + '):</strong> Data telah dimuat.';
+                    } else {
+                        renewalBadge.innerHTML = '🔄 <strong>Data Perpanjangan:</strong> Data telah dimuat.';
+                    }
+                } else if (req.status === 'ANTREAN') {
+                    renewalBadge.classList.remove('d-none');
+                    renewalBadge.classList.replace('bg-info', 'bg-warning');
+                    renewalBadge.innerHTML = '⏳ <strong>USER MENGANTRE:</strong> Tidak ada unit terpilih.';
+                } else {
+                    renewalBadge.classList.add('d-none');
+                }
     }
 
     var topikEl = document.getElementById('modal-topik');
