@@ -196,8 +196,11 @@
                         <label class="form-label required-label">Software</label>
                         <select class="form-select" id="software" multiple></select>
                         <div class="form-text mt-1">
-                            Hanya butuh unit komputer lab (untuk coding Python/Fortran/dll)? 
-                            <a href="javascript:void(0)" onclick="selectPenelitianMandiri()" class="text-decoration-none fw-bold" style="color: var(--accent-color);">Klik di sini</a>
+                            Hanya butuh unit komputer lab saja (untuk coding bahasa pemrograman atau penggunaan software
+                            berlisensi gratis)?
+                            <a href="javascript:void(0)" onclick="selectPenelitianMandiri()"
+                                class="text-decoration-none fw-bold" style="color: var(--accent-color);">Klik di
+                                sini</a>
                         </div>
                     </div>
                     <div id="labOnlyWarning" class="alert alert-warning d-none mt-2 shadow-sm"
@@ -287,7 +290,8 @@
                                                 <input type="text" id="kodePeserta" class="form-control"
                                                     placeholder="Masukkan kode untuk membuka akses..."
                                                     style="text-transform: uppercase;">
-                                                <button class="btn btn-warning" type="button" id="btn-check-kode" onclick="var res = checkLabAgendas(true); if(!res.isBlocked) loadAvailableComputers();">Cek
+                                                <button class="btn btn-warning" type="button" id="btn-check-kode"
+                                                    onclick="var res = checkLabAgendas(true); if(!res.isBlocked) loadAvailableComputers();">Cek
                                                     Kode</button>
                                             </div>
                                             <div class="form-text mt-1 text-warning" style="font-size: 0.7rem;">Ruangan
