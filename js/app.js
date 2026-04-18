@@ -1526,7 +1526,7 @@ function prefillRenewalForm(data) {
     }, 200);
 
     // --- QUEUE WARNING (Resource Monopoly Fix) ---
-    if (window.initialData && window.initialData.hasActiveQueue) {
+    if (initialData && initialData.hasActiveQueue) {
         var queueWarn = document.getElementById('queue-warning');
         if (queueWarn) queueWarn.classList.remove('d-none');
     }
