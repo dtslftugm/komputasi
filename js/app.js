@@ -41,8 +41,11 @@ document.addEventListener('DOMContentLoaded', function () {
             setupComputerToggle();
             setupDateRestrictions();
             setupHistoricalTracker();
+            setupQuotaCheck();
             setupMitraToggle();
+            setupIdentitasToggle();
 
+            // Populate Dosen initially
             // Attach event listener for software change
             $('#software').on('change', handleSoftwareChange);
 
@@ -937,67 +940,71 @@ function setupFormHandlers() {
             return;
         }
 
-        // Handle File Reading first if needed
-        var fileInput = document.getElementById('uploadSurat');
-        var processSubmission = function (fileObj) {
-            showLoading('Menyimpan data...');
-            api.submitRequest(formData)
-                .then(function (result) {
-                    if (result.success && result.data) {
+        // --- Step 1: Prepare Files ---
+        var filePromises = [];
+        
+        // Letter File
+        var suratInput = document.getElementById('uploadSurat');
+        if (formData.uploadMethod === 'upload' && suratInput.files.length > 0) {
+            filePromises.push(getFileBase64(suratInput.files[0]).then(f => ({ ...f, targetCol: 'Surat Keterangan' })));
+        }
+
+        // Identity File (Mitra)
+        var identitasInput = document.getElementById('uploadIdentitas');
+        if (formData.keperluanPenggunaan === 'Mitra' && formData.identitasMethod === 'upload' && identitasInput.files.length > 0) {
+            filePromises.push(getFileBase64(identitasInput.files[0]).then(f => ({ ...f, targetCol: 'Identitas KTP / NPWP' })));
+        }
+
+        showLoading('Mempersiapkan data...');
+        
+        Promise.all(filePromises)
+            .then(function (fileObjects) {
+                showLoading('Menyimpan data teks...');
+                return api.submitRequest(formData)
+                    .then(function (result) {
+                        if (!result.success) throw new Error(result.message || 'Gagal menyimpan data teks');
+                        
                         var rowIndex = result.data.rowIndex;
+                        var sheetName = result.data.sheetName;
                         var requestId = result.data.requestId;
 
-                        // Step 2: Upload File if exists
-                        if (fileObj && rowIndex) {
-                            showLoading('Mengunggah file (Step 2/2)...');
-                            api.uploadFile({
-                                rowIndex: rowIndex,
-                                sheetName: result.data.sheetName || 'Response',
-                                fileData: fileObj.data,
-                                mimeType: fileObj.mimeType,
-                                fileName: fileObj.name
-                            }).then(function (uploadResult) {
-                                console.log('Upload result (opaque):', uploadResult);
-                                finalizeSuccess(requestId);
-                            }).catch(function (uploadErr) {
-                                console.error('File upload failed:', uploadErr);
-                                ui.warning('Data tersimpan, namun unggahan file gagal. Admin akan menghubungi Anda jika diperlukan.', 'Upload Pending');
+                        // --- Step 2: Upload Files sequentially if they exist ---
+                        if (fileObjects.length > 0) {
+                            var uploadChain = Promise.resolve();
+                            
+                            fileObjects.forEach(function (fileObj, index) {
+                                uploadChain = uploadChain.then(function () {
+                                    showLoading('Mengunggah berkas ' + (index + 1) + '/' + fileObjects.length + '...');
+                                    return api.uploadFile({
+                                        rowIndex: rowIndex,
+                                        sheetName: sheetName,
+                                        targetCol: fileObj.targetCol,
+                                        fileData: fileObj.data,
+                                        mimeType: fileObj.mimeType,
+                                        fileName: fileObj.name
+                                    });
+                                });
+                            });
+
+                            return uploadChain.then(function () {
                                 finalizeSuccess(requestId);
                             });
                         } else {
                             finalizeSuccess(requestId);
                         }
-                    } else {
-                        hideLoading();
-                        ui.error('Gagal menyimpan: ' + (result.message || 'Unknown error'), 'Simpan Gagal');
-                    }
-                })
-                .catch(function (error) {
-                    hideLoading();
-                    console.error('Submission error:', error);
-                    ui.error('Terjadi kesalahan: ' + error.message, 'System Error');
-                });
-        };
+                    });
+            })
+            .catch(function (error) {
+                hideLoading();
+                console.error('Submission error:', error);
+                ui.error('Terjadi kesalahan: ' + error.message, 'System Error');
+            });
 
         var finalizeSuccess = function (requestId) {
             hideLoading();
             showSuccessModal(requestId || 'Berhasil');
             resetForm();
         };
-
-        if (formData.uploadMethod === 'upload' && fileInput.files.length > 0) {
-            showLoading('Membaca file...');
-            getFileBase64(fileInput.files[0])
-                .then(function (fileObj) {
-                    processSubmission(fileObj);
-                })
-                .catch(function (err) {
-                    hideLoading();
-                    ui.error('Gagal membaca file: ' + err.message, 'File Error');
-                });
-        } else {
-            processSubmission(null);
-        }
     });
 }
 
@@ -1025,20 +1032,52 @@ function getFileBase64(file) {
 function setupMitraToggle() {
     var radios = document.getElementsByName('keperluan');
     var mitraFields = document.getElementById('mitraFields');
+    var academicSection = document.getElementById('academicSection');
     if (!mitraFields) return;
 
     function toggleMitra() {
         var selectedValue = (document.querySelector('input[name="keperluan"]:checked') || {}).value;
+        
         if (selectedValue === 'Mitra') {
             mitraFields.classList.remove('d-none');
+            if (academicSection) academicSection.classList.add('d-none');
         } else {
             mitraFields.classList.add('d-none');
+            if (academicSection) academicSection.classList.remove('d-none');
         }
     }
 
     for (var i = 0; i < radios.length; i++) {
         radios[i].addEventListener('change', toggleMitra);
     }
+    // Initial call
+    toggleMitra();
+}
+
+/**
+ * Handle Identity Upload Method Toggle (Mitra Only)
+ */
+function setupIdentitasToggle() {
+    var radios = document.getElementsByName('identitasMethod');
+    var uploadContainer = document.getElementById('identitasUploadContainer');
+    var linkContainer = document.getElementById('identitasLinkContainer');
+
+    function toggleMode() {
+        var mode = (document.querySelector('input[name="identitasMethod"]:checked') || {}).value;
+        if (mode === 'upload') {
+            uploadContainer.style.display = 'block';
+            linkContainer.style.display = 'none';
+        } else {
+            uploadContainer.style.display = 'none';
+            linkContainer.style.display = 'block';
+        }
+    }
+
+    for (var i = 0; i < radios.length; i++) {
+        radios[i].addEventListener('change', toggleMode);
+    }
+    // Initial call
+    toggleMode();
 }
 
 function collectFormData() {
@@ -1087,6 +1126,7 @@ function collectFormData() {
         nikNpwp: (document.getElementById('nikNpwp') || {}).value || '',
         alamatInstitusi: (document.getElementById('alamatInstitusi') || {}).value || '',
         jangkaWaktu: (document.getElementById('jangkaWaktu') || {}).value || '',
+        identitasMethod: (document.querySelector('input[name="identitasMethod"]:checked') || {}).value || 'upload',
         linkIdentitas: (document.getElementById('linkIdentitas') || {}).value || '',
         mitraDisclaimer: (document.getElementById('mitraDisclaimer') || {}).checked
     };
@@ -1141,16 +1181,22 @@ function validateFormData(data) {
 
     // Mitra Specific Validation
     if (data.keperluanPenggunaan === 'Mitra') {
-        if (!data.asalInstitusi || !data.nikNpwp || !data.alamatInstitusi || !data.jangkaWaktu || !data.linkIdentitas) {
-            ui.alert('Harap lengkapi seluruh Informasi Administrasi Mitra (Institusi, NIK/NPWP, Alamat, dan Link File Identitas).', 'Administrasi Mitra', 'warning');
+        var identitasOk = (data.identitasMethod === 'link') ? !!data.linkIdentitas : !!document.getElementById('uploadIdentitas').files.length;
+
+        if (!data.asalInstitusi || !data.nikNpwp || !data.alamatInstitusi || !data.jangkaWaktu) {
+            ui.alert('Harap lengkapi seluruh Informasi Administrasi Mitra (Institusi, NIK/NPWP, Alamat, dan Jangka Waktu).', 'Administrasi Mitra', 'warning');
             return false;
         }
+        
+        if (!identitasOk) {
+            ui.alert('Harap unggah berkas Identitas (KTP/NPWP) atau sertakan link identitas Anda.', 'Dokumen Identitas', 'warning');
+            return false;
+        }
+
         if (!data.mitraDisclaimer) {
-            ui.alert('Anda wajib menyetujui Disclaimer Tanggung Jawab Lisensi untuk melanjutkan sebagai Mitra.', 'Penafian Hukum', 'warning');
+            ui.alert('Anda wajib menyetujui Pernyataan Tanggung Jawab Hukum untuk melanjutkan sebagai Mitra.', 'Penafian Hukum', 'info');
             return false;
         }
-        // Skip some internal academic requirements if needed, or keep them if they apply
-        // For now, let's keep the dates/emails etc.
     }
 
     if (data.keperluanPenggunaan !== 'Mitra' && !data.prodi) {
