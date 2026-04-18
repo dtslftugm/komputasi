@@ -736,8 +736,11 @@ function loadAvailableComputers() {
     var noComputers = document.getElementById('no-computers');
     var pagination = document.getElementById('computer-pagination');
 
-    if (!room) {
+    var isRenewalFlow = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData);
+    
+    if (!room || isRenewalFlow) {
         container.style.display = 'none';
+        container.classList.add('d-none'); // Force CSS level hidden
         return;
     }
 
@@ -1445,7 +1448,13 @@ function prefillRenewalForm(data) {
 
         // Hide the entire computer search/grid section so user isn't distracted
         var pList = document.getElementById('computer-selection-container');
-        if (pList) pList.style.display = 'none';
+        if (pList) {
+            pList.style.display = 'none';
+            pList.classList.add('d-none'); // Force CSS level hidden
+        }
+        
+        var noComp = document.getElementById('no-computers');
+        if (noComp) noComp.classList.add('d-none');
     } else {
         if (needsNo) needsNo.checked = true;
     }
