@@ -44,6 +44,19 @@
 
     <div class="container">
         <div id="main-content">
+            
+            <!-- Status & Queue Information -->
+            <div id="queue-warning" class="col-12 d-none mt-2 mb-3">
+                <div class="alert alert-danger shadow-sm border-0 mb-0" style="border-radius: 12px; background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%); border-left: 5px solid #ff4d4d !important;">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3 fs-3">⏳</div>
+                        <div>
+                            <h6 class="fw-bold mb-1" style="color: #c92a2a;">Terdapat Antrean Pengguna</h6>
+                            <p class="small mb-0" style="color: #e03131;">Saat ini terdapat mahasiswa lain yang sedang mengantre untuk menggunakan layanan. Mohon pertimbangkan kembali apakah perpanjangan ini benar-benar mendesak agar rekan Anda dapat bergantian menggunakan fasilitas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Header Section -->
             <div class="row align-items-center mb-4 border-bottom pb-3"
@@ -143,18 +156,7 @@
 
                 <!-- Personal Information -->
                 <div class="row g-3">
-                    <!-- Status & Queue Information -->
-                    <div id="queue-warning" class="col-12 d-none">
-                        <div class="alert alert-danger shadow-sm border-0 mb-3" style="border-radius: 12px; background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%); border-left: 5px solid #ff4d4d !important;">
-                            <div class="d-flex align-items-center">
-                                <div class="me-3 fs-3">⏳</div>
-                                <div>
-                                    <h6 class="fw-bold mb-1" style="color: #c92a2a;">Terdapat Antrean Pengguna</h6>
-                                    <p class="small mb-0" style="color: #e03131;">Saat ini terdapat mahasiswa lain yang sedang mengantre untuk menggunakan layanan. Mohon pertimbangkan kembali apakah perpanjangan ini benar-benar mendesak agar rekan Anda dapat bergantian menggunakan fasilitas.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
 
                     <div class="col-md-6">
                         <label class="form-label required-label">Email Address</label>
