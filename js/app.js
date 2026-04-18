@@ -219,24 +219,36 @@ function setupHistoricalTracker() {
     var nimInput = document.getElementById('nim');
     var badge = document.getElementById('returningUserBadge');
     var trackingContainer = document.getElementById('renewalTrackingContainer');
-    
-    if (!nimInput || !initialData || !initialData.historicalNims) return;
-    
-    nimInput.addEventListener('blur', function(e) {
-        // Skip cross-check if it's explicitly a dedicated renewal link anyway
-        if (!!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData)) return;
-        
-        var currentNim = e.target.value.replace(/\s/g, '').toUpperCase();
-        if (currentNim.length > 3 && initialData.historicalNims.includes(currentNim)) {
-            // Recognized historical user skipping the renewal link
+
+    if (!initialData) return;
+
+    function checkHistory() {
+        if (!!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData)) return; // Skip if explicit renewal
+
+        var rawNim = nimInput ? nimInput.value : '';
+        var currentNim = rawNim.replace(/\s/g, '').toUpperCase();
+
+        console.log("--- HISTORICAL NIM CHECK ---");
+        console.log("Raw Input NIM:", rawNim);
+        console.log("Cleaned Input NIM:", currentNim);
+        console.log("Total Historical NIMs in DB:", initialData.historicalNims ? initialData.historicalNims.length : 0);
+
+        var isHistoricalNim = currentNim.length > 3 && initialData.historicalNims && initialData.historicalNims.includes(currentNim);
+        console.log("NIM Match Result:", isHistoricalNim);
+
+        if (isHistoricalNim) {
             if (badge) badge.classList.remove('d-none');
             if (trackingContainer) trackingContainer.classList.remove('d-none');
         } else {
-            // Unrecognized or corrected NIM
             if (badge) badge.classList.add('d-none');
             if (trackingContainer) trackingContainer.classList.add('d-none');
         }
-    });
+    }
+
+    if (nimInput) {
+        nimInput.addEventListener('blur', checkHistory);
+        nimInput.addEventListener('change', checkHistory);
+    }
 }
 
 // ===== THEME TOGGLE =====
@@ -1274,9 +1286,9 @@ function validateFormData(data) {
     let nim = (document.getElementById('nim') || {}).value || "";
     let cleanNim = nim.replace(/\s/g, '').toUpperCase();
     let isHistoricalUser = window.initialData && window.initialData.historicalNims && window.initialData.historicalNims.includes(cleanNim);
-    
+
     let isContextRenewal = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData) || isHistoricalUser;
-    
+
     if (isContextRenewal) {
         if (!data.progres || data.progres.trim().length < 20) {
             ui.alert('Harap isi Progres/Capaian Sebelumnya dengan detail (minimal 20 karakter). Penjelasan ini digunakan sebagai pertimbangan perpanjangan.', 'Progres Diperlukan', 'warning')
