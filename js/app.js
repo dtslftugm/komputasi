@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
             setupComputerToggle();
             setupDateRestrictions();
             setupHistoricalTracker();
+            setupMitraToggle();
 
             // Attach event listener for software change
             $('#software').on('change', handleSoftwareChange);
@@ -951,6 +952,7 @@ function setupFormHandlers() {
                             showLoading('Mengunggah file (Step 2/2)...');
                             api.uploadFile({
                                 rowIndex: rowIndex,
+                                sheetName: result.data.sheetName || 'Response',
                                 fileData: fileObj.data,
                                 mimeType: fileObj.mimeType,
                                 fileName: fileObj.name
@@ -1019,6 +1021,26 @@ function getFileBase64(file) {
     });
 }
 
+// ===== MITRA TOGGLE =====
+function setupMitraToggle() {
+    var radios = document.getElementsByName('keperluan');
+    var mitraFields = document.getElementById('mitraFields');
+    if (!mitraFields) return;
+
+    function toggleMitra() {
+        var selectedValue = (document.querySelector('input[name="keperluan"]:checked') || {}).value;
+        if (selectedValue === 'Mitra') {
+            mitraFields.classList.remove('d-none');
+        } else {
+            mitraFields.classList.add('d-none');
+        }
+    }
+
+    for (var i = 0; i < radios.length; i++) {
+        radios[i].addEventListener('change', toggleMitra);
+    }
+}
+
 function collectFormData() {
     // Get keperluan (radio buttons)
     var keperluan = document.querySelector('input[name="keperluan"]:checked');
@@ -1059,7 +1081,14 @@ function collectFormData() {
         previousRequestId: getUrlParam('renewal_id') || "",
         progres: (document.getElementById('progresLaporan') || {}).value || '',
         target: (document.getElementById('targetLaporan') || {}).value || '',
-        kendala: (document.getElementById('kendalaLaporan') || {}).value || ''
+        kendala: (document.getElementById('kendalaLaporan') || {}).value || '',
+        // Mitra specific fields
+        asalInstitusi: (document.getElementById('asalInstitusi') || {}).value || '',
+        nikNpwp: (document.getElementById('nikNpwp') || {}).value || '',
+        alamatInstitusi: (document.getElementById('alamatInstitusi') || {}).value || '',
+        jangkaWaktu: (document.getElementById('jangkaWaktu') || {}).value || '',
+        linkIdentitas: (document.getElementById('linkIdentitas') || {}).value || '',
+        mitraDisclaimer: (document.getElementById('mitraDisclaimer') || {}).checked
     };
 }
 
@@ -1076,7 +1105,7 @@ function getDosenValue() {
 
 function validateFormData(data) {
     if (!data.keperluanPenggunaan) {
-        ui.alert('Pilih salah satu Keperluan Penggunaan (TA, Penelitian, Lomba, atau Tugas) untuk melanjutkan.', 'Pilihan Diperlukan', 'warning')
+        ui.alert('Pilih salah satu Keperluan Penggunaan (TA, Penelitian, Lomba, Tugas, atau Mitra) untuk melanjutkan.', 'Pilihan Diperlukan', 'warning')
             .then(function () {
                 var card = document.getElementById('keperluan-card');
                 if (card) {
@@ -1094,9 +1123,10 @@ function validateFormData(data) {
         return false;
     }
 
-    if (!data.emailAddress || !data.nama || !data.nim) {
+    if (!data.emailAddress || !data.nama || (!data.nim && data.keperluanPenggunaan !== 'Mitra')) {
         var firstMissing = !data.emailAddress ? 'email' : (!data.nama ? 'nama' : 'nim');
-        ui.alert('Harap lengkapi data personal (Email, Nama, dan NIM) Anda.', 'Data Belum Lengkap', 'warning')
+        var msg = (data.keperluanPenggunaan === 'Mitra') ? 'Harap lengkapi Email dan Nama Anda.' : 'Harap lengkapi data personal (Email, Nama, dan NIM) Anda.';
+        ui.alert(msg, 'Data Belum Lengkap', 'warning')
             .then(function () {
                 var el = document.getElementById(firstMissing);
                 if (el) {
@@ -1109,7 +1139,21 @@ function validateFormData(data) {
         return false;
     }
 
-    if (!data.prodi) {
+    // Mitra Specific Validation
+    if (data.keperluanPenggunaan === 'Mitra') {
+        if (!data.asalInstitusi || !data.nikNpwp || !data.alamatInstitusi || !data.jangkaWaktu || !data.linkIdentitas) {
+            ui.alert('Harap lengkapi seluruh Informasi Administrasi Mitra (Institusi, NIK/NPWP, Alamat, dan Link File Identitas).', 'Administrasi Mitra', 'warning');
+            return false;
+        }
+        if (!data.mitraDisclaimer) {
+            ui.alert('Anda wajib menyetujui Disclaimer Tanggung Jawab Lisensi untuk melanjutkan sebagai Mitra.', 'Penafian Hukum', 'warning');
+            return false;
+        }
+        // Skip some internal academic requirements if needed, or keep them if they apply
+        // For now, let's keep the dates/emails etc.
+    }
+
+    if (data.keperluanPenggunaan !== 'Mitra' && !data.prodi) {
         ui.alert('Silakan pilih Program Studi Anda.', 'Prodi Diperlukan', 'warning')
             .then(function () {
                 var el = document.getElementById('prodi');

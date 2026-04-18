@@ -153,6 +153,71 @@
                                     </div>
                                 </label>
                             </div>
+                            <!-- Row 3: Mitra (Full Width 2-2-1 Layout) -->
+                            <div class="col-12">
+                                <input type="radio" class="btn-check" name="keperluan" id="kep5" value="Mitra">
+                                <label class="selection-card border-primary border-opacity-25" for="kep5"
+                                    style="border-style: dashed;">
+                                    <div class="fw-bold fs-5 mb-2 card-title-text">🤝 Mitra</div>
+                                    <div class="text-muted small">Untuk pihak instansi/perusahaan mitra departemen.
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mitra Specific Information (Hidden by default) -->
+                <div id="mitraFields" class="row g-3 d-none mb-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm border-primary border-opacity-25"
+                            style="background-color: rgba(13, 110, 253, 0.02);">
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold mb-3" style="color: var(--accent-color);">📋 Informasi Administrasi
+                                    Mitra</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label required-label small">Asal Institusi /
+                                            Perusahaan</label>
+                                        <input type="text" class="form-control" id="asalInstitusi"
+                                            placeholder="Nama instansi mitra...">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label required-label small">NIK / NPWP</label>
+                                        <input type="text" class="form-control" id="nikNpwp"
+                                            placeholder="Nomor identitas...">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label required-label small">Alamat Institusi</label>
+                                        <textarea class="form-control" id="alamatInstitusi" rows="1"
+                                            placeholder="Alamat lengkap instansi..."></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label required-label small">Jangka Waktu Penggunaan</label>
+                                        <input type="text" class="form-control" id="jangkaWaktu"
+                                            placeholder="Misal: 3 Bulan">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label required-label small">Link/Upload KTP atau NPWP</label>
+                                        <input type="text" class="form-control" id="linkIdentitas"
+                                            placeholder="Link GDrive/Dropbox atau Upload...">
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <div class="form-check p-3 bg-white rounded border border-warning shadow-sm">
+                                            <input class="form-check-input ms-0 me-2" type="checkbox"
+                                                id="mitraDisclaimer">
+                                            <label class="form-check-label small fw-bold text-dark"
+                                                for="mitraDisclaimer" style="text-align: justify; display: block;">
+                                                ⚠️ Kami selaku perwakilan Mitra memahami sepenuhnya bahwa layanan Lab
+                                                Komputasi DTSL hanya menyediakan akses infrastruktur. Segala aspek
+                                                legitimasi dan kepatuhan terhadap lisensi perangkat lunak menjadi
+                                                tanggung jawab penuh pihak Mitra. Departemen dibebaskan dari segala
+                                                tuntutan hukum akibat penyalahgunaan fungsi perangkat lunak.
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
