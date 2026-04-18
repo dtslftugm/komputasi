@@ -44,15 +44,18 @@
 
     <div class="container">
         <div id="main-content">
-            
+
             <!-- Status & Queue Information -->
             <div id="queue-warning" class="col-12 d-none mt-2 mb-3">
-                <div class="alert alert-danger shadow-sm border-0 mb-0" style="border-radius: 12px; background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%); border-left: 5px solid #ff4d4d !important;">
+                <div class="alert alert-danger shadow-sm border-0 mb-0"
+                    style="border-radius: 12px; background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%); border-left: 5px solid #ff4d4d !important;">
                     <div class="d-flex align-items-center">
                         <div class="me-3 fs-3">⏳</div>
                         <div>
                             <h6 class="fw-bold mb-1" style="color: #c92a2a;">Terdapat Antrean Pengguna</h6>
-                            <p class="small mb-0" style="color: #e03131;">Saat ini terdapat mahasiswa lain yang sedang mengantre untuk menggunakan layanan. Mohon pertimbangkan kembali apakah perpanjangan ini benar-benar mendesak agar rekan Anda dapat bergantian menggunakan fasilitas.</p>
+                            <p class="small mb-0" style="color: #e03131;">Saat ini terdapat mahasiswa lain yang sedang
+                                mengantre untuk menggunakan layanan. Mohon pertimbangkan kembali apakah perpanjangan ini
+                                benar-benar mendesak agar rekan Anda dapat bergantian menggunakan fasilitas.</p>
                         </div>
                     </div>
                 </div>
@@ -356,13 +359,19 @@
                                         <div id="no-computers" class="text-center py-5 d-none">
                                             <div class="mb-3 fs-1">🏢</div>
                                             <h5 class="fw-bold mb-2">Maaf, Ruangan Penuh</h5>
-                                            <p class="text-muted mb-4 small">Saat ini tidak ada unit komputer tersedia di ruangan yang Anda pilih.<br>Silakan pilih ruangan lain atau mendaftar di antrean.</p>
-                                            
+                                            <p class="text-muted mb-4 small">Saat ini tidak ada unit komputer tersedia
+                                                di ruangan yang Anda pilih.<br>Silakan pilih ruangan lain atau mendaftar
+                                                di antrean.</p>
+
                                             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                                                <button type="button" class="btn btn-primary px-4 py-2 shadow-sm fw-bold" onclick="handleJoinQueue()" style="border-radius: 10px;">
+                                                <button type="button"
+                                                    class="btn btn-primary px-4 py-2 shadow-sm fw-bold"
+                                                    onclick="handleJoinQueue()" style="border-radius: 10px;">
                                                     📝 Daftar Antrean Penelitian
                                                 </button>
-                                                <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="document.getElementById('roomPreference').focus()" style="border-radius: 10px;">
+                                                <button type="button" class="btn btn-outline-secondary px-4 py-2"
+                                                    onclick="document.getElementById('roomPreference').focus()"
+                                                    style="border-radius: 10px;">
                                                     Pilih Ruang Lain
                                                 </button>
                                             </div>
@@ -372,11 +381,11 @@
                                         <nav id="computer-pagination" class="mt-4 d-none">
                                             <ul class="pagination pagination-sm justify-content-center">
                                                 <li class="page-item"><button class="page-link"
-                                                         id="prev-page">Prev</button></li>
+                                                        id="prev-page">Prev</button></li>
                                                 <li class="page-item disabled"><span class="page-link"
-                                                         id="page-info">Page 1 / 1</span></li>
+                                                        id="page-info">Page 1 / 1</span></li>
                                                 <li class="page-item"><button class="page-link"
-                                                         id="next-page">Next</button></li>
+                                                        id="next-page">Next</button></li>
                                             </ul>
                                         </nav>
                                     </div>
@@ -403,6 +412,34 @@
                         </div>
                         <div class="form-text mt-2" style="font-size: 0.8rem;">Wajib diisi untuk pendaftaran lisensi
                             server di laptop pribadi.</div>
+                    </div>
+                </div>
+
+                <!-- Renewal Progress Tracking -->
+                <div id="renewalTrackingContainer" class="d-none mb-3 mt-4 p-4 border rounded"
+                    style="background-color: #f8f9fa; border-color: #dee2e6;">
+                    <h5 class="outfit fw-bold" style="color: #0d6efd;"><i class="bi bi-journal-text me-2"></i>Jurnal
+                        Progres Laporan</h5>
+                    <p class="small text-muted mb-3">Sebagai syarat perpanjangan layanan, silakan isikan capaian Anda
+                        sebelumnya dan target Anda untuk periode ini. (Minimal 20 Karakter)</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label fw-bold">Progres / Capaian Sebelumnya</label>
+                            <textarea class="form-control" id="progresLaporan" rows="3"
+                                placeholder="Jelaskan progres Anda sejak periode terakhir (bimbingan, olah data, simulasi, dll)..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label fw-bold">Target Komputasi Selanjutnya</label>
+                            <textarea class="form-control" id="targetLaporan" rows="3"
+                                placeholder="Jelaskan spesifik apa yang ingin dikerjakan menggunakan fasilitas lab di periode ini..."></textarea>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-danger">Kendala / Hambatan (Bila target tidak
+                                tercapai)</label>
+                            <textarea class="form-control border-danger-subtle" id="kendalaLaporan" rows="2"
+                                placeholder="(Opsional) Ceritakan jika ada hambatan yang membuat progres tidak sesuai jadwal (contoh: dosen sulit ditemui, software error, antrean penuh, dll)..."></textarea>
+                        </div>
                     </div>
                 </div>
 

@@ -737,7 +737,7 @@ function loadAvailableComputers() {
     var pagination = document.getElementById('computer-pagination');
 
     var isRenewalFlow = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData);
-    
+
     if (!room || isRenewalFlow) {
         container.style.display = 'none';
         container.classList.add('d-none'); // Force CSS level hidden
@@ -1018,7 +1018,10 @@ function collectFormData() {
         computerUserName: (document.getElementById('computerUserName') || {}).value || '',
         computerHostname: (document.getElementById('computerHostname') || {}).value || '',
         isRenewal: !!getUrlParam('renewal_id'),
-        previousRequestId: getUrlParam('renewal_id') || ""
+        previousRequestId: getUrlParam('renewal_id') || "",
+        progres: (document.getElementById('progresLaporan') || {}).value || '',
+        target: (document.getElementById('targetLaporan') || {}).value || '',
+        kendala: (document.getElementById('kendalaLaporan') || {}).value || ''
     };
 }
 
@@ -1241,6 +1244,33 @@ function validateFormData(data) {
         }
     }
 
+    // Renewal Usage Tracking Validation
+    let isContextRenewal = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData);
+    if (isContextRenewal) {
+        if (!data.progres || data.progres.trim().length < 20) {
+            ui.alert('Harap isi Progres/Capaian Sebelumnya dengan detail (minimal 20 karakter). Penjelasan ini digunakan sebagai pertimbangan perpanjangan.', 'Progres Diperlukan', 'warning')
+                .then(function () {
+                    var el = document.getElementById('progresLaporan');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(function () { el.focus(); }, 300);
+                    }
+                });
+            return false;
+        }
+        if (!data.target || data.target.trim().length < 20) {
+            ui.alert('Harap isi Target Komputasi Selanjutnya (minimal 20 karakter). Jelaskan apa yang spesifik ingin dikerjakan pada periode berikutnya ini.', 'Target Diperlukan', 'warning')
+                .then(function () {
+                    var el = document.getElementById('targetLaporan');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(function () { el.focus(); }, 300);
+                    }
+                });
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -1452,7 +1482,7 @@ function prefillRenewalForm(data) {
             pList.style.display = 'none';
             pList.classList.add('d-none'); // Force CSS level hidden
         }
-        
+
         var noComp = document.getElementById('no-computers');
         if (noComp) noComp.classList.add('d-none');
     } else {
@@ -1530,6 +1560,10 @@ function prefillRenewalForm(data) {
         var queueWarn = document.getElementById('queue-warning');
         if (queueWarn) queueWarn.classList.remove('d-none');
     }
+
+    // --- RENEWAL USAGE TRACKING ---
+    var trackingContainer = document.getElementById('renewalTrackingContainer');
+    if (trackingContainer) trackingContainer.classList.remove('d-none');
 }
 
 // Global handler for Join Queue
