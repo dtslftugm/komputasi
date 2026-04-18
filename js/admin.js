@@ -239,7 +239,7 @@ function renderTable(filter) {
             '</td>' +
             '<td>' +
             '<div class="small">' + req.software + '</div>' +
-            '<div class="small fw-bold mt-1" style="color:var(--accent-color);">📅 Mulai: ' + req.mulaiPemakaian + urgencyBadge + '</div>' +
+            '<div class="small fw-bold mt-1" style="color:var(--accent-color);">📅 Mulai: ' + formatDateHuman(req.mulaiPemakaian) + urgencyBadge + '</div>' +
             '<div class="text-muted extra-small">' + (req.status === 'ANTREAN' ? '<span class="text-warning fw-bold">⚠️ WAITING LIST</span>' : req.roomPreference) + '</div>' +
             '</td>' +
             '<td><span class="badge ' + statusClass + ' border">' + statusLabel + '</span></td>' +
@@ -1230,4 +1230,31 @@ function parseDateIndo(dateStr) {
     var year = parseInt(parts[2], 10);
     
     return new Date(year, month, day);
+}
+
+function formatDateHuman(dateInput, includeTime) {
+    if (!dateInput || dateInput === "-") return "-";
+    
+    // Check if it's already in the target format (simple check)
+    if (typeof dateInput === 'string' && /^\d{2}-[A-Z][a-z]{2}-\d{4}$/.test(dateInput)) {
+        return dateInput;
+    }
+
+    var d = new Date(dateInput);
+    if (isNaN(d.getTime())) return dateInput;
+
+    var day = d.getDate();
+    var monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+    var month = monthNames[d.getMonth()];
+    var year = d.getFullYear();
+
+    var datePart = (day < 10 ? '0' + day : day) + '-' + month + '-' + year;
+    
+    if (includeTime) {
+        var hours = d.getHours();
+        var mins = d.getMinutes();
+        return datePart + ' ' + (hours < 10 ? '0' + hours : hours) + ':' + (mins < 10 ? '0' + mins : mins);
+    }
+    
+    return datePart;
 }
