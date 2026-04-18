@@ -3,91 +3,18 @@
  */
 
 window.appState = {
-    sessionToken: localStorage.getItem('adminAuthToken'),
-    currentUser: null,
-
     init: function () {
-        this.validateSession();
         this.loadAppBranding();
-    },
-
-    validateSession: function () {
-        if (!this.sessionToken) {
-            this.showLogin();
-            return;
-        }
-
-        // Use Global UI Helper loading
-        if (window.ui) ui.loading("Memverifikasi Sesi...");
-
-        api.checkAuth(this.sessionToken)
-            .then(function (res) {
-                if (window.ui) ui.hideLoading();
-                if (res && res.authenticated) {
-                    window.appState.currentUser = res.user;
-                    window.appState.showReportApp();
-                } else {
-                    localStorage.removeItem('adminAuthToken');
-                    window.appState.showLogin();
-                }
-            })
-            .catch(function (err) {
-                if (window.ui) ui.hideLoading();
-                console.error("Auth error:", err);
-                window.appState.showLogin();
-            });
-    },
-
-    handleLogin: function () {
-        var email = document.getElementById('login-email').value;
-        var pass = document.getElementById('login-password').value;
-
-        if (!email || !pass) {
-            if (window.ui) ui.error("Admin Email dan Password diperlukan.");
-            return;
-        }
-
-        if (window.ui) ui.loading("Memverifikasi Login...");
-
-        api.adminLogin(email, pass)
-            .then(function (res) {
-                if (window.ui) ui.hideLoading();
-                if (res && res.success) {
-                    localStorage.setItem('adminAuthToken', res.token);
-                    window.appState.sessionToken = res.token;
-                    window.appState.currentUser = res.user;
-                    window.appState.showReportApp();
-                } else {
-                    if (window.ui) ui.error(res.message || "Email atau password salah", "Login Gagal");
-                }
-            })
-            .catch(function (err) {
-                if (window.ui) ui.hideLoading();
-                if (window.ui) ui.error("Gagal menghubungi server: " + err.message, "Error");
-            });
-    },
-
-    handleLogout: function () {
-        if (window.ui) ui.loading("Keluar...");
-        api.run('apiLogout', { token: this.sessionToken })
-            .then(function () {
-                localStorage.removeItem('adminAuthToken');
-                window.location.reload();
-            })
-            .catch(function (err) {
-                localStorage.removeItem('adminAuthToken');
-                window.location.reload();
-            });
-    },
-
-    showLogin: function () {
-        document.getElementById('login-container').style.display = 'flex';
-        document.getElementById('report-app').style.display = 'none';
+        this.showReportApp();
     },
 
     showReportApp: function () {
-        document.getElementById('login-container').style.display = 'none';
-        document.getElementById('report-app').style.display = 'block';
+        var appEl = document.getElementById('report-app');
+        if (appEl) appEl.style.display = 'block';
+        
+        var loginEl = document.getElementById('login-container');
+        if (loginEl) loginEl.style.display = 'none';
+
         this.loadFilters();
         this.refreshReport();
     },

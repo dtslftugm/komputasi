@@ -140,51 +140,12 @@
             display: none;
         }
 
-        #login-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-body);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+
     </style>
 </head>
 
 <body>
-    <!-- AUTH MODAL -->
-    <div id="login-container">
-        <div class="card p-4" style="width: 100%; max-width: 400px;">
-            <div class="text-center mb-4">
-                <div class="col-auto">
-                    <img id="app-logo" alt="Logo DTSL" class="img-fluid rounded bg-white p-1"
-                        style="max-height: 80px; width: auto;">
-                </div>
-                <h4 class="outfit">Admin Login</h4>
-                <p class="text-muted small">Laporan & Statistik Layanan Komputasi</p>
-            </div>
-            <div class="mb-3">
-                <label class="form-label small fw-bold">Email Address</label>
-                <input type="email" id="login-email" class="form-control" placeholder="admin@ugm.ac.id">
-            </div>
-            <div class="mb-4">
-                <label class="form-label small fw-bold">Password</label>
-                <input type="password" id="login-password" class="form-control" placeholder="••••••••"
-                    onkeyup="if(event.key==='Enter') window.appState.handleLogin()">
-            </div>
-            <button class="btn btn-primary w-100 py-2 outfit fw-bold" onclick="window.appState.handleLogin()">Masuk ke
-                Laporan</button>
-            <div class="text-center mt-3">
-                <a href="index.html" class="text-decoration-none small text-muted">← Kembali ke Form</a>
-            </div>
-        </div>
-    </div>
-
-    <div id="report-app" style="display: none;">
+    <div id="report-app">
         <!-- Header -->
         <header class="glass-header shadow-sm">
             <div class="container d-flex justify-content-between align-items-center">
@@ -205,10 +166,7 @@
                     <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="window.print()">
                         <i class="bi bi-printer me-1"></i> Cetak
                     </button>
-                    <button class="btn btn-outline-danger btn-sm rounded-pill px-3"
-                        onclick="window.appState.handleLogout()">
-                        Keluar
-                    </button>
+
                 </div>
             </div>
         </header>
