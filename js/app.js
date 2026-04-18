@@ -441,6 +441,54 @@ function setupSoftwareSelect() {
     }
 }
 
+/**
+ * Enhanced Quota Check UI
+ * Updates the software dropdown with (In-Use/Quota) information
+ */
+function setupQuotaCheck() {
+    try {
+        if (!initialData || !initialData.softwareList) return;
+        var softwareList = initialData.softwareList;
+        var selectEl = document.getElementById('software');
+        if (!selectEl) return;
+
+        // Apply Quota Info to each option
+        var options = selectEl.options;
+        for (var i = 0; i < options.length; i++) {
+            var opt = options[i];
+            var swData = null;
+            
+            // Find matched data
+            for (var j = 0; j < softwareList.length; j++) {
+                if (softwareList[j].name === opt.value) {
+                    swData = softwareList[j];
+                    break;
+                }
+            }
+
+            if (swData) {
+                var quotaString = swData.quotaInfo || "";
+                var baseName = swData.name;
+                
+                if (swData.isAvailable) {
+                    opt.textContent = baseName + " " + quotaString;
+                    opt.disabled = false;
+                } else {
+                    opt.textContent = baseName + " " + (quotaString || "(Penuh/Habis)");
+                    opt.disabled = true;
+                }
+            }
+        }
+        
+        // Refresh Select2 if it exists
+        if ($.fn.select2 && $(selectEl).data('select2')) {
+            $(selectEl).trigger('change.select2');
+        }
+    } catch (e) {
+        console.error("Error in setupQuotaCheck:", e);
+    }
+}
+
 // ===== SOFTWARE RESTRICIONS LOGIC (Client-side for 0 Latency) =====
 function checkSoftwareRestrictionsClient(softwareStr) {
     if (!softwareStr) return { requiresLab: false, requiresNetwork: false, needsBorrowKey: false, allowedRooms: [], success: true };
