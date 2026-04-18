@@ -1,6 +1,6 @@
 # Rangkuman Fitur Layanan Laboratorium Komputasi DTSL
 
-Dokumen ini merangkum seluruh kemampuan dan fitur yang telah diimplementasikan di dalam platform pendaftaran serta manajemen Laboratorium Komputasi. Anda dapat menggunakan draf ini sebagai basis laporan, rilis catatan (*release notes*), atau manual penggunaan, dan bebas menyuntingnya sesuai kebutuhan.
+Dokumen ini merangkum seluruh kemampuan dan fitur yang telah diimplementasikan di dalam platform pendaftaran serta manajemen Laboratorium Komputasi. 
 
 ---
 
