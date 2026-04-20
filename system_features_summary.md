@@ -35,6 +35,12 @@ Fitur ini berfokus pada automasi infrastruktur tingkat lanjut (*infrastructure-a
 - **Sistem Email Notifikasi Kelayakan Layanan**: Pemberitahuan otomatis (via email) kepada Admin atas urgensi status perawatan atau pemeliharaan perangkat (*hardware/software maintenance*). Hal ini mempercepat reaksi Admin dalam menindaklanjuti unit komputer yang perlu pemeliharaan.
 - **Manajemen Relasi Lisensi & Token**: Algoritma peringatan ambang batas (*threshold/quota alert*), mengawal batas penggunaan *software* simultan, masa kontrak *software* vendor, dan menolak pengajuan jika seat telah habis.
 - **Sistem Validasi Agenda Workshop**: Modul generator portal acara di sisi laboran yang memiliki kapabilitas *strict matching* "Kode Peserta", menyelaraskan kebutuhan praktikum masal tanpa menabrak jadwal regu riset rutin.
+- **Audit Cerdas Bertenaga AI (Gemini Document Auditor)**: Transformasi verifikasi berkas perizinan mahasiswa dari manual menjadi sepenuhnya otomatis menggunakan model AI mutakhir (Gemini Flash). Fitur ini memiliki kapabilitas analitik untuk melakukan:
+    - **Validasi Kontekstual**: Memastikan Judul Penelitian pada dokumen identik dengan input pendaftaran mahasiswa.
+    - **Pemeriksaan Masa Berlaku (Strict Expiry)**: Mendeteksi tanggal berakhir secara presisi dan menolak dokumen yang tidak mencantumkan tenggat waktu secara jelas.
+    - **Deteksi Kecurangan (Anti-Fraud)**: Menganalisa inkonsistensi logis antar tanggal (misal: tanggal terbit > tanggal berakhir) serta mendeteksi anomali teks yang mencurigakan (indikasi edit manual).
+    - **Verifikasi TTE & QR Code**: Mendeteksi keberadaan Tanda Tangan Elektronik atau QR Code instruksional yang sah pada dokumen pendaftaran.
+    - **Sistem Integrasi Tangguh**: Dilengkapi dengan mekanisme *Exponential Backoff* untuk menangani kesibukan server Google serta logika *Auto-Repair* untuk memperbaiki struktur data JSON yang terpotong. Hasil audit langsung disajikan dengan indikator warna (Hijau/Merah) pada pangkalan data admin untuk mempercepat pengambilan keputusan final.
 
 **🚀 Rencana Implementasi Masa Depan / Tahap Stabilisasi (*Future Implementations*)**
 Fitur-fitur infrastruktur lanjutan di bawah ini sedang dalam proses pengembangan/pengujian stabilitas integrasi ke dalam ekosistem:
