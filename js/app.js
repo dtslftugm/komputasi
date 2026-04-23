@@ -749,6 +749,7 @@ function setupComputerToggle() {
         } else {
             computerSection.style.display = 'none';
             selectedComputer = null;
+            if (roomPreference) roomPreference.value = '';
         }
     }
 
