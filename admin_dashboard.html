@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Layanan Laboratorium DTSL</title>
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <?!= include('Scripts'); ?>
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --secondary: #6c757d;
+            --success: #198754;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #0dcaf0;
+            --bg-body: #f4f7f6;
+            --text-main: #2d3436;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --border-color: #e9ecef;
+        }
+
+        /* Shared UI resources are now included via Scripts.html */
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding-top: 30px;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Glassmorphism Sidebar/Header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 15px 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .table-card {
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--border-color);
+            padding: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .table td {
+            padding: 15px;
+            vertical-align: middle;
+        }
+
+        .badge-type {
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .btn-action {
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-pill {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        /* Modal Customization */
+        .modal-content {
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 25px;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 6px;
+            margin-bottom: 6px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .checklist-item:hover {
+            background: #e9ecef;
+        }
+
+        .checklist-item input {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+        }
+
+        .activation-key-box {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            font-size: 1.2rem;
+            text-align: center;
+            background: #fff;
+            padding: 10px;
+            border: 2px dashed var(--info);
+            border-radius: 10px;
+        }
+
+        .glass-footer {
+            background: #ffffff;
+            border-top: 1px solid #dee2e6;
+            padding: 2.5rem 0;
+            margin-top: 5rem;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .glass-footer h6 {
+            color: #0d6efd;
+            font-weight: 700;
+        }
+
+        .glass-footer .text-muted {
+            color: #6c757d !important;
+        }
+
+        /* Sidebar & Layout Fixes */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #ffffff;
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--secondary);
+            border-radius: 12px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .nav-link:hover {
+            background: #f8f9fa;
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: rgba(13, 110, 253, 0.1);
+            color: var(--primary);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<!-- Shared Loading Overlay initialized from Scripts.html -->
+
+<!-- Login Section -->
+<div id="login-container"
+    style="display: none; align-items: center; justify-content: center; min-height: 100vh; background-color: var(--bg-body);">
+    <div class="card p-4 shadow-lg border-0" style="max-width: 400px; width: 100%; border-radius: 24px;">
+        <div class="text-center mb-4">
+            <img id="login-logo" src="" alt="Logo" class="img-fluid mb-3" style="max-height: 80px;">
+            <h3 class="fw-bold outfit">Admin Login</h3>
+            <p class="text-muted small">Layanan Komputasi DTSL FT UGM</p>
+        </div>
+        <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Email / Username</label>
+                <input type="text" id="login-email" class="form-control rounded-pill px-3" required
+                    placeholder="nama@ugm.ac.id">
+            </div>
+            <div class="mb-4">
+                <label class="form-label small fw-bold">Password</label>
+                <input type="password" id="login-password" class="form-control rounded-pill px-3" required
+                    placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2">
+                Masuk ke Dashboard
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Dashboard App Content -->
+<div id="dashboard-app" style="display: none;">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="mb-4 text-center">
+            <img id="app-logo" src="" alt="Logo DTSL" class="img-fluid rounded bg-white p-1 mb-3"
+                style="max-height: 60px; width: auto;">
+            <h5 class="fw-bold mb-0 outfit">Komputasi DTSL</h5>
+        </div>
+
+        <nav class="flex-column">
+            <a href="#" class="nav-link active" onclick="setActiveNavItem(this); loadRequests(); return false;">
+                🏠 <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-link" onclick="setActiveNavItem(this); openAgendaModal(); return false;">
+                📅 <span>Agenda Lab</span>
+            </a>
+            <a href="#" class="nav-link" onclick="setActiveNavItem(this); runDiagnostics(); return false;">
+                📊 <span>Diagnostics</span>
+            </a>
+            <a href="#" class="nav-link" onclick="setActiveNavItem(this); handleNormalizeDates(); return false;"
+                title="Standarisasi Format Tanggal">
+                📅 <span>Normalize Dates</span>
+            </a>
+            <a href="#" class="nav-link" onclick="setActiveNavItem(this); runTriggerSetup(); return false;"
+                title="Setup Daily Triggers">
+                ⚙️ <span>Setup Triggers</span>
+            </a>
+            <hr class="text-muted opacity-25">
+            <a href="#" class="nav-link" onclick="setActiveNavItem(this); loadRequests(); return false;">
+                🔄 <span>Refresh Data</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center mb-3">
+                <div class="avatar-small me-2"
+                    style="width: 32px; height:32px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                    A
+                </div>
+                <div class="overflow-hidden">
+                    <div id="user-display-name" class="fw-bold text-truncate small" title="Admin Name">Admin</div>
+                    <div class="text-muted x-small" style="font-size: 10px;">Administrator</div>
+                </div>
+            </div>
+            <button class="btn btn-outline-danger btn-sm w-100 rounded-pill fw-bold" onclick="handleLogout()">
+                🚪 Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Mobile Toggle Box -->
+        <div class="d-lg-none mb-3">
+            <button class="btn btn-white shadow-sm"
+                onclick="document.getElementById('sidebar').classList.toggle('show')">
+                ☰
+            </button>
+        </div>
+
+        <div class="container">
+            <!-- Stats Summary -->
+            <div class="row g-4 mb-5">
+                <div class="col-md">
+                    <div class="card p-4 text-center">
+                        <h5 class="text-muted mb-2">Antrian</h5>
+                        <div id="count-pending" class="display-5 fw-bold text-warning">0</div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card p-4 text-center action-card" onclick="showExpiredModal()"
+                        style="cursor: pointer; border-left: 5px solid #dc3545;">
+                        <h5 class="text-muted mb-2">Butuh Revoke</h5>
+                        <div id="count-expired" class="display-5 fw-bold text-danger">--</div>
+                    </div>
+                </div>
+                <div class="col-md" id="col-maintenance" style="display: none;">
+                    <div class="card p-4 text-center action-card" onclick="showMaintenanceModal()"
+                        style="cursor: pointer; border-left: 5px solid #fd7e14;">
+                        <h5 class="text-muted mb-2">Maintenance</h5>
+                        <div id="count-maintenance" class="display-5 fw-bold text-orange" style="color: #fd7e14;">0
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md" id="col-sw-expiring" style="display: none;">
+                    <div class="card p-4 text-center" style="border-left: 5px solid #6f42c1;">
+                        <h5 class="text-muted mb-2">SW Expiring (45h)</h5>
+                        <div id="count-sw-expiring" class="display-5 fw-bold text-purple" style="color: #6f42c1;">0
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md">
+                    <div class="card p-4 text-center">
+                        <h5 class="text-muted mb-2">User Aktif</h5>
+                        <div id="count-active-users" class="display-5 fw-bold text-success">--</div>
+                    </div>
+                </div>
+                <div class="col-md text-nowrap">
+                    <div class="card p-4 text-center">
+                        <h5 class="text-muted mb-2">Okupansi Lab</h5>
+                        <div id="count-total-requests" class="display-6 fw-bold text-primary"
+                            style="letter-spacing: -1px;">
+                            --</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Table -->
+            <div class="card table-card">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">📋 Verifikasi Permohonan</h5>
+                    <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text bg-light border-0"><svg xmlns="http://www.w3.org/2000/svg"
+                                width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                                <path
+                                    d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                            </svg></span>
+                        <input type="text" id="searchInput" class="form-control bg-light border-0"
+                            placeholder="Cari nama, NIM, atau ID...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%">Info Permohonan</th>
+                                <th style="width: 45%">Resource</th>
+                                <th style="width: 24%">Tipe Akses</th>
+                                <th class="text-center" style="width: 1%; white-space: nowrap;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestTableBody">
+                            <!-- Data will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Maintenance Section -->
+            <div id="maintenance-container" class="mt-5 d-none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold mb-0">🛠️ Daftar Maintenance & Cleanup</h4>
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                        onclick="loadMaintenanceSection()">
+                        🔄 Refresh Maintenance
+                    </button>
+                </div>
+                <div class="card table-card">
+                    <div class="table-responsive">
+                        <table class="table mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr class="small text-uppercase">
+                                    <th style="width: 20%">Target / Unit</th>
+                                    <th style="width: 20%">User Terakhir</th>
+                                    <th style="width: 15%">Status / Masa Berlaku</th>
+                                    <th style="width: 30%">Tugas Maintenance</th>
+                                    <th class="text-center" style="width: 15%">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintenanceSectionBody">
+                                <!-- Maintenance items will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="glass-footer">
+            <div class="container text-center">
+                <div class="row align-items-center">
+                    <div class="col-md-4 text-md-start mb-3 mb-md-0">
+                        <h6 class="fw-bold mb-1">Layanan Komputasi DTSL</h6>
+                        <p class="text-muted small mb-0">Teknik Sipil & Lingkungan FT UGM</p>
+                    </div>
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="text-muted small">
+                            Admin Dashboard - Version STABLE 20.0
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <p class="text-muted small mb-0">&copy; 2026 Dept. Teknik Sipil & Lingkungan</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+
+
+
+        <!-- Expired Usage Modal -->
+</div> <!-- End of dashboard-app -->
+<!-- Processing Modal -->
+<div class="modal fade" id="processModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title outfit fw-bold">🛠️ Proses Permohonan <span id="modal-request-id"
+                        class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <!-- Left Info -->
+                    <div class="col-md-5">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3">Informasi Mahasiswa</h6>
+                        <p class="mb-1 small"><strong>Nama:</strong> <span id="modal-nama"></span></p>
+                        <p class="mb-1 small"><strong>NIM:</strong> <span id="modal-nim"></span></p>
+                        <p class="mb-1 small"><strong>Prodi:</strong> <span id="modal-prodi"></span></p>
+                        <p class="mb-1 small" id="universitas-container"><strong>Universitas:</strong> <span
+                                id="modal-universitas"></span></p>
+                        <p class="mb-1 small"><strong>Dosen Pembimbing:</strong> <span id="modal-dosen"></span></p>
+
+                        <div class="mb-1 small">
+                            <strong>Topik / Judul:</strong>
+                            <div id="modal-topik" class="p-2 border rounded bg-light mt-1"
+                                style="min-height: 40px; word-break: break-word;"></div>
+                        </div>
+
+                        <p class="mb-1 small mt-2"><strong>Keperluan:</strong> <span id="modal-keperluan"></span></p>
+                        <div class="mb-1 small mt-2">
+                            <strong>Catatan:</strong>
+                            <div id="modal-catatan" class="p-2 border rounded bg-light mt-1 text-muted fst-italic"
+                                style="min-height: 40px; word-break: break-word;"></div>
+                        </div>
+
+                        <p class="mb-1 mt-3 small"><strong>Tipe Request:</strong> <span id="modal-request-type"
+                                class="badge bg-primary-subtle text-primary border-0"></span></p>
+                        <p class="mb-1 small"><strong>Email:</strong> <span id="modal-email"></span></p>
+                        <p class="mb-4 small"><strong>Phone:</strong> <a id="modal-phone" href="#" target="_blank"
+                                class="text-decoration-none">📱 WhatsApp</a></p>
+
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3">Software:</h6>
+                        <div id="modal-software" class="d-flex flex-wrap gap-1 mb-4"></div>
+
+                        <a id="modal-doc-link" href="#" target="_blank"
+                            class="btn btn-outline-secondary btn-sm w-100 mb-2">📄 Buka Dokumen Bukti</a>
+                    </div>
+
+                    <!-- Right Action Area -->
+                    <div class="col-md-7 border-start">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3">Administrator Tools</h6>
+
+                        <div id="computer-specs-container" class="card shadow-sm border-0 bg-light mb-3 d-none">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="card-title fw-bold mb-0 text-primary">🖥️ Computer Assigned</h6>
+                                    <button id="reallocate-btn" class="btn btn-sm btn-outline-primary py-0 px-2 small"
+                                        onclick="toggleReallocate()">🔄 Change</button>
+                                </div>
+                                <div id="spec-details-box">
+                                    <p class="mb-1 small"><strong>Unit:</strong> <span id="spec-name"
+                                            class="fw-bold fs-6"></span></p>
+                                    <p class="mb-1 small"><strong>Location:</strong> <span id="spec-location"
+                                            class="text-muted"></span></p>
+                                    <div class="row g-2 mt-1">
+                                        <div class="col-6">
+                                            <div class="p-2 border rounded bg-white small text-center">
+                                                <div class="text-muted" style="font-size: 10px;">IP Address</div><strong
+                                                    id="spec-ip"></strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 border rounded bg-white small text-center">
+                                                <div class="text-muted" style="font-size: 10px;">AnyDesk ID</div><strong
+                                                    id="spec-anydesk"></strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="reallocate-selector" class="d-none mt-2 pt-2 border-top">
+                                    <label class="form-label small mb-1">Select Replacement Unit:</label>
+                                    <div class="d-flex gap-2">
+                                        <select id="replacement-computer-select"
+                                            class="form-select form-select-sm flex-grow-1"></select>
+                                        <button class="btn btn-sm btn-primary"
+                                            onclick="applyReallocation()">Assign</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="activation-key-container" class="mb-3 p-3 border rounded bg-light d-none">
+                            <label id="activation-key-label"
+                                class="form-label fw-bold small text-primary mb-1">Activation Key / Token</label>
+                            <input type="text" id="activation-key-input" class="form-control form-control-sm"
+                                placeholder="Paste key here...">
+                            <div id="activation-key-desc" class="form-text mt-1" style="font-size: 11px;"></div>
+                        </div>
+
+                        <div id="anydesk-pass-container" class="mb-3 p-3 border rounded bg-light d-none">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold small text-primary mb-0">🔐 Anydesk Password
+                                    (Penelitian)</label>
+                                <button class="btn btn-sm btn-outline-secondary py-0" style="font-size: 10px;"
+                                    onclick="updateAnydeskPasswordUI()">🔄 Auto-Generate</button>
+                            </div>
+                            <div class="p-2 bg-white border rounded text-center fs-5 fw-bold font-monospace text-success mt-2"
+                                id="anydesk-pass-display"></div>
+                            <div class="form-text mt-1" style="font-size: 11px;">The password formula uses the assigned
+                                computer and request date. This is safely stored in Global Config.</div>
+                        </div>
+
+                        <div id="server-license-container" class="mb-3 p-3 border rounded bg-warning-subtle d-none">
+                            <label class="form-label fw-bold small text-warning-emphasis mb-1">⚙️ Server License Client
+                                Setup</label>
+                            <div class="form-text mb-2 text-dark" style="font-size: 11px;">Konfigurasi LM_LICENSE_FILE
+                                yang perlu ditambahkan di server vendor:</div>
+                            <input type="text" id="server-license-config"
+                                class="form-control form-control-sm font-monospace bg-white" readonly>
+                            <div class="form-text mt-1" style="font-size: 11px;">(Pastikan admin telah memperbarui
+                                konfigurasi server sebelum Grant)</div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Software Expiration</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light">📅</span>
+                                    <input type="date" id="expiration-date-input" class="form-control" title="Masa aktif lisensi software">
+                                </div>
+                                <div class="form-text" style="font-size: 10px;">Default: 30 hari (Regular/Cloud).</div>
+                            </div>
+                            <div id="seat-expiration-container" class="col-md-6 d-none">
+                                <label class="form-label fw-bold small text-danger">Seat Expiration</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-danger-subtle text-danger border-danger">🪑</span>
+                                    <input type="date" id="seat-expiration-date-input" class="form-control border-danger" title="Masa aktif menempati kursi lab">
+                                </div>
+                                <div class="form-text text-danger" style="font-size: 10px;">Default: 14 hari (Ruang Penelitian).</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 mt-4">
+                            <label class="form-label fw-bold small">Administrator Notes (To User Email)</label>
+                            <textarea id="admin-notes" class="form-control" rows="3"
+                                placeholder="Tambahkan pesan instruksi atau alasan penolakan..."></textarea>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex gap-2">
+                            <button class="btn btn-danger flex-grow-1" onclick="submitRejection()">Reject
+                                Request</button>
+                            <button class="btn btn-success flex-grow-1" onclick="submitApproval()">Grant
+                                Request</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expired Usage Modal -->
+    <div class="modal fade" id="expiredModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">⚠️ Butuh Revoke (Masa Berlaku Habis)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>Email</th>
+                                    <th>Software / Computer</th>
+                                    <th>Type</th>
+                                    <th>Expired On</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expiredTableBody">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance Management Modal -->
+    <div class="modal fade" id="maintenanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold">🛠️ Manajemen Maintenance Komputer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 small mb-4">
+                        Daftar komputer yang sedang dalam status <strong>In Maintenance</strong>. Pastikan semua
+                        checklist selesai sebelum diaktifkan kembali.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr class="small text-uppercase">
+                                    <th>Komputer</th>
+                                    <th>User Terakhir</th>
+                                    <th>Masa Berlaku</th>
+                                    <th>Checklist Maintenance</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintenanceTableBody">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-outline-primary rounded-pill"
+                        onclick="loadMaintenanceList()">🔄
+                        Refresh</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agenda Management Modal -->
+    <div class="modal fade" id="agendaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="fw-bold"><i class="bi bi-calendar-event me-2"></i>Manajemen Agenda Lab</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Form Tambah Agenda -->
+                    <div class="card border-0 bg-light mb-4 shadow-sm" style="border-radius: 16px;">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-3 small text-uppercase text-primary">Tambah Agenda Baru</h6>
+                            <form id="agendaForm" onsubmit="event.preventDefault(); handleSimpanAgenda();">
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Ruangan</label>
+                                        <select class="form-select rounded-pill small" id="agenda-ruangan" required>
+                                            <option value="Ruang Komputer 1">Ruang Komputer 1 (Barat)</option>
+                                            <option value="Ruang Komputer 2">Ruang Komputer 2 (Timur)</option>
+                                            <option value="Ruang Penelitian">Ruang Penelitian</option>
+                                            <option value="Semua Ruangan">Semua Ruangan</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-bold">Nama Kegiatan</label>
+                                        <input type="text" class="form-control rounded-pill small" id="agenda-kegiatan"
+                                            required placeholder="Contoh: Kuliah Gambar Teknik">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Waktu Mulai</label>
+                                        <input type="datetime-local" class="form-control rounded-pill small"
+                                            id="agenda-mulai" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Waktu Selesai</label>
+                                        <input type="datetime-local" class="form-control rounded-pill small"
+                                            id="agenda-selesai" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Deskripsi / Catatan</label>
+                                        <textarea class="form-control" id="agenda-deskripsi" rows="2"
+                                            style="border-radius: 12px; font-size: 13px;"
+                                            placeholder="Keterangan tambahan..."></textarea>
+                                    </div>
+                                    <div class="col-12 text-end mt-2">
+                                        <button type="submit"
+                                            class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">Simpan
+                                            Agenda</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- List Agenda Mendatang -->
+                    <h6 class="fw-bold mb-3 small text-uppercase">Agenda Mendatang</h6>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr class="small">
+                                    <th>Ruangan</th>
+                                    <th>Kegiatan</th>
+                                    <th>Waktu</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agenda-list" class="small">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let pendingRequests = [];
+        let swMap = {}; // Software rules & metadata from SW-List
+        let currentRequestId = null;
+        let currentRequestType = null;
+        let currentRequest = null; // Store full request object
+        let currentReassignedComputer = null;
+        let appConfig = { durationRegular: 30, seatExpiration: 14 }; // Default fallback
+        let sessionToken = localStorage.getItem('adminAuthToken');
+        let currentUser = null;
+
+        const processModal = new bootstrap.Modal(document.getElementById('processModal'));
+        const agendaModal = new bootstrap.Modal(document.getElementById('agendaModal'));
+        const maintenanceModal = new bootstrap.Modal(document.getElementById('maintenanceModal'));
+
+        // Initialize App
+        window.onload = function () {
+            loadAppBranding();
+            validateSession();
+        };
+
+        function validateSession() {
+            if (!sessionToken) {
+                showLogin();
+                return;
+            }
+
+            // checkAuth on server
+            GAS.run('apiCheckAuth', { token: sessionToken })
+                .then(res => {
+                    const data = res.data || {};
+                    if (data.authenticated) {
+                        currentUser = data.user;
+                        showDashboard();
+                    } else {
+                        localStorage.removeItem('adminAuthToken');
+                        sessionToken = null;
+                        if (data.message) Toast.warn("Session Expired", data.message);
+                        showLogin();
+                    }
+                })
+                .catch(err => {
+                    console.error("Auth check failed:", err);
+                    showLogin();
+                });
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+
+            Loading.show("Menautkan Akun...");
+            GAS.run('apiAdminLogin', { email: email, password: pass })
+                .then(result => {
+                    Loading.hide();
+                    const res = result.data || {};
+                    if (res.success) {
+                        localStorage.setItem('adminAuthToken', res.token);
+                        sessionToken = res.token;
+                        currentUser = res.user;
+                        Toast.success("Berhasil", "Selamat datang, " + res.user.nama);
+                        showDashboard();
+                    } else {
+                        Toast.error("Login Gagal", res.message || "Email atau password salah");
+                    }
+                })
+                .catch(err => {
+                    Loading.hide();
+                    Toast.error("Error", "Gagal menghubungi server: " + err.message);
+                });
+        }
+
+        function showLogin() {
+            document.getElementById('login-container').style.display = 'flex';
+            document.getElementById('dashboard-app').style.display = 'none';
+        }
+
+        function showDashboard() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('dashboard-app').style.display = 'block';
+            document.getElementById('user-display-name').textContent = currentUser.nama;
+
+            // Trigger data load
+            loadRequests();
+            loadExpiredStats();
+            console.log("Dashboard shown. Footer status:", document.querySelector('.glass-footer') ? 'In DOM' : 'NOT FOUND');
+        }
+
+        function setActiveNavItem(el) {
+            document.querySelectorAll('.nav-link').forEach(nav => nav.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function runTriggerSetup() {
+            if (!confirm("Setup daily triggers for student reminders and license checks?")) return;
+
+            Toast.show("Processing...", "Setting up triggers...");
+            GAS.run('apiCreateDailyTriggers')
+                .then(res => {
+                    if (res.success) Toast.success("Success", res.message);
+                    else Toast.error("Failed", res.message);
+                })
+                .catch(err => Toast.error("Setup Fail", err.toString()));
+        }
+
+        function handleLogout() {
+            Confirm.show("Logout", "Apakah Anda yakin untuk keluar?", () => {
+                Loading.show("Keluar...");
+                GAS.run('admin-logout', { token: sessionToken })
+                    .then(() => {
+                        localStorage.removeItem('adminAuthToken');
+                        window.location.reload();
+                    })
+                    .catch(err => {
+                        console.error("Logout error:", err);
+                        localStorage.removeItem('adminAuthToken');
+                        window.location.reload();
+                    });
+            });
+        }
+
+        // --- AGENDA MANAGEMENT ---
+
+        function openAgendaModal() {
+            refreshAgendaList();
+            agendaModal.show();
+        }
+
+        function refreshAgendaList() {
+            const tbody = document.getElementById('agenda-list');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Memuat data agenda...</td></tr>';
+
+            GAS.run('admin-agendas')
+                .then(result => {
+                    const agendas = result.data || [];
+                    if (!tbody) return;
+                    if (agendas.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 small">Tidak ada agenda mendatang</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = agendas.map(a => {
+                        const mulaiDisplay = new Date(a.mulai).toLocaleString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                        const selesaiDisplay = new Date(a.selesai).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                        return `
+                        <tr>
+                            <td class="fw-bold text-primary">${a.ruangan}</td>
+                            <td>${a.kegiatan}</td>
+                            <td>${mulaiDisplay} - ${selesaiDisplay}</td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <button class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleHapusAgenda(${a.rowIndex})" title="Hapus">
+                                        <span style="font-size: 10px;">❌</span>
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm rounded-circle p-1" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center;" onclick="handleBroadcastAgenda(${a.rowIndex})" title="Siarkan Pengingat">
+                                        <span style="font-size: 10px;">📢</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    }).join('');
+                })
+                .catch(err => {
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3 small">Error memuat data</td></tr>';
+                });
+        }
+
+        function handleSimpanAgenda() {
+            const data = {
+                ruangan: document.getElementById('agenda-ruangan').value,
+                kegiatan: document.getElementById('agenda-kegiatan').value,
+                mulai: document.getElementById('agenda-mulai').value,
+                selesai: document.getElementById('agenda-selesai').value,
+                deskripsi: document.getElementById('agenda-deskripsi').value
+            };
+
+            GAS.runWithLoading('admin-save-agenda', "Menyimpan Agenda...", data)
+                .then(res => {
+                    if (res.success) {
+                        Toast.success("Berhasil", "Agenda telah disimpan.");
+                        document.getElementById('agendaForm').reset();
+                        refreshAgendaList();
+                    } else {
+                        Toast.error("Gagal", res.message);
+                    }
+                })
+                .catch(err => {
+                    Toast.error("Error", "Gagal menyimpan agenda: " + err.message);
+                });
+        }
+
+        function handleHapusAgenda(rowIndex) {
+            Confirm.show("Hapus Agenda", "Apakah Anda yakin ingin menghapus agenda ini?", () => {
+                GAS.runWithLoading('admin-delete-agenda', "Menghapus...", { rowIndex: rowIndex })
+                    .then(res => {
+                        refreshAgendaList();
+                        Toast.info("Terhapus", "Agenda telah dihapus.");
+                    })
+                    .catch(err => {
+                        Toast.error("Error", "Gagal menghapus agenda");
+                    });
+            });
+        }
+
+        function handleBroadcastAgenda(rowIndex) {
+            Confirm.show("Siarkan Agenda", "Kirim email pengingat kepada pengguna yang terdampak di ruangan tersebut?", () => {
+                GAS.runWithLoading('apiSiarkanPengingatAgenda', "Broadcasting...", { rowIndex: rowIndex })
+                    .then(res => {
+                        if (res.success) {
+                            Toast.success("Berhasil", `Broadcast terkirim ke ${res.count} pengguna.`);
+                        } else {
+                            Toast.error("Gagal", res.message);
+                        }
+                    })
+                    .catch(err => {
+                        Toast.error("Error", "Gagal mengirim broadcast");
+                    });
+            });
+        }
+
+        function handleNormalizeDates() {
+            Confirm.show("Normalisasi Tanggal", "Fungsi ini akan mengubah semua teks tanggal di spreadsheet menjadi format DD-MMM-YYYY yang standar. Lanjutkan?", () => {
+                GAS.runWithLoading('apiNormalizeSheetDates', "Menormalisasi Data...")
+                    .then(result => {
+                        const msg = result.data || result;
+                        Toast.success("Berhasil", msg);
+                        loadRequests(); // Refresh listing to see formatted dates
+                    })
+                    .catch(err => {
+                        Toast.error("Gagal", err.toString());
+                    });
+            });
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Search filter
+            document.getElementById('searchInput').addEventListener('input', function (e) {
+                renderTable(e.target.value);
+            });
+        });
+
+        function loadRequests() {
+            console.log("Loading requests...");
+            Loading.show("Memuat Data...");
+
+            if (typeof google === 'undefined' || !google.script || !google.script.run) {
+                console.error("Google Apps Script context not found!");
+                Toast.error("Connection Error", "GAS context missing. Run this as a Web App!");
+                Loading.hide();
+                return;
+            }
+
+            GAS.run('apiGetAdminRequests')
+                .then(result => {
+                    const res = result; // already has success, data, stats, swMap
+                    if (res) console.log("Server Response Raw:", res);
+                    Loading.hide();
+                    if (res && res.success) {
+                        console.log("Server Response:", res);
+
+                        // Handle diagnostic logs if present
+                        pendingRequests = res.data || [];
+                        swMap = res.swMap || {}; // Store rules for UI logic
+                        if (res.config) appConfig = res.config; // Store dynamic durations
+
+                        // Check if stats are provided (new backend)
+                        if (res.stats) {
+                            document.getElementById('count-pending').textContent = res.stats.pending || 0;
+                            document.getElementById('count-active-users').textContent = res.stats.activeUsers || 0;
+                            document.getElementById('count-expired').textContent = res.stats.toRevoke || 0;
+                            document.getElementById('count-total-requests').textContent = `${res.stats.labUsed || 0} / ${res.stats.labTotal || 0} PC`;
+
+                            // Maintenance Stat
+                            const colMaint = document.getElementById('col-maintenance');
+                            if (res.stats.labMaintenance > 0) {
+                                document.getElementById('count-maintenance').textContent = res.stats.labMaintenance;
+                                colMaint.style.display = 'block';
+                                document.getElementById('maintenance-container').classList.remove('d-none');
+                                loadMaintenanceSection();
+                            } else {
+                                colMaint.style.display = 'none';
+                                document.getElementById('maintenance-container').classList.add('d-none');
+                            }
+
+                            // SW Expiring Stat
+                            const colSW = document.getElementById('col-sw-expiring');
+                            if (res.stats.swExpiring > 0) {
+                                document.getElementById('count-sw-expiring').textContent = res.stats.swExpiring;
+                                colSW.style.display = 'block';
+                            } else {
+                                colSW.style.display = 'none';
+                            }
+                        } else {
+                            // Fallback or legacy
+                            document.getElementById('count-pending').textContent = pendingRequests.length;
+                            document.getElementById('count-active-users').textContent = '--';
+                            document.getElementById('count-expired').textContent = '--';
+                            document.getElementById('count-total-requests').textContent = '--';
+                        }
+
+                        renderTable();
+                    } else {
+                        Toast.error("Load Error", (res && res.message) || "Unknown error");
+                    }
+                })
+                .catch(err => {
+                    console.error("Server error:", err);
+                    Toast.error("Error", "Gagal mengambil data: " + err.message);
+                    Loading.hide();
+                });
+        }
+
+        function runDiagnostics() {
+            console.log("Running diagnostics...");
+            GAS.run('apiGetDashboardDebugInfo')
+                .then(res => {
+                    console.group("📊 DASHBOARD DIAGNOSTICS");
+                    if (!res || !res.success) {
+                        console.error("DIAGNOSTIC ERROR:", (res && res.message) || "No response from server");
+                        Toast.error("Diagnostic Failure", (res && res.message) || "No response");
+                    } else {
+                        console.log("Response Headers:", res.headers || "Missing");
+                        console.log("Response Sample:", res.sampleRows || "Missing");
+                        console.log("🖥️ KOMPUTER INVENTORY INFO:", res.komputerInfo || "Missing");
+                        Toast.info("Diagnostics Ready", "Results logged to Console (F12).");
+                    }
+                    console.groupEnd();
+                })
+                .catch(err => {
+                    console.error("Diagnostic error:", err);
+                    Toast.error("Error", "Gagal menjalankan diagnostik");
+                });
+        }
+
+        // --- EXPIRED USAGE LOGIC ---
+        const expiredModal = new bootstrap.Modal(document.getElementById('expiredModal'));
+        let expiredDataCache = [];
+
+        function loadExpiredStats() {
+            GAS.run('apiGetExpiredUsage')
+                .then(result => {
+                    const res = result;
+                    if (res && res.success) {
+                        expiredDataCache = res.data;
+                    } else {
+                        console.error("Failed to load expired data:", res);
+                    }
+                })
+                .catch(err => console.error("Expired data load error:", err));
+        }
+
+        function showExpiredModal() {
+            const tbody = document.getElementById('expiredTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+
+            expiredModal.show();
+
+            // Refresh data on open to be sure
+            GAS.run('apiGetExpiredUsage')
+                .then(result => {
+                    const res = result;
+                    if (res && res.success) {
+                        expiredDataCache = res.data;
+                        renderExpiredTable(res.data);
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load data</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error: ' + err.message + '</td></tr>';
+                });
+        }
+
+        // --- MAINTENANCE DASHBOARD LOGIC ---
+        function showMaintenanceModal() {
+            maintenanceModal.show();
+            loadMaintenanceList();
+        }
+
+        function loadMaintenanceList() {
+            const tbody = document.getElementById('maintenanceTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Memuat data...</td></tr>';
+
+            GAS.run('apiGetMaintenanceList')
+                .then(res => {
+                    if (res && res.success) {
+                        renderMaintenanceTable('maintenanceTableBody', res.data);
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${res.message}</td></tr>`;
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${err.message}</td></tr>`;
+                });
+        }
+
+        function loadMaintenanceSection() {
+            const tbody = document.getElementById('maintenanceSectionBody');
+            if (!tbody) return;
+            if (tbody.innerHTML.trim() === '') {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Memuat...</td></tr>';
+            }
+
+            GAS.run('apiGetMaintenanceList')
+                .then(res => {
+                    if (res && res.success) {
+                        renderMaintenanceTable('maintenanceSectionBody', res.data);
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${res.message}</td></tr>`;
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${err.message}</td></tr>`;
+                });
+        }
+
+        function renderMaintenanceTable(tbodyId, data) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                if (tbodyId === 'maintenanceSectionBody') {
+                    document.getElementById('maintenance-container').classList.add('d-none');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data maintenance.</td></tr>';
+                }
+                return;
+            }
+
+            if (tbodyId === 'maintenanceSectionBody') {
+                document.getElementById('maintenance-container').classList.remove('d-none');
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const suffix = tbodyId === 'maintenanceTableBody' ? '-modal' : '';
+
+                let checklistHtml = '';
+                let actionBtn = '';
+
+                if (item.type === 'PC') {
+                    checklistHtml = `
+                    <div class="form-check small mb-1">
+                        <input class="form-check-input" type="checkbox" id="check-storage-${item.targetName}${suffix}">
+                        <label class="form-check-label" for="check-storage-${item.targetName}${suffix}">Cek Sisa Storage</label>
+                    </div>
+                    <div class="form-check small mb-1">
+                        <input class="form-check-input" type="checkbox" id="check-junk-${item.targetName}${suffix}">
+                        <label class="form-check-label" for="check-junk-${item.targetName}${suffix}">Bersihkan File Sampah</label>
+                    </div>
+                `;
+                    if (item.shouldDeleteUser) {
+                        checklistHtml += `
+                        <div class="form-check small text-danger fw-bold">
+                            <input class="form-check-input border-danger" type="checkbox" id="check-user-${item.targetName}${suffix}">
+                            <label class="form-check-label" for="check-user-${item.targetName}${suffix}">Hapus User Windows (> 2 Bln)</label>
+                        </div>
+                    `;
+                    }
+                    actionBtn = `<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="handleFinishPCMaintenance('${item.targetName}', '${tbodyId}')">PC OK</button>`;
+                } else {
+                    checklistHtml = `
+                    <div class="form-check small fw-bold text-info">
+                        <input class="form-check-input border-info" type="checkbox" id="check-license-${item.requestId}${suffix}">
+                        <label class="form-check-label" for="check-license-${item.requestId}${suffix}">Hapus dari Cloud Vendor Dashboard</label>
+                    </div>
+                `;
+                    actionBtn = `<button class="btn btn-info btn-sm rounded-pill px-3 text-white" onclick="handleFinishLicenseCleanup('${item.requestId}', ${item.rowIndex}, '${tbodyId}')">Lisensi OK</button>`;
+                }
+
+                tr.innerHTML = `
+                <td>
+                    <span class="badge ${item.type === 'PC' ? 'bg-warning text-dark' : 'bg-info text-white'} me-2">${item.type}</span>
+                    <span class="fw-bold">${item.targetName}</span>
+                </td>
+                <td>
+                    <div class="small fw-bold">${item.lastUser}</div>
+                    <div class="text-muted extra-small">ID: ${item.requestId || '-'}</div>
+                </td>
+                <td>
+                    <div class="small">${item.dateRef}</div>
+                    <div class="extra-small text-danger">${item.daysAgo} hari yang lalu</div>
+                </td>
+                <td>${checklistHtml}</td>
+                <td class="text-center">${actionBtn}</td>
+            `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleFinishPCMaintenance(computerName, tbodyId = 'maintenanceSectionBody') {
+            const suffix = tbodyId === 'maintenanceTableBody' ? '-modal' : '';
+            const storageCheck = document.getElementById(`check-storage-${computerName}${suffix}`).checked;
+            const junkCheck = document.getElementById(`check-junk-${computerName}${suffix}`).checked;
+            const userCheckEl = document.getElementById(`check-user-${computerName}${suffix}`);
+            const userCheck = userCheckEl ? userCheckEl.checked : true;
+
+            if (!storageCheck || !junkCheck || !userCheck) {
+                Toast.warn("Belum Selesai", "Berikan tanda centang pada tugas yang sudah dikerjakan.");
+                return;
+            }
+
+            Confirm.show("Selesaikan PC", `Status PC ${computerName} akan diatur menjadi Available.`, () => {
+                GAS.runWithLoading('apiCompleteMaintenance', "Processing...", { computerName: computerName })
+                    .then(res => {
+                        if (res.success) {
+                            Toast.success("Success", res.message);
+                            loadRequests(); // Refresh all
+                            if (tbodyId === 'maintenanceTableBody') loadMaintenanceList();
+                        } else Toast.error("Gagal", res.message);
+                    })
+                    .catch(err => {
+                        Toast.error("Error", "Gagal menyelesaikan maintenance: " + err.message);
+                    });
+            });
+        }
+
+        function handleFinishLicenseCleanup(requestId, rowIndex, tbodyId = 'maintenanceSectionBody') {
+            const suffix = tbodyId === 'maintenanceTableBody' ? '-modal' : '';
+            if (!document.getElementById(`check-license-${requestId}${suffix}`).checked) {
+                Toast.warn("Belum Selesai", "Konfirmasi bahwa user telah dihapus dari vendor dashboard.");
+                return;
+            }
+
+            Confirm.show("Selesaikan Lisensi", `Sembunyikan tugas cleanup untuk ID ${requestId}?`, () => {
+                GAS.runWithLoading('apiCompleteLicenseCleanup', "Processing...", { requestId: requestId, rowIndex: rowIndex })
+                    .then(res => {
+                        if (res.success) {
+                            Toast.success("Success", res.message);
+                            loadRequests();
+                            if (tbodyId === 'maintenanceTableBody') loadMaintenanceList();
+                        } else Toast.error("Gagal", res.message);
+                    })
+                    .catch(err => {
+                        Toast.error("Error", "Gagal menyelesaikan cleanup: " + err.message);
+                    });
+            });
+        }
+
+        function renderExpiredTable(data) {
+            const tbody = document.getElementById('expiredTableBody');
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Semua akses masih aktif.</td></tr>';
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                let badgeColor = "bg-danger";
+                if (item.alertType === "SEAT ROTATION") badgeColor = "bg-warning text-dark";
+                if (item.alertType === "TOTAL EXPIRED") badgeColor = "bg-dark text-white";
+
+                tr.innerHTML = `
+                    <td>
+                        <div class="fw-bold">${item.nama}</div>
+                        <div class="extra-small text-muted">ID: ${item.requestId}</div>
+                    </td>
+                    <td>${item.email}</td>
+                    <td>
+                        <div class="fw-bold small">${item.software}</div>
+                        <div class="text-muted extra-small">${item.computer} (${item.room})</div>
+                    </td>
+                    <td>
+                        <span class="badge ${badgeColor}" style="font-size: 10px;">${item.alertType}</span>
+                    </td>
+                    <td class="small">
+                        <div>Lic: <span class="text-danger fw-bold">${item.expirationDate}</span></div>
+                        <div class="${item.seatExpirationDate !== '-' ? '' : 'd-none'}">Seat: <span class="text-warning-emphasis fw-bold">${item.seatExpirationDate}</span></div>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-outline-danger btn-sm" onclick="revokeAccess('${item.requestId}', '${item.nama}', ${item.rowIndex})">
+                            ${item.alertType === "SEAT ROTATION" ? "Release Seat" : "Revoke All"}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function revokeAccess(requestId, name, rowIndex) {
+            const msg = `Cabut akses untuk ${name}?\n\nTindakan ini akan:\n1. Mengubah status menjadi Expired\n2. Melepaskan komputer\n3. Menjadwalkan maintenance PC`;
+
+            Confirm.show("Cabut Akses", msg, () => {
+                GAS.runWithLoading('apiRevokeRequest', "Processing...", { requestId: requestId, adminNotes: "", rowIndex: rowIndex })
+                    .then(result => {
+                        const res = result.data || result;
+                        if (res && res.success) {
+                            Toast.success("Revoke Berhasil", res.message);
+                            loadRequests(); // Refresh dashboard
+                            expiredModal.hide();
+                        } else {
+                            Toast.error("Gagal Revoke", res.message || "Unknown error");
+                        }
+                    })
+                    .catch(err => {
+                        Toast.error("Server Error", err.message);
+                    });
+            });
+        }
+
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            console.error('Window Error: ', msg, ' at ', lineNo, ':', columnNo);
+            Toast.error("System Error", msg);
+            Loading.hide();
+            return false;
+        };
+
+        function renderTable(filter = '') {
+            const tbody = document.getElementById('requestTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            // Guard against null/undefined
+            if (!Array.isArray(pendingRequests)) {
+                console.error("pendingRequests is not an array:", pendingRequests);
+                pendingRequests = [];
+            }
+
+            const filtered = pendingRequests.filter(r => {
+                if (!r) return false;
+                const name = (r.nama || "").toLowerCase();
+                const rid = (r.requestId || "").toLowerCase();
+                const nim = (r.nim || "").toLowerCase();
+                const f = (filter || "").toLowerCase();
+                return name.includes(f) || rid.includes(f) || nim.includes(f);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Tidak ada permohonan yang perlu diproses.</td></tr>';
+                return;
+            }
+
+            filtered.forEach(req => {
+                try {
+                    const tr = document.createElement('tr');
+
+                    // Color for type
+                    let typeBadgeClass = "bg-primary-subtle text-primary";
+                    if (req.requestType === "Borrow License") typeBadgeClass = "bg-info-subtle text-info";
+                    if (req.requestType === "Computer Only") typeBadgeClass = "bg-success-subtle text-success";
+
+                    tr.innerHTML = `
+                    <td>
+                            <div class="fw-bold">${req.nama || 'No Name'}</div>
+                            <div class="text-muted small">${req.nim || '-'} | ID: ${req.requestId || 'N/A'}</div>
+                        </td>
+                        <td>
+                            <div class="small">${req.software || 'General Comp'}</div>
+                            <div class="text-muted small">${req.roomPreference || 'Personal Device'}</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-type ${typeBadgeClass}">${req.requestType || 'Standard'}</span>
+                            ${req.isRenewal ? `<div class="mt-1"><span class="badge bg-warning text-dark border-0 extra-small" style="font-size: 9px;">Renewal #${req.periodCount - 1}</span></div>` : ''}
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-primary btn-action btn-sm" onclick="openProcessModal('${req.requestId}')">Process</button>
+                        </td>
+                `;
+                    tbody.appendChild(tr);
+                } catch (e) {
+                    console.error("Error rendering row:", e, req);
+                }
+            });
+        }
+
+        function openProcessModal(requestId) {
+            const req = pendingRequests.find(r => r.requestId === requestId);
+            if (!req) return;
+
+            currentRequestId = requestId;
+            currentRequestType = req.requestType;
+            currentRequest = req; // Store full request object for later use
+
+            document.getElementById('modal-request-id').textContent = requestId;
+            document.getElementById('modal-nama').textContent = req.nama;
+            document.getElementById('modal-nim').textContent = req.nim;
+            document.getElementById('modal-prodi').textContent = req.prodi;
+
+            const isNonUgm = req.prodi && req.prodi.startsWith('Non-UGM');
+            document.getElementById('universitas-container').style.display = isNonUgm ? 'block' : 'none';
+            document.getElementById('modal-universitas').textContent = req.universitas || '-';
+
+            document.getElementById('modal-dosen').textContent = req.dosen || '-';
+            document.getElementById('modal-topik').textContent = req.topik || '-';
+            document.getElementById('modal-keperluan').textContent = req.keperluan || '-';
+            document.getElementById('modal-catatan').textContent = req.catatan || '-';
+
+            // Set email
+            const emailSpan = document.getElementById('modal-email');
+            emailSpan.textContent = req.email || '-';
+
+            // Set phone/WhatsApp link
+            const phoneLink = document.getElementById('modal-phone');
+            if (req.phone && req.phone.includes('wa.me')) {
+                phoneLink.href = req.phone; // The phone field WhatsApp link
+            } else {
+                phoneLink.href = '#';
+                phoneLink.textContent = req.phone || '📱 WhatsApp';
+            }
+
+            // Render software as multiple badges
+            const swContainer = document.getElementById('modal-software');
+            swContainer.innerHTML = '';
+            if (req.software) {
+                req.software.split(',').forEach(s => {
+                    const swName = s.trim();
+                    const span = document.createElement('span');
+
+                    // Highlight if it's a Borrow License based on rules
+                    const isBorrow = swMap[swName] && swMap[swName].rules && swMap[swName].rules.includes('Borrow License');
+                    span.className = isBorrow ? 'badge bg-warning text-dark border small' : 'badge bg-light text-dark border small';
+                    span.title = isBorrow ? 'Requires Borrow License Key' : '';
+                    span.textContent = swName;
+                    swContainer.appendChild(span);
+                });
+            } else {
+                swContainer.innerHTML = '<span class="text-muted small">No Software Requested</span>';
+            }
+
+            document.getElementById('modal-doc-link').href = req.fileUrl;
+            document.getElementById('admin-notes').value = '';
+            currentReassignedComputer = null;
+
+            // Helper for robust software meta lookup
+            const getSwMeta = (name) => {
+                if (swMap[name]) return swMap[name];
+                // Try partial matching if exact fail
+                const foundKey = Object.keys(swMap).find(k =>
+                    name.toLowerCase().includes(k.toLowerCase()) ||
+                    k.toLowerCase().includes(name.toLowerCase())
+                );
+                return foundKey ? swMap[foundKey] : null;
+            };
+
+            // 2. Seat Expiry & License Overrides
+            const durationRegular = appConfig.durationRegular || 30;
+            const seatLimit = appConfig.seatExpiration || 14;
+            const requestedSw = (req.software || "").split(',').map(s => s.trim());
+            
+            let hasServerLicense = false;
+            let onlyResearchRoom = true;
+            let hasResearchRule = false;
+
+            requestedSw.forEach(swName => {
+                const meta = getSwMeta(swName);
+                if (meta && meta.rules) {
+                    const rls = meta.rules.map(r => r.toLowerCase());
+                    if (rls.some(r => r.includes('akses lisensi server'))) hasServerLicense = true;
+                    if (rls.some(r => r.includes('ruang penelitian'))) hasResearchRule = true;
+                    if (rls.some(r => !r.includes('ruang penelitian'))) onlyResearchRoom = false;
+                }
+            });
+
+            const isResearchRoom = (req.roomPreference === 'Ruang Penelitian');
+            let licenseDays = durationRegular;
+            
+            // APPLY OVERRIDES
+            if (onlyResearchRoom && isResearchRoom) {
+                licenseDays = seatLimit;
+            } else if (hasServerLicense && isResearchRoom) {
+                licenseDays = seatLimit;
+            }
+
+            // 2. Base Date for calculation (Support Renewal Accumulation)
+            let baseDate = new Date();
+            if (req.isRenewal && req.prevExpirationDate) {
+                const prevDate = new Date(req.prevExpirationDate);
+                // Use prev expiry as base if it's valid and not too far in the past
+                if (!isNaN(prevDate.getTime()) && prevDate > new Date(new Date().setDate(new Date().getDate() - 30))) {
+                    baseDate = prevDate;
+                }
+            }
+
+            const expDate = new Date(baseDate.getTime());
+            expDate.setDate(expDate.getDate() + licenseDays);
+            document.getElementById('expiration-date-input').value = expDate.toISOString().split('T')[0];
+
+            const seatContainer = document.getElementById('seat-expiration-container');
+            const seatInput = document.getElementById('seat-expiration-date-input');
+            const isPhysical = (req.requestType || "").includes('Komputer');
+
+            if (isPhysical) {
+                seatContainer.classList.remove('d-none');
+                const seatDays = isResearchRoom ? seatLimit : durationRegular;
+                
+                // CUMULATIVE SEAT EXPIRY FOR RENEWAL
+                let sBaseDate = new Date();
+                if (req.isRenewal && req.prevSeatExpirationDate) {
+                    const prevSDate = new Date(req.prevSeatExpirationDate);
+                    // Use prev seat expiry as base if it's within a reasonable window
+                    if (!isNaN(prevSDate.getTime()) && prevSDate > new Date(new Date().setDate(new Date().getDate() - 30))) {
+                        sBaseDate = prevSDate;
+                    }
+                }
+                
+                const sExpDate = new Date(sBaseDate.getTime());
+                sExpDate.setDate(sExpDate.getDate() + seatDays);
+                seatInput.value = sExpDate.toISOString().split('T')[0];
+            } else {
+                seatContainer.classList.add('d-none');
+                seatInput.value = '';
+            }
+
+            // Handle AnyDesk visibility (STRICT RULE: Only if Computer + Ruang Penelitian)
+            const keyContainer = document.getElementById('activation-key-container');
+            const passContainer = document.getElementById('anydesk-pass-container');
+            const specContainer = document.getElementById('computer-specs-container');
+            const serverLicenseContainer = document.getElementById('server-license-container');
+            
+            // Reset visibility
+            keyContainer.classList.add('d-none');
+            passContainer.classList.add('d-none');
+            serverLicenseContainer.classList.add('d-none');
+            
+            const reallocateSelector = document.getElementById('reallocate-selector');
+            const specDetails = document.getElementById('spec-details-box');
+            const reallocateBtn = document.getElementById('reallocate-btn');
+            reallocateSelector.classList.add('d-none');
+            specDetails.classList.remove('d-none');
+            reallocateBtn.innerText = "🔄 Change";
+
+            document.getElementById('activation-key-input').value = '';
+            document.getElementById('anydesk-pass-display').textContent = '-';
+
+            // Check if any requested software requires "Borrow License" from Rules sheet
+            let needsBorrowKey = requestedSw.some(swName => {
+                const meta = getSwMeta(swName);
+                return meta && meta.rules && meta.rules.some(r => r.toLowerCase().includes('borrow license'));
+            });
+
+            if (req.requestType === 'Borrow License' || needsBorrowKey) {
+                keyContainer.classList.remove('d-none');
+                const label = document.getElementById('activation-key-label');
+                const placeholder = document.getElementById('activation-key-input');
+                const desc = document.getElementById('activation-key-desc');
+                if (needsBorrowKey) {
+                    label.textContent = "Borrow License / Activation Key";
+                    placeholder.placeholder = "Generated Borrow Key";
+                    desc.textContent = "Gunakan aplikasi PTV License Manager untuk generate Borrow Key.";
+                } else {
+                    label.textContent = "Activation Key (Manual)";
+                    placeholder.placeholder = "Paste key from vendor dashboard...";
+                    desc.textContent = "Lisensi ini harus diset manual oleh admin setelah didaftarkan di portal vendor.";
+                }
+            } 
+            
+            // VISIBILITY RULE: Anydesk only for Physical Research Room use
+            if (isPhysical && hasResearchRule && isResearchRoom) {
+                passContainer.classList.remove('d-none');
+                updateAnydeskPasswordUI(); // Auto-calculate on load
+            }
+
+            // Show server license configuration if username and hostname exist
+            if (req.computerUsername && req.computerHostname) {
+                serverLicenseContainer.classList.remove('d-none');
+                const serverConfig = `allow = ${req.computerUsername}@${req.computerHostname} `;
+                document.getElementById('server-license-config').value = serverConfig;
+            }
+
+            // Reset checklist
+            document.querySelectorAll('.checklist-item input').forEach(i => i.checked = false);
+
+            processModal.show();
+
+            // Load computer specs if applicable
+            if (req.preferredComputer && req.preferredComputer !== 'Auto Assign') {
+                specContainer.classList.remove('d-none');
+                document.getElementById('spec-name').textContent = req.preferredComputer;
+
+                GAS.run('apiGetComputerDetails', { computerName: req.preferredComputer })
+                    .then(result => {
+                        const details = result.data || result;
+                        if (details) {
+                            document.getElementById('spec-anydesk').textContent = details.anydeskId || '-';
+                            document.getElementById('spec-ip').textContent = details.ipAddress || '-';
+                            document.getElementById('spec-location').textContent = details.location || '-';
+                        }
+                    })
+                    .catch(err => console.error("Error loading computer details:", err));
+            } else {
+                specContainer.classList.add('d-none');
+            }
+        }
+
+        function toggleCheck(el) {
+            const cb = el.querySelector('input');
+            cb.checked = !cb.checked;
+        }
+
+        function toggleReallocate() {
+            const selector = document.getElementById('reallocate-selector');
+            const details = document.getElementById('spec-details-box');
+            const btn = document.getElementById('reallocate-btn');
+
+            if (selector.classList.contains('d-none')) {
+                selector.classList.remove('d-none');
+                details.classList.add('d-none');
+                btn.innerText = "✖ Cancel";
+                loadAvailableComputers();
+            } else {
+                selector.classList.add('d-none');
+                details.classList.remove('d-none');
+                btn.innerText = "🔄 Change";
+            }
+        }
+
+        function loadAvailableComputers() {
+            const select = document.getElementById('replacement-computer-select');
+            select.innerHTML = '<option value="">Searching...</option>';
+
+            GAS.run('apiGetAvailableComputers')
+                .then(result => {
+                    const comps = result.data || [];
+                    select.innerHTML = '<option value="">-- Pilih komputer pengganti --</option>';
+                    if (comps.length > 0) {
+                        comps.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.name;
+                            opt.innerText = `${c.name} (${c.location})`;
+                            select.appendChild(opt);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">Tidak tersedia unit pengganti</option>';
+                    }
+                })
+                .catch(err => {
+                    select.innerHTML = '<option value="">Error memuat data</option>';
+                });
+        }
+
+        function applyReallocation() {
+            const newCompName = document.getElementById('replacement-computer-select').value;
+            if (!newCompName) return;
+
+            document.getElementById('spec-name').textContent = newCompName + " (Reassigned)";
+            currentReassignedComputer = newCompName;
+
+            // Update details
+            GAS.run('apiGetComputerDetails', { computerName: newCompName })
+                .then(result => {
+                    const details = result.data || result;
+                    if (details) {
+                        document.getElementById('spec-anydesk').textContent = details.anydeskId || '-';
+                        document.getElementById('spec-ip').textContent = details.ipAddress || '-';
+                        document.getElementById('spec-location').textContent = details.location || '-';
+
+                        // Switch back to details view
+                        toggleReallocate();
+                        Toast.info("Hardware Reassigned", `Request will be granted to ${newCompName} `);
+                    }
+                })
+                .catch(err => {
+                    Toast.error("Error", "Gagal mengambil detail komputer: " + err.message);
+                });
+        }
+
+        function updateAnydeskPasswordUI() {
+            // Priority: reassigned computer > preferred computer
+            const computerName = currentReassignedComputer || currentRequest.preferredComputer || '';
+            const timestamp = currentRequest.timestamp;
+
+            if (!computerName) {
+                document.getElementById('anydesk-pass-display').textContent = 'Pilih dahulu unit komputer.';
+                return;
+            }
+
+            if (!timestamp) {
+                document.getElementById('anydesk-pass-display').textContent = 'Error: Data Tanggal Kosong';
+                return;
+            }
+
+            // Format timestamp to yyyy-MM-dd
+            let dateStr;
+            try {
+                if (timestamp instanceof Date && !isNaN(timestamp)) {
+                    dateStr = timestamp.toISOString().split('T')[0];
+                } else if (typeof timestamp === 'string') {
+                    const dateObj = new Date(timestamp);
+                    if (!isNaN(dateObj)) {
+                        dateStr = dateObj.toISOString().split('T')[0];
+                    } else {
+                        dateStr = new Date().toISOString().split('T')[0];
+                    }
+                } else {
+                    dateStr = new Date().toISOString().split('T')[0];
+                }
+            } catch (e) {
+                console.warn("Date formatting error, using today:", e);
+                dateStr = new Date().toISOString().split('T')[0];
+            }
+
+            // Generate password using ComputerName#YYYY-MM-DD format
+            GAS.run('apiGenerateAnydeskPassword', { computerName: computerName, dateStr: dateStr })
+                .then(result => {
+                    const password = result.data || result;
+                    document.getElementById('anydesk-pass-display').textContent = password || 'Error';
+                })
+                .catch(err => {
+                    console.error('Failed to generate password:', err);
+                    document.getElementById('anydesk-pass-display').textContent = 'Error';
+                });
+        }
+
+        function submitApproval() {
+            const checks = document.querySelectorAll('.checklist-item input');
+            const allChecked = Array.from(checks).every(c => c.checked);
+
+            const performApproval = () => {
+                const notes = document.getElementById('admin-notes').value;
+                const key = document.getElementById('activation-key-input').value;
+                const anydeskPass = document.getElementById('anydesk-pass-display').textContent;
+                const passToSubmit = (anydeskPass && anydeskPass !== '-') ? anydeskPass : null;
+                const customExpDate = document.getElementById('expiration-date-input').value;
+                const customSeatExpDate = document.getElementById('seat-expiration-date-input').value;
+
+                Loading.show("Memproses Approval...");
+                processModal.hide();
+
+                GAS.runWithLoading('apiApproveRequest', "Memproses Approval...", {
+                    requestId: currentRequestId,
+                    adminNotes: notes,
+                    activationKey: key,
+                    anydeskPassword: passToSubmit,
+                    newComputerName: currentReassignedComputer,
+                    customExpirationDate: customExpDate,
+                    customSeatExpirationDate: customSeatExpDate
+                })
+                    .then(res => {
+                        if (res.success) {
+                            Toast.success("Approved!", "Request " + currentRequestId + " telah disetujui.");
+                            loadRequests();
+                        } else {
+                            Toast.error("Error", res.message);
+                        }
+                    })
+                    .catch(err => {
+                        Toast.error("Error", "Gagal melakukan approval: " + err.message);
+                    });
+            };
+
+            if (!allChecked) {
+                Confirm.show("Incomplete Checklist", "Beberapa checklist verifikasi belum dicentang. Kabulkan permohonan?", performApproval);
+            } else {
+                Confirm.show("Grant Request", "Anda yakin untuk menyetujui permohonan ini?", performApproval);
+            }
+        }
+
+        // --- REMOTE HELPER FUNCTIONS ---
+
+        function copyAnydeskCommand(type) {
+            const pass = document.getElementById('anydesk-pass-display').textContent.trim();
+            const target = (type === 'id') ?
+                document.getElementById('spec-anydesk').textContent.replace(/\s/g, '') :
+                document.getElementById('spec-ip').textContent.replace(/\s/g, '');
+
+            if (!target || target === '-') {
+                showToast("Data Missing", "Target AnyDesk ID or IP Address not found.", "warning");
+                return;
+            }
+
+            const cmd = `echo ${pass} | "C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe" ${target} --with-password`;
+            copyToClipboard(cmd);
+        }
+
+        function launchAnydesk(type) {
+            const pass = document.getElementById('anydesk-pass-display').textContent.trim();
+            const target = (type === 'id') ?
+                document.getElementById('spec-anydesk').textContent.replace(/\s/g, '') :
+                document.getElementById('spec-ip').textContent.replace(/\s/g, '');
+
+            if (!target || target === '-') {
+                Toast.warn("Data Missing", "Target AnyDesk ID or IP Address not found.");
+                return;
+            }
+
+            // Copy password to clipboard first so Admin can just Ctrl+V
+            navigator.clipboard.writeText(pass).then(() => {
+                // Then launch the app using URI protocol
+                window.location.assign(`anydesk:${target}`);
+                // Simple toast or alert
+                console.log("Launching AnyDesk and copied password.");
+            }).catch(err => {
+                Toast.error("Copy Failed", "Please ensure the page is using HTTPS.");
+                console.error('Launch error: ', err);
+            });
+        }
+
+        function copyToClipboard(text) {
+            Utils.copyToClipboard(text, "Command copied to clipboard.");
+        }
+
+        function copyServerConfig() {
+            const configText = document.getElementById('server-license-config').value;
+            Utils.copyToClipboard(configText, "Server license config copied to clipboard.");
+        }
+
+        function submitRejection() {
+            const notes = document.getElementById('admin-notes').value;
+            if (!notes) {
+                Toast.warn("Action Required", "Berikan detail alasan penolakan pada bagian catatan.");
+                return;
+            }
+
+            Confirm.show("Reject Request", "Anda yakin ingin menolak permohonan ini?", () => {
+                Loading.show("Memproses Penolakan...");
+                processModal.hide();
+
+                GAS.runWithLoading('apiRejectRequest', "Memproses Penolakan...", {
+                    requestId: currentRequestId,
+                    adminNotes: notes
+                })
+                    .then(res => {
+                        if (res.success) {
+                            Toast.info("Rejected", "Request " + currentRequestId + " telah ditolak.");
+                            loadRequests();
+                        } else {
+                            Toast.error("Error", res.message);
+                        }
+                    })
+                    .catch(err => {
+                        Toast.error("Error", "Gagal melakukan penolakan: " + err.message);
+                    });
+            });
+        }
+    </script>
+
+    <script>
+        // Initialize branding from shared script
+        loadAppBranding();
+    </script>
+    </body>
+
+</html>
