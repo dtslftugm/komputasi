@@ -30,6 +30,7 @@ Fitur ini berfokus pada automasi infrastruktur tingkat lanjut (*infrastructure-a
 - **Otomasi *Password Generator RustDesk/AnyDesk***: Mampu menciptakan parameter sandi secara acak dan kuat, menghilangkan celah kerentanan *password* lemah buatan manusia yang mudah diretas, atau kelupaan dari sisi laboran.
 - **Tautan Akses Lampiran Cepat**: Meletakkan *hyperlink* dokumen perizinan tepat bersamaan dengan baris *dashboard* persetujuan mahasiswa. Laboran tidak akan lagi menghabiskan waktu menyusuri portal Google Drive untuk mencari berkas izin yang menumpuk.
 - **Generator Penyetelan Lisensi (*License Server Automation*)**: Skrip langsung memetakan nilai pengaturan basis server mesin (*port/hostname*) otomatis. Fitur ini membebaskan admin dari keharusan bolak-balik berinteraksi dengan portal atau *software manager* vendor yang sangat repetitif.
+- **Input Kunci Aktivasi Dinamis Berbasis Aturan (*Rule-Based Multi-Key*)**: Automasi deteksi software yang memerlukan mekanisme *Borrow License*. Jika permohonan mencakup beberapa software bertipe ini, sistem akan menyediakan kolom input kunci aktivasi yang dinamis dan terpisah untuk setiap produk. Hal ini menjamin admin dapat mengelola kunci aktivasi vendor yang berbeda dalam satu alur persetujuan, dengan penggabungan data otomatis yang tetap menjaga akurasi laporan statistik penggunaan lisensi per produk.
 - **Manajemen Kredensial *RustDesk/AnyDesk***: Kolom tabel *"Daftar User Aktif"* pada pangkalan data yang interaktif (baris dapat diklik) sehingga Laboran dapat melacak ID layar pengguna hanya dengan sekali ketuk. Serta melakukan pengecekan unit komputer yang sedang digunakan secara remote.
 - **Fleksibilitas Sentral Parameter (*Config Sheet*)**: Tata kelola regulasi, sirkulasi masa aktif pemakaian komputer, hingga preservasi akses Dosen yang permanen dikendalikan dari *Google Sheet Config* yang sangat fleksibel. Perubahan parameter apa pun (*Dynamic Config*) dapat terdistribusi seketika ke aplikasi peramban tanpa harus mengedit sebaris pun kode bahasa mesin, sekaligus menjamin hak prioritas lisensi Dosen selalu terlindungi.
 - **Sistem Email Notifikasi Kelayakan Layanan**: Pemberitahuan otomatis (via email) kepada Admin atas urgensi status perawatan atau pemeliharaan perangkat (*hardware/software maintenance*). Hal ini mempercepat reaksi Admin dalam menindaklanjuti unit komputer yang perlu pemeliharaan.
@@ -60,3 +61,27 @@ Berpusat pada analisis, optimalisasi investasi lab, serta mempermudah evaluasi k
 - **Analitik Jurnal Penggunaan (Diagnostik Dosen & Lab)**: Keunggulan fitur tracking (Kendala & Progres) bukan hanya untuk mencecar mahasiswa, melainkan menyoroti "titik buta". Misalnya, apakah komputer lab disalahkan atas simulasi yang lambat, atau ternyata mahasiswa tertahan karena faktor Dosen Pembimbing?
 - **Justifikasi Perencanaan Anggaran LISENSI ASET ASET (ROI)**: Memastikan manajemen tidak membuang dana sia-sia untuk pembelian *Hardware workstation* baru maupun *Software* bernilai tinggi jika sistem dasbor mendeteksi banyak utilisasi fiktif. Evaluasi anggaran berjalan berdasar data murni (*Data-driven Policy*).
 - **Catatan & *Maintenance Log* Terpusat**: Pelacakan riwayat kerusakan *(pending repair)* yang tercatat presisi sehingga usia aset tiap unit tergambar jejak sejarahnya secara akurat.
+
+---
+
+## ⚙️ 4. Parameter & Aturan Penggunaan Layanan (SOP Digital)
+Bagian ini merinci parameter teknis yang menjamin standarisasi pelayanan:
+
+- **Sirkulasi Masa Pakai Standar**:
+    - **Lisensi Software**: Standar durasi penggunaan adalah **30 hari** (dapat dikonfigurasi via *Config Sheet*).
+    - **Unit Komputer (Seat)**: Untuk menjamin keadilan bagi seluruh mahasiswa yang ingin menggunakan fasilitas, penggunaan unit fisik di Ruang Penelitian akan diberikan maksimal **14 hari** berturut-turut bila tidak terdapat antrean, sedangkan lisensi software akan tetap berlaku selama 30 hari.
+- **Protokol Validasi Berkas Perizinan**:
+    - **Kesesuaian Kontekstual**: Judul penelitian pada dokumen harus memiliki tingkat kemiripan tinggi dengan judul/topik yang diinputkan pada form pendaftaran.
+    - **Integritas Waktu**: Dokumen dianggap **TIDAK VALID** jika tanggal berakhir sudah terlampaui atau jika terdapat anomali kronologis (tanggal terbit lebih muda dari tanggal berakhir).
+    - **Atribut Keabsahan Tanda Tangan**: Dokumen wajib menyertakan setidaknya **1 tanda tangan basah** milik pengguna (mahasiswa), serta **1 tanda tangan basah atau tanda tangan elektronik (TTE)** yang sah milik Dosen Pembimbing atau pejabat yang berwenang.
+- **Ketentuan Perpanjangan (*Renewal SOP*)**:
+    - **Akuntabilitas**: Mahasiswa wajib menginputkan laporan progres minimal **20 karakter**. Sistem akan menolak input yang terlalu pendek atau hanya berupa karakter acak.
+    - **Sinkronisasi Data**: Masa perpanjangan dihitung secara otomatis menyambung dari tanggal berakhir sebelumnya guna mencegah tumpang tindih masa pakai.
+- **Jendela Pemesanan (*Booking Window*)**:
+    - Sistem membatasi pemilihan tanggal "Mulai Pemakaian" maksimal **7 hari ke depan (H+7)** dari hari operasional berjalan untuk mencegah pemesanan slot fiktif jangka panjang.
+- **Protokol Penghapusan Data (*Grace Period*)**:
+    - Data pekerjaan mahasiswa di unit komputer akan dipertahankan selama **60 hari** setelah masa berlaku habis sebelum masuk ke jadwal pembersihan otomatis oleh sistem.
+- **Integritas & Keamanan Data Pengguna**:
+    - **Isolasi Profil Pengguna (*Windows User Profile*)**: Sebagai langkah perlindungan privasi dan keamanan data, sistem menerapkan kebijakan pembuatan **profil pengguna Windows** (sesuai nama pemohon) pada setiap unit komputer yang dialokasikan. Pengguna **dilarang keras** mengakses atau menggunakan profil Windows milik orang lain. Ketentuan ini bertujuan untuk memastikan isolasi data antar pengguna dapat terjaga dengan baik.
+    - **Tanggung Jawab Mandiri**: Seluruh data hasil pekerjaan, file simulasi, maupun dokumen pribadi yang disimpan di dalam unit komputer laboratorium merupakan tanggung jawab sepenuhnya dari masing-masing pengguna. Pengguna sangat disarankan untuk melakukan pencadangan (*backup*) data secara mandiri dan berkala ke media penyimpanan eksternal atau *cloud storage* pribadi.
+    - **Batasan Jaminan & *Force Majeure***: Pengelola laboratorium berkomitmen untuk menjaga stabilitas infrastruktur dan keamanan sistem secara optimal. Namun demikian, pengelola tidak dapat memberikan jaminan mutlak terhadap keutuhan data terhadap risiko kehilangan atau kerusakan yang disebabkan oleh kegagalan sistem teknis maupun kejadian di luar kendali pengelola (*Force Majeure*), termasuk namun tidak terbatas pada bencana alam, kebakaran, atau gangguan daya listrik yang mengakibatkan data tidak dapat diakses kembali.
