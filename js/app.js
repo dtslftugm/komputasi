@@ -1582,23 +1582,23 @@ function getUrlParam(name) {
 function prefillRenewalForm(data) {
     if (!data) return;
 
-    if (data.nama) document.getElementById('nama').value = data.nama;
-    if (data.nim) document.getElementById('nim').value = data.nim;
-    if (data.emailAddress) document.getElementById('email').value = data.emailAddress;
-    if (data.emailUGM) document.getElementById('emailUGM').value = data.emailUGM;
+    if (data.nama) document.getElementById('nama').value = String(data.nama);
+    if (data.nim) document.getElementById('nim').value = String(data.nim);
+    if (data.emailAddress) document.getElementById('email').value = String(data.emailAddress);
+    if (data.emailUGM) document.getElementById('emailUGM').value = String(data.emailUGM);
 
     if (data.phone) {
-        var phone = data.phone.replace('https://wa.me/+62', '');
+        var phone = String(data.phone).replace('https://wa.me/+62', '');
         document.getElementById('phone').value = phone;
     }
 
     if (data.prodi) {
-        document.getElementById('prodi').value = data.prodi;
+        document.getElementById('prodi').value = String(data.prodi);
         handleProdiChange(); // Force UI update (Select2 vs Manual)
     }
 
-    if (data.universitas) document.getElementById('universitas').value = data.universitas;
-    if (data.topikJudul) document.getElementById('topik').value = data.topikJudul;
+    if (data.universitas) document.getElementById('universitas').value = String(data.universitas);
+    if (data.topikJudul) document.getElementById('topik').value = String(data.topikJudul);
 
     if (data.software) {
         var swArray = data.software.split(',').map(function (s) { return s.trim(); });
