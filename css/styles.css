@@ -502,3 +502,11 @@ body.light-mode .mitra-disclaimer-switch {
 .mitra-disclaimer-switch label {
   color: var(--text-main) !important;
 }
+
+.mitra-disclaimer-header {
+  color: #ffc107 !important; /* Warning yellow for Dark Mode */
+}
+
+body.light-mode .mitra-disclaimer-header {
+  color: #212529 !important; /* Dark for Light Mode */
+}
