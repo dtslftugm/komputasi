@@ -1341,7 +1341,7 @@ function validateFormData(data) {
         return false;
     }
 
-    if (!data.dosenPembimbing) {
+    if (data.keperluanPenggunaan !== 'Mitra' && !data.dosenPembimbing) {
         var prodiVal = document.getElementById('prodi').value;
         ui.alert('Harap pilih atau isi nama Dosen Pembimbing / Pengampu Anda.', 'Dosen Diperlukan', 'warning')
             .then(function () {
@@ -1368,7 +1368,7 @@ function validateFormData(data) {
         return false;
     }
 
-    if (!data.topikJudul) {
+    if (data.keperluanPenggunaan !== 'Mitra' && !data.topikJudul) {
         ui.alert('Isi topik atau judul penelitian/tugas Anda.', 'Topik Diperlukan', 'warning')
             .then(function () {
                 var el = document.getElementById('topik');
