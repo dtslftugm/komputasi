@@ -80,7 +80,7 @@ function setupDateRestrictions() {
     var dd = String(today.getDate()).padStart(2, '0');
     var todayStr = yyyy + '-' + mm + '-' + dd;
 
-    // Calculate Max Date for Start Date (H+7)
+    // Restore Max Date for Start Date (H+7)
     var maxDate = new Date();
     maxDate.setDate(today.getDate() + 7);
     var maxYyyy = maxDate.getFullYear();
@@ -95,21 +95,59 @@ function setupDateRestrictions() {
         mulaiEl.setAttribute('min', todayStr);
         mulaiEl.setAttribute('max', maxDateStr);
         if (!mulaiEl.value) {
-            mulaiEl.value = todayStr; // Set default to today
+            mulaiEl.value = todayStr;
         }
-    }
-    if (akhirEl) akhirEl.setAttribute('min', todayStr);
 
-    // Ensure akhir min date dynamically updates based on mulai date
-    if (mulaiEl && akhirEl) {
         mulaiEl.addEventListener('change', function () {
-            var selectedStart = this.value || todayStr;
-            akhirEl.setAttribute('min', selectedStart);
-            if (akhirEl.value && akhirEl.value < selectedStart) {
-                akhirEl.value = selectedStart;
-            }
+            validateAndAdjustDates();
         });
     }
+
+    if (akhirEl) {
+        akhirEl.addEventListener('change', function () {
+            validateAndAdjustDates();
+        });
+    }
+
+    function validateAndAdjustDates() {
+        var mulaiVal = mulaiEl.value;
+        if (!mulaiVal) return;
+
+        var mulaiDate = new Date(mulaiVal);
+        var isMitra = false;
+        var mitraRadio = document.querySelector('input[name="keperluan"]:checked');
+        if (mitraRadio && mitraRadio.value === 'Mitra') {
+            isMitra = true;
+        }
+
+        if (isMitra) {
+            // Mitra: Minimal 30 days
+            var minAkhir = new Date(mulaiDate.getTime());
+            minAkhir.setDate(minAkhir.getDate() + 30);
+
+            var minAkhirStr = minAkhir.toISOString().split('T')[0];
+            akhirEl.setAttribute('min', minAkhirStr);
+
+            // Auto adjust if empty or less than min
+            if (!akhirEl.value || new Date(akhirEl.value) < minAkhir) {
+                akhirEl.value = minAkhirStr;
+            }
+        } else {
+            // Regular: Minimal 1 day (same day or after)
+            // Fix: If switching AWAY from Mitra, reset the value to empty for flexibility
+            var wasMitra = akhirEl.getAttribute('min') && (new Date(akhirEl.getAttribute('min')) - mulaiDate > 86400000);
+
+            akhirEl.setAttribute('min', mulaiVal);
+            if (wasMitra) {
+                akhirEl.value = ''; // Clear for student flexibility
+            } else if (akhirEl.value && new Date(akhirEl.value) < mulaiDate) {
+                akhirEl.value = mulaiVal;
+            }
+        }
+    }
+
+    // Expose for other toggles
+    window.validateAndAdjustDates = validateAndAdjustDates;
 }
 
 // ===== BRANDING =====
@@ -457,7 +495,7 @@ function setupQuotaCheck() {
         for (var i = 0; i < options.length; i++) {
             var opt = options[i];
             var swData = null;
-            
+
             // Find matched data
             for (var j = 0; j < softwareList.length; j++) {
                 if (softwareList[j].name === opt.value) {
@@ -469,7 +507,7 @@ function setupQuotaCheck() {
             if (swData) {
                 var quotaString = swData.quotaInfo || "";
                 var baseName = swData.name;
-                
+
                 if (swData.isAvailable) {
                     opt.textContent = baseName + " " + quotaString;
                     opt.disabled = false;
@@ -479,7 +517,7 @@ function setupQuotaCheck() {
                 }
             }
         }
-        
+
         // Refresh Select2 if it exists
         if ($.fn.select2 && $(selectEl).data('select2')) {
             $(selectEl).trigger('change.select2');
@@ -991,7 +1029,7 @@ function setupFormHandlers() {
 
         // --- Step 1: Prepare Files ---
         var filePromises = [];
-        
+
         // Letter File
         var suratInput = document.getElementById('uploadSurat');
         if (formData.uploadMethod === 'upload' && suratInput.files.length > 0) {
@@ -1005,14 +1043,14 @@ function setupFormHandlers() {
         }
 
         showLoading('Mempersiapkan data...');
-        
+
         Promise.all(filePromises)
             .then(function (fileObjects) {
                 showLoading('Menyimpan data teks...');
                 return api.submitRequest(formData)
                     .then(function (result) {
                         if (!result.success) throw new Error(result.message || 'Gagal menyimpan data teks');
-                        
+
                         var rowIndex = result.data.rowIndex;
                         var sheetName = result.data.sheetName;
                         var requestId = result.data.requestId;
@@ -1020,7 +1058,7 @@ function setupFormHandlers() {
                         // --- Step 2: Upload Files sequentially if they exist ---
                         if (fileObjects.length > 0) {
                             var uploadChain = Promise.resolve();
-                            
+
                             fileObjects.forEach(function (fileObj, index) {
                                 uploadChain = uploadChain.then(function () {
                                     showLoading('Mengunggah berkas ' + (index + 1) + '/' + fileObjects.length + '...');
@@ -1086,13 +1124,18 @@ function setupMitraToggle() {
 
     function toggleMitra() {
         var selectedValue = (document.querySelector('input[name="keperluan"]:checked') || {}).value;
-        
+
         if (selectedValue === 'Mitra') {
             mitraFields.classList.remove('d-none');
             if (academicSection) academicSection.classList.add('d-none');
         } else {
             mitraFields.classList.add('d-none');
             if (academicSection) academicSection.classList.remove('d-none');
+        }
+
+        // Trigger date adjustment if it exists
+        if (typeof validateAndAdjustDates === 'function') {
+            validateAndAdjustDates();
         }
     }
 
@@ -1174,7 +1217,15 @@ function collectFormData() {
         asalInstitusi: (document.getElementById('asalInstitusi') || {}).value || '',
         nikNpwp: (document.getElementById('nikNpwp') || {}).value || '',
         alamatInstitusi: (document.getElementById('alamatInstitusi') || {}).value || '',
-        jangkaWaktu: (document.getElementById('jangkaWaktu') || {}).value || '',
+        jangkaWaktu: (function () {
+            var m = document.getElementById('mulai').value;
+            var a = document.getElementById('akhir').value;
+            if (!m || !a) return "";
+            var d1 = new Date(m);
+            var d2 = new Date(a);
+            var diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+            return diff + " Hari";
+        })(),
         identitasMethod: (document.querySelector('input[name="identitasMethod"]:checked') || {}).value || 'upload',
         linkIdentitas: (document.getElementById('linkIdentitas') || {}).value || '',
         mitraDisclaimer: (document.getElementById('mitraDisclaimer') || {}).checked
@@ -1232,18 +1283,46 @@ function validateFormData(data) {
     if (data.keperluanPenggunaan === 'Mitra') {
         var identitasOk = (data.identitasMethod === 'link') ? !!data.linkIdentitas : !!document.getElementById('uploadIdentitas').files.length;
 
-        if (!data.asalInstitusi || !data.nikNpwp || !data.alamatInstitusi || !data.jangkaWaktu) {
-            ui.alert('Harap lengkapi seluruh Informasi Administrasi Mitra (Institusi, NIK/NPWP, Alamat, dan Jangka Waktu).', 'Administrasi Mitra', 'warning');
+        if (!data.asalInstitusi || !data.nikNpwp || !data.alamatInstitusi) {
+            var firstMissingMitra = !data.asalInstitusi ? 'asalInstitusi' : (!data.nikNpwp ? 'nikNpwp' : 'alamatInstitusi');
+            ui.alert('Harap lengkapi seluruh Informasi Administrasi Mitra (Institusi, NIK/NPWP, dan Alamat).', 'Administrasi Mitra', 'warning')
+                .then(function () {
+                    var el = document.getElementById(firstMissingMitra);
+                    if (el) {
+                        el.classList.add('is-invalid');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(function () { el.focus(); }, 300);
+                        $(el).one('input change', function () { el.classList.remove('is-invalid'); });
+                    }
+                });
             return false;
         }
-        
+
         if (!identitasOk) {
-            ui.alert('Harap unggah berkas Identitas (KTP/NPWP) atau sertakan link identitas Anda.', 'Dokumen Identitas', 'warning');
+            ui.alert('Harap unggah berkas Identitas (KTP/NPWP) atau sertakan link identitas Anda.', 'Dokumen Identitas', 'warning')
+                .then(function () {
+                    var container = document.getElementById(data.identitasMethod === 'link' ? 'identitasLink' : 'uploadIdentitas');
+                    if (container) {
+                        container.classList.add('is-invalid');
+                        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        $(container).one('input change', function () { container.classList.remove('is-invalid'); });
+                    }
+                });
             return false;
         }
 
         if (!data.mitraDisclaimer) {
-            ui.alert('Anda wajib menyetujui Pernyataan Tanggung Jawab Hukum untuk melanjutkan sebagai Mitra.', 'Penafian Hukum', 'info');
+            ui.alert('Anda wajib menyetujui Pernyataan Tanggung Jawab Hukum untuk melanjutkan sebagai Mitra.', 'Penafian Hukum', 'info')
+                .then(function () {
+                    var card = document.getElementById('mitraDisclaimer').closest('.card');
+                    if (card) {
+                        card.classList.add('invalid-selection');
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        $('#mitraDisclaimer').one('change', function () {
+                            card.classList.remove('invalid-selection');
+                        });
+                    }
+                });
             return false;
         }
     }
