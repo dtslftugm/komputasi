@@ -868,6 +868,8 @@ function loadAvailableComputers() {
     var isRenewalFlow = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData);
     var isMitra = (document.querySelector('input[name="keperluan"]:checked') || {}).value === 'Mitra';
 
+    console.log('loadAvailableComputers: room=' + room + ', isMitra=' + isMitra + ', isRenewal=' + isRenewalFlow);
+
     if (!room || (isRenewalFlow && !isMitra)) {
         container.style.display = 'none';
         container.classList.add('d-none'); // Force CSS level hidden
@@ -896,6 +898,7 @@ function loadAvailableComputers() {
     api.getAvailableComputers(room)
         .then(function (response) {
             availableComputers = (response && response.data) ? response.data : [];
+            console.log('loadAvailableComputers: Received ' + availableComputers.length + ' computers');
             filterComputers();
         })
         .catch(function (error) {
