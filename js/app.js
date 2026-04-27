@@ -887,6 +887,7 @@ function loadAvailableComputers() {
     }
 
     container.style.display = 'block';
+    container.classList.remove('d-none');
     loading.style.display = 'block';
     list.innerHTML = '';
     noComputers.classList.add('d-none');
