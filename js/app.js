@@ -866,8 +866,9 @@ function loadAvailableComputers() {
     var pagination = document.getElementById('computer-pagination');
 
     var isRenewalFlow = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData);
+    var isMitra = (document.querySelector('input[name="keperluan"]:checked') || {}).value === 'Mitra';
 
-    if (!room || isRenewalFlow) {
+    if (!room || (isRenewalFlow && !isMitra)) {
         container.style.display = 'none';
         container.classList.add('d-none'); // Force CSS level hidden
         return;
@@ -879,7 +880,7 @@ function loadAvailableComputers() {
         loading.style.display = 'none';
         list.innerHTML = '';
         noComputers.classList.remove('d-none');
-        noComputers.innerHTML = '<div class="alert alert-warning fw-bold mb-0">🔒 Ruangan Terkunci: Silakan masukkan "Kode Peserta" yang benar di atas untuk mengikuti kegiatan.</div>';
+        noComputers.innerHTML = '<div class="alert alert-warning fw-bold mb-0">🔒 Ruangan Terkunci: Silakan masukkan "Kode Peserta" yang benar untuk mengikuti kegiatan.</div>';
         pagination.classList.add('d-none');
         container.style.display = 'block';
         return;
@@ -1065,6 +1066,7 @@ function setupFormHandlers() {
                                     return api.uploadFile({
                                         rowIndex: rowIndex,
                                         sheetName: sheetName,
+                                        requestId: requestId,
                                         targetCol: fileObj.targetCol,
                                         fileData: fileObj.data,
                                         mimeType: fileObj.mimeType,
