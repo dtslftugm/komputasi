@@ -198,7 +198,10 @@ APIClient.prototype.uploadFile = function (data) {
         rowIndex: data.rowIndex,
         fileData: data.fileData,
         mimeType: data.mimeType,
-        fileName: data.fileName
+        fileName: data.fileName,
+        sheetName: data.sheetName,
+        requestId: data.requestId,
+        targetCol: data.targetCol
     });
 
     return fetch(this.getBaseURL(), {

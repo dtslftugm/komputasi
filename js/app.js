@@ -1050,11 +1050,16 @@ function setupFormHandlers() {
                 showLoading('Menyimpan data teks...');
                 return api.submitRequest(formData)
                     .then(function (result) {
+                        console.log('Submission Result:', result);
                         if (!result.success) throw new Error(result.message || 'Gagal menyimpan data teks');
 
-                        var rowIndex = result.data.rowIndex;
-                        var sheetName = result.data.sheetName;
-                        var requestId = result.data.requestId;
+                        // Robustly extract data from either top-level or nested 'data' property
+                        var resData = result.data || result;
+                        var rowIndex = resData.rowIndex;
+                        var sheetName = resData.sheetName;
+                        var requestId = resData.requestId;
+
+                        console.log('Targeting Sheet:', sheetName, 'Row:', rowIndex, 'ID:', requestId);
 
                         // --- Step 2: Upload Files sequentially if they exist ---
                         if (fileObjects.length > 0) {
