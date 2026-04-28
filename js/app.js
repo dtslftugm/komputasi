@@ -299,7 +299,6 @@ function setupHistoricalTracker() {
     }
 
     if (nimInput) {
-        nimInput.addEventListener('blur', checkHistory);
         nimInput.addEventListener('change', checkHistory);
     }
 }
