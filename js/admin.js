@@ -259,7 +259,7 @@ function renderTable(filter) {
             '</td>' +
             '<td><span class="badge ' + statusClass + ' border">' + statusLabel + '</span></td>' +
             '<td class="text-center">' +
-            '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openProcessModal(\'' + req.requestId + '\')">Proses</button>' +
+            '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openProcessModal(\'' + req.requestId + '\', ' + req.rowIndex + ')">Proses</button>' +
             '</td>';
         tbody.appendChild(tr);
     });
@@ -430,8 +430,14 @@ function renderBorrowKeyInputs(borrowSoftwares) {
     }
 }
 
-function openProcessModal(requestId) {
-    var req = pendingRequests.find(function (r) { return r.requestId === requestId; });
+function openProcessModal(requestId, rowIndex) {
+    // Priority search by rowIndex for precision in renewals
+    var req = pendingRequests.find(function (r) { return r.rowIndex === rowIndex; });
+
+    // Fallback to requestId for safety
+    if (!req) {
+        req = pendingRequests.find(function (r) { return r.requestId === requestId; });
+    }
     if (!req) return;
 
     if (!processModalObj) {
@@ -512,184 +518,184 @@ function openProcessModal(requestId) {
         }
     }
 
-// Renewal Details Visibility
-var renewalInfoContainer = document.getElementById('renewal-details-container');
-if (renewalInfoContainer) {
-    var hasProgressData = req.progresSebelumnya || req.targetSelanjutnya || req.kendala;
-    if (req.isRenewal || req.hasNimHistory || hasProgressData) {
-        renewalInfoContainer.classList.remove('d-none');
-        document.getElementById('modal-progres-sebelumnya').textContent = req.progresSebelumnya || '-';
-        document.getElementById('modal-target-selanjutnya').textContent = req.targetSelanjutnya || '-';
-        document.getElementById('modal-kendala').textContent = req.kendala || '-';
+    // Renewal Details Visibility
+    var renewalInfoContainer = document.getElementById('renewal-details-container');
+    if (renewalInfoContainer) {
+        var hasProgressData = req.progresSebelumnya || req.targetSelanjutnya || req.kendala;
+        if (req.isRenewal || req.hasNimHistory || hasProgressData) {
+            renewalInfoContainer.classList.remove('d-none');
+            document.getElementById('modal-progres-sebelumnya').textContent = req.progresSebelumnya || '-';
+            document.getElementById('modal-target-selanjutnya').textContent = req.targetSelanjutnya || '-';
+            document.getElementById('modal-kendala').textContent = req.kendala || '-';
 
-        // If it's a NIM history match but NOT an official renewal, add a note
-        if (!req.isRenewal && req.hasNimHistory) {
-            var header = renewalInfoContainer.querySelector('h6');
-            if (header) header.innerHTML = '🔄 Riwayat NIM Terdeteksi';
-        }
-    } else {
-        renewalInfoContainer.classList.add('d-none');
-    }
-}
-
-var docLink = document.getElementById('modal-doc-link');
-if (docLink) docLink.href = req.fileUrl || '#';
-
-// 2. Reset UI State & Inputs
-document.getElementById('admin-notes').value = '';
-var keyInput = document.getElementById('activation-key-input');
-var anydeskPasswordInput = document.getElementById('anydesk-password-input');
-if (keyInput) keyInput.value = '';
-if (anydeskPasswordInput) anydeskPasswordInput.value = '';
-
-// Visibility management
-var keyContainer = document.getElementById('activation-key-container');
-var anydeskPasswordContainer = document.getElementById('anydesk-password-container');
-var specContainer = document.getElementById('computer-specs-container');
-var serverLicenseContainer = document.getElementById('server-license-container');
-var reallocateSelector = document.getElementById('reallocate-selector');
-var specDetails = document.getElementById('spec-details-box');
-var winUserContainer = document.getElementById('check-win-user-container');
-
-// Default: Hide all optional sections
-if (keyContainer) keyContainer.classList.add('d-none');
-if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
-if (specContainer) specContainer.classList.add('d-none');
-if (serverLicenseContainer) serverLicenseContainer.classList.add('d-none');
-if (reallocateSelector) reallocateSelector.classList.add('d-none');
-if (specDetails) specDetails.classList.remove('d-none');
-document.getElementById('reallocate-btn').innerText = "🔄 Change";
-
-if (winUserContainer) {
-    winUserContainer.classList.add('d-none');
-    document.getElementById('id-check-win-user').checked = false;
-}
-
-// 3. Logic-based Visibility & Content
-// Milestone 17 Fix: STRICT equality check for room consistency
-var isRuangPenelitian = (req.roomPreference === 'Ruang Penelitian');
-var daysToAdd = isRuangPenelitian ? adminConfig.seatExpiration : adminConfig.durationRegular;
-
-// Normalize Today to Midnight Local for calculation base
-var baseDate = new Date();
-baseDate.setHours(0, 0, 0, 0);
-
-// Logic: If renewal, use prevExpirationDate (standard Date parsing)
-if (req.isRenewal && req.prevExpirationDate) {
-    // Parse the ISO string or Date object passed from backend
-    var prevDate = new Date(req.prevExpirationDate);
-
-    if (!isNaN(prevDate.getTime())) {
-        // Ensure we only use the date part for comparison (prevent time-of-day edge cases)
-        var normalizedPrev = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
-
-        // If previous date is in the future, use it as building block
-        if (normalizedPrev > baseDate) {
-            baseDate = normalizedPrev;
+            // If it's a NIM history match but NOT an official renewal, add a note
+            if (!req.isRenewal && req.hasNimHistory) {
+                var header = renewalInfoContainer.querySelector('h6');
+                if (header) header.innerHTML = '🔄 Riwayat NIM Terdeteksi';
+            }
+        } else {
+            renewalInfoContainer.classList.add('d-none');
         }
     }
-}
 
-// Final Calculation Result
-var expDate = new Date(baseDate.getTime());
-expDate.setDate(expDate.getDate() + daysToAdd);
+    var docLink = document.getElementById('modal-doc-link');
+    if (docLink) docLink.href = req.fileUrl || '#';
 
-// Milestone 17: Format using project-standard method (adhering to local time)
-// toISOString() uses UTC, so we adjust by the timezone offset to keep it "Local"
-var tzOffset = expDate.getTimezoneOffset() * 60000; // in ms
-var localExpDate = new Date(expDate.getTime() - tzOffset);
-document.getElementById('expiration-date-input').value = localExpDate.toISOString().split('T')[0];
+    // 2. Reset UI State & Inputs
+    document.getElementById('admin-notes').value = '';
+    var keyInput = document.getElementById('activation-key-input');
+    var anydeskPasswordInput = document.getElementById('anydesk-password-input');
+    if (keyInput) keyInput.value = '';
+    if (anydeskPasswordInput) anydeskPasswordInput.value = '';
 
-// Activation Key / Borrow License (Dynamic Rule-Based Rendering)
-var borrowSoftwares = getBorrowSoftwares(req.software);
-if (req.needsKey || req.requestType === 'Borrow License' || borrowSoftwares.length > 0) {
-    if (keyContainer) {
-        keyContainer.classList.remove('d-none');
-        renderBorrowKeyInputs(borrowSoftwares);
+    // Visibility management
+    var keyContainer = document.getElementById('activation-key-container');
+    var anydeskPasswordContainer = document.getElementById('anydesk-password-container');
+    var specContainer = document.getElementById('computer-specs-container');
+    var serverLicenseContainer = document.getElementById('server-license-container');
+    var reallocateSelector = document.getElementById('reallocate-selector');
+    var specDetails = document.getElementById('spec-details-box');
+    var winUserContainer = document.getElementById('check-win-user-container');
+
+    // Default: Hide all optional sections
+    if (keyContainer) keyContainer.classList.add('d-none');
+    if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
+    if (specContainer) specContainer.classList.add('d-none');
+    if (serverLicenseContainer) serverLicenseContainer.classList.add('d-none');
+    if (reallocateSelector) reallocateSelector.classList.add('d-none');
+    if (specDetails) specDetails.classList.remove('d-none');
+    document.getElementById('reallocate-btn').innerText = "🔄 Change";
+
+    if (winUserContainer) {
+        winUserContainer.classList.add('d-none');
+        document.getElementById('id-check-win-user').checked = false;
     }
-}
 
-// AnyDesk (Only for Research Room)
-if (req.roomPreference === 'Ruang Penelitian') {
-    if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
-    updateAnydeskPasswordUI();
-}
+    // 3. Logic-based Visibility & Content
+    // Milestone 17 Fix: STRICT equality check for room consistency
+    var isRuangPenelitian = (req.roomPreference === 'Ruang Penelitian');
+    var daysToAdd = isRuangPenelitian ? adminConfig.seatExpiration : adminConfig.durationRegular;
 
-// Server License Configuration
-if (serverLicenseContainer) {
-    var reqTypeStr = (req.requestType || "");
-    var isServerType = reqTypeStr.indexOf('Akses Lisensi Server') !== -1;
+    // Normalize Today to Midnight Local for calculation base
+    var baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
 
-    console.log("SERVER LICENSE CHECK:", { reqType: reqTypeStr, isServerType: isServerType, software: req.software });
+    // Logic: If renewal, use prevExpirationDate (standard Date parsing)
+    if (req.isRenewal && req.prevExpirationDate) {
+        // Parse the ISO string or Date object passed from backend
+        var prevDate = new Date(req.prevExpirationDate);
 
-    if (req.needsServerInfo || isServerType || (req.computerUsername && req.computerHostname)) {
-        serverLicenseContainer.classList.remove('d-none');
-        var serverConfigInput = document.getElementById('server-license-config');
-        var applicantConfigStr = "allow=" + (req.computerUsername || "") + "@" + (req.computerHostname || "");
+        if (!isNaN(prevDate.getTime())) {
+            // Ensure we only use the date part for comparison (prevent time-of-day edge cases)
+            var normalizedPrev = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
 
-        if (serverConfigInput) {
-            if (isServerType && req.software) {
-                serverConfigInput.value = "Menarik data Dosen & User aktif dari server...";
-
-                // Fetch active users + dosen rules
-                api.run('admin-active-software-users', { softwareName: req.software })
-                    .then(function (res) {
-                        if (res.success && res.data && res.data.allowlist) {
-                            serverConfigInput.value = res.data.allowlist + "\n" + applicantConfigStr;
-                        } else {
-                            serverConfigInput.value = applicantConfigStr + "\n(Gagal menarik data list aktif: " + (res.message || "Unknown Error") + ")";
-                        }
-                    })
-                    .catch(function (err) {
-                        serverConfigInput.value = applicantConfigStr + "\n(" + err + ")";
-                    });
-            } else {
-                serverConfigInput.value = applicantConfigStr;
+            // If previous date is in the future, use it as building block
+            if (normalizedPrev > baseDate) {
+                baseDate = normalizedPrev;
             }
         }
     }
-}
 
-// Computer Specs (Visibility based on Request Type & Preference)
-var reqType = req.requestType || "";
-var isLaptopPribadi = (req.roomPreference || "").toLowerCase().indexOf("laptop pribadi") !== -1;
-var isPureLicense = reqType.indexOf("Borrow License") !== -1 || reqType.indexOf("Cloud License") !== -1 || reqType.indexOf("Akses Lisensi Server") !== -1;
-var noComputerNeeded = isLaptopPribadi || isPureLicense;
+    // Final Calculation Result
+    var expDate = new Date(baseDate.getTime());
+    expDate.setDate(expDate.getDate() + daysToAdd);
 
-var computerToShow = req.preferredComputer;
-var hasValidComputer = computerToShow && computerToShow !== 'Auto Assign' && computerToShow !== 'Belum Dialokasikan';
+    // Milestone 17: Format using project-standard method (adhering to local time)
+    // toISOString() uses UTC, so we adjust by the timezone offset to keep it "Local"
+    var tzOffset = expDate.getTimezoneOffset() * 60000; // in ms
+    var localExpDate = new Date(expDate.getTime() - tzOffset);
+    document.getElementById('expiration-date-input').value = localExpDate.toISOString().split('T')[0];
 
-if (hasValidComputer || !noComputerNeeded) {
-    specContainer.classList.remove('d-none');
-
-    if (hasValidComputer) {
-        document.getElementById('spec-name').textContent = computerToShow;
-        api.jsonpRequest('admin-get-computer-details', { computerName: computerToShow })
-            .then(function (res) {
-                if (res.success && res.data) {
-                    document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
-                    document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
-                    document.getElementById('spec-location').textContent = res.data.location || '-';
-
-                    if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
-                        if (res.data.anydeskPassword) anydeskPasswordInput.value = res.data.anydeskPassword;
-                    }
-                }
-            });
-    } else {
-        document.getElementById('spec-name').textContent = "Belum Dialokasikan";
-        document.getElementById('spec-anydesk').textContent = '-';
-        document.getElementById('spec-ip').textContent = '-';
-        document.getElementById('spec-location').textContent = '-';
+    // Activation Key / Borrow License (Dynamic Rule-Based Rendering)
+    var borrowSoftwares = getBorrowSoftwares(req.software);
+    if (req.needsKey || req.requestType === 'Borrow License' || borrowSoftwares.length > 0) {
+        if (keyContainer) {
+            keyContainer.classList.remove('d-none');
+            renderBorrowKeyInputs(borrowSoftwares);
+        }
     }
-}
 
-// Show Windows User check only for Computer access
-if (winUserContainer && !noComputerNeeded) {
-    winUserContainer.classList.remove('d-none');
-}
+    // AnyDesk (Only for Research Room)
+    if (req.roomPreference === 'Ruang Penelitian') {
+        if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
+        updateAnydeskPasswordUI();
+    }
 
-processModalObj.show();
+    // Server License Configuration
+    if (serverLicenseContainer) {
+        var reqTypeStr = (req.requestType || "");
+        var isServerType = reqTypeStr.indexOf('Akses Lisensi Server') !== -1;
+
+        console.log("SERVER LICENSE CHECK:", { reqType: reqTypeStr, isServerType: isServerType, software: req.software });
+
+        if (req.needsServerInfo || isServerType || (req.computerUsername && req.computerHostname)) {
+            serverLicenseContainer.classList.remove('d-none');
+            var serverConfigInput = document.getElementById('server-license-config');
+            var applicantConfigStr = "allow=" + (req.computerUsername || "") + "@" + (req.computerHostname || "");
+
+            if (serverConfigInput) {
+                if (isServerType && req.software) {
+                    serverConfigInput.value = "Menarik data Dosen & User aktif dari server...";
+
+                    // Fetch active users + dosen rules
+                    api.run('admin-active-software-users', { softwareName: req.software })
+                        .then(function (res) {
+                            if (res.success && res.data && res.data.allowlist) {
+                                serverConfigInput.value = res.data.allowlist + "\n" + applicantConfigStr;
+                            } else {
+                                serverConfigInput.value = applicantConfigStr + "\n(Gagal menarik data list aktif: " + (res.message || "Unknown Error") + ")";
+                            }
+                        })
+                        .catch(function (err) {
+                            serverConfigInput.value = applicantConfigStr + "\n(" + err + ")";
+                        });
+                } else {
+                    serverConfigInput.value = applicantConfigStr;
+                }
+            }
+        }
+    }
+
+    // Computer Specs (Visibility based on Request Type & Preference)
+    var reqType = req.requestType || "";
+    var isLaptopPribadi = (req.roomPreference || "").toLowerCase().indexOf("laptop pribadi") !== -1;
+    var isPureLicense = reqType.indexOf("Borrow License") !== -1 || reqType.indexOf("Cloud License") !== -1 || reqType.indexOf("Akses Lisensi Server") !== -1;
+    var noComputerNeeded = isLaptopPribadi || isPureLicense;
+
+    var computerToShow = req.preferredComputer;
+    var hasValidComputer = computerToShow && computerToShow !== 'Auto Assign' && computerToShow !== 'Belum Dialokasikan';
+
+    if (hasValidComputer || !noComputerNeeded) {
+        specContainer.classList.remove('d-none');
+
+        if (hasValidComputer) {
+            document.getElementById('spec-name').textContent = computerToShow;
+            api.jsonpRequest('admin-get-computer-details', { computerName: computerToShow })
+                .then(function (res) {
+                    if (res.success && res.data) {
+                        document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
+                        document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
+                        document.getElementById('spec-location').textContent = res.data.location || '-';
+
+                        if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
+                            if (res.data.anydeskPassword) anydeskPasswordInput.value = res.data.anydeskPassword;
+                        }
+                    }
+                });
+        } else {
+            document.getElementById('spec-name').textContent = "Belum Dialokasikan";
+            document.getElementById('spec-anydesk').textContent = '-';
+            document.getElementById('spec-ip').textContent = '-';
+            document.getElementById('spec-location').textContent = '-';
+        }
+    }
+
+    // Show Windows User check only for Computer access
+    if (winUserContainer && !noComputerNeeded) {
+        winUserContainer.classList.remove('d-none');
+    }
+
+    processModalObj.show();
 }
 
 function toggleReallocate() {
@@ -811,7 +817,9 @@ function submitApproval() {
             return singleInput ? singleInput.value : "";
         })(),
         anydeskPassword: document.getElementById('anydesk-password-input') ? document.getElementById('anydesk-password-input').value : "",
-        newComputerName: currentReassignedComputer
+        newComputerName: currentReassignedComputer,
+        rowIndex: currentRequest.rowIndex,
+        sheetName: currentRequest.sheetName
     };
 
     showLoading("Memproses Approval...");
@@ -863,7 +871,8 @@ function submitRejection() {
             showLoading("Memproses Penolakan...");
             api.jsonpRequest('admin-reject', {
                 requestId: currentRequest.requestId,
-                reason: reason
+                reason: reason,
+                sheetName: currentRequest.sheetName
             })
                 .then(function (res) {
                     if (res.success) {
@@ -932,13 +941,13 @@ function renderExpiredTable(data) {
             '</td>' +
             '<td class="text-danger fw-bold small">' + item.expirationDate + '</td>' +
             '<td class="text-center">' +
-            '<button class="btn btn-outline-danger btn-sm" onclick="handleRevoke(\'' + item.requestId + '\', \'' + item.nama + '\', ' + item.rowIndex + ', \'' + item.type + '\')">Revoke</button>' +
+            '<button class="btn btn-outline-danger btn-sm" onclick="handleRevoke(\'' + item.requestId + '\', \'' + item.nama + '\', ' + item.rowIndex + ', \'' + item.type + '\', \'' + item.sheetName + '\')">Revoke</button>' +
             '</td>';
         tbody.appendChild(tr);
     });
 }
 
-function handleRevoke(requestId, name, rowIndex, requestType) {
+function handleRevoke(requestId, name, rowIndex, requestType, sheetName) {
     var needsComputer = requestType === "Lisensi + Komputer" || requestType === "Komputer";
     var confirmMsg = "Cabut akses untuk " + name + "?";
     if (needsComputer) {
@@ -950,7 +959,7 @@ function handleRevoke(requestId, name, rowIndex, requestType) {
             if (!confirmed) return;
 
             showLoading("Mencabut akses...");
-            api.jsonpRequest('admin-revoke', { requestId: requestId, rowIndex: rowIndex })
+            api.jsonpRequest('admin-revoke', { requestId: requestId, rowIndex: rowIndex, sheetName: sheetName })
                 .then(function (res) {
                     if (res.success) {
                         ui.success("Akses berhasil dicabut.");
