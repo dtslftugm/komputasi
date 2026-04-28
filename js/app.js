@@ -279,8 +279,19 @@ function setupHistoricalTracker() {
         console.log("NIM Match Result:", isHistoricalNim);
 
         if (isHistoricalNim) {
-            if (badge) badge.classList.remove('d-none');
-            if (trackingContainer) trackingContainer.classList.remove('d-none');
+            if (badge) {
+                badge.classList.remove('d-none');
+                badge.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <div class="fs-4 me-3">👋</div>
+                        <div>
+                            <strong class="d-block mb-1" style="color: var(--text-color);">Selamat Datang Kembali!</strong>
+                            <span class="small text-muted">Senang melihat Anda menggunakan layanan kami lagi. Silakan lanjutkan pengisian form permohonan baru.</span>
+                        </div>
+                    </div>
+                `;
+            }
+            if (trackingContainer) trackingContainer.classList.add('d-none');
         } else {
             if (badge) badge.classList.add('d-none');
             if (trackingContainer) trackingContainer.classList.add('d-none');
@@ -1516,7 +1527,7 @@ function validateFormData(data) {
     let cleanNim = nim.replace(/\s/g, '').toUpperCase();
     let isHistoricalUser = window.initialData && window.initialData.historicalNims && window.initialData.historicalNims.includes(cleanNim);
 
-    let isContextRenewal = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData) || isHistoricalUser;
+    let isContextRenewal = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData);
 
     if (isContextRenewal) {
         if (!data.progres || data.progres.trim().length < 20) {
