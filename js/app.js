@@ -1061,51 +1061,69 @@ function setupFormHandlers() {
 
         Promise.all(filePromises)
             .then(function (fileObjects) {
-                showLoading('Menyimpan data teks...');
-                return api.submitRequest(formData)
-                    .then(function (result) {
-                        console.log('Submission Result:', result);
-                        if (!result.success) throw new Error(result.message || 'Gagal menyimpan data teks');
+                
+                function attemptSubmission() {
+                    showLoading('Menyimpan data teks...');
+                    return api.submitRequest(formData)
+                        .then(function (result) {
+                            console.log('Submission Result:', result);
+                            if (!result.success) throw new Error(result.message || 'Gagal menyimpan data teks');
 
-                        // Robustly extract data from either top-level or nested 'data' property
-                        var resData = result.data || result;
-                        var rowIndex = resData.rowIndex;
-                        var sheetName = resData.sheetName;
-                        var requestId = resData.requestId;
+                            // Robustly extract data from either top-level or nested 'data' property
+                            var resData = result.data || result;
+                            var rowIndex = resData.rowIndex;
+                            var sheetName = resData.sheetName;
+                            var requestId = resData.requestId;
 
-                        console.log('Targeting Sheet:', sheetName, 'Row:', rowIndex, 'ID:', requestId);
+                            console.log('Targeting Sheet:', sheetName, 'Row:', rowIndex, 'ID:', requestId);
 
-                        // --- Step 2: Upload Files sequentially if they exist ---
-                        if (fileObjects.length > 0) {
-                            var uploadChain = Promise.resolve();
+                            // --- Step 2: Upload Files sequentially if they exist ---
+                            if (fileObjects.length > 0) {
+                                var uploadChain = Promise.resolve();
 
-                            fileObjects.forEach(function (fileObj, index) {
-                                uploadChain = uploadChain.then(function () {
-                                    showLoading('Mengunggah berkas ' + (index + 1) + '/' + fileObjects.length + '...');
-                                    return api.uploadFile({
-                                        rowIndex: rowIndex,
-                                        sheetName: sheetName,
-                                        requestId: requestId,
-                                        targetCol: fileObj.targetCol,
-                                        fileData: fileObj.data,
-                                        mimeType: fileObj.mimeType,
-                                        fileName: fileObj.name
+                                fileObjects.forEach(function (fileObj, index) {
+                                    uploadChain = uploadChain.then(function () {
+                                        showLoading('Mengunggah berkas ' + (index + 1) + '/' + fileObjects.length + '...');
+                                        return api.uploadFile({
+                                            rowIndex: rowIndex,
+                                            sheetName: sheetName,
+                                            requestId: requestId,
+                                            targetCol: fileObj.targetCol,
+                                            fileData: fileObj.data,
+                                            mimeType: fileObj.mimeType,
+                                            fileName: fileObj.name
+                                        });
                                     });
                                 });
-                            });
 
-                            return uploadChain.then(function () {
+                                return uploadChain.then(function () {
+                                    finalizeSuccess(requestId);
+                                });
+                            } else {
                                 finalizeSuccess(requestId);
-                            });
-                        } else {
-                            finalizeSuccess(requestId);
-                        }
-                    });
+                            }
+                        })
+                        .catch(function (error) {
+                            hideLoading();
+                            console.error('Submission error:', error);
+                            
+                            var errMsg = error.message || "Kesalahan tidak diketahui.";
+                            ui.confirm('Terjadi kesalahan: ' + errMsg + '<br><br>Apakah Anda ingin mencoba mengirim ulang?', 'Koneksi Bermasalah')
+                                .then(function (confirmed) {
+                                    if (confirmed) {
+                                        attemptSubmission();
+                                    }
+                                });
+                        });
+                }
+
+                // Start the first attempt
+                attemptSubmission();
             })
             .catch(function (error) {
                 hideLoading();
-                console.error('Submission error:', error);
-                ui.error('Terjadi kesalahan: ' + error.message, 'System Error');
+                console.error('File preparation error:', error);
+                ui.alert('Gagal mempersiapkan berkas: ' + error.message, 'System Error', 'error');
             });
 
         var finalizeSuccess = function (requestId) {
@@ -1148,10 +1166,26 @@ function setupMitraToggle() {
 
         if (selectedValue === 'Mitra') {
             mitraFields.classList.remove('d-none');
-            if (academicSection) academicSection.classList.add('d-none');
+            if (academicSection) {
+                academicSection.classList.add('d-none');
+                // Remove required attribute to prevent HTML5 validation errors on hidden fields
+                var reqEls = academicSection.querySelectorAll('[required]');
+                for (var j = 0; j < reqEls.length; j++) {
+                    reqEls[j].removeAttribute('required');
+                    reqEls[j].setAttribute('data-was-required', 'true');
+                }
+            }
         } else {
             mitraFields.classList.add('d-none');
-            if (academicSection) academicSection.classList.remove('d-none');
+            if (academicSection) {
+                academicSection.classList.remove('d-none');
+                // Restore required attribute
+                var wasReqEls = academicSection.querySelectorAll('[data-was-required="true"]');
+                for (var k = 0; k < wasReqEls.length; k++) {
+                    wasReqEls[k].setAttribute('required', 'required');
+                    wasReqEls[k].removeAttribute('data-was-required');
+                }
+            }
         }
 
         // Trigger date adjustment if it exists
