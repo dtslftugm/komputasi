@@ -822,45 +822,53 @@ function submitApproval() {
         sheetName: currentRequest.sheetName
     };
 
-    showLoading("Memproses Approval...");
-    api.jsonpRequest('admin-approve', data)
-        .then(function (res) {
-            if (res.success) {
-                if (res.debugLogs && res.debugLogs.length > 0) {
-                    console.log("=== BACKEND DEBUG LOGS ===");
-                    console.log(res.debugLogs.join("\n"));
-                    ui.success("Disetujui.\nLOGS: " + res.debugLogs.join(" | "));
+    function attemptApprove() {
+        showLoading("Memproses Approval...");
+        api.jsonpRequest('admin-approve', data)
+            .then(function (res) {
+                hideLoading();
+                if (res.success) {
+                    if (res.debugLogs && res.debugLogs.length > 0) {
+                        console.log("=== BACKEND DEBUG LOGS ===");
+                        console.log(res.debugLogs.join("\n"));
+                        ui.success("Disetujui.\nLOGS: " + res.debugLogs.join(" | "));
+                    } else {
+                        ui.success("Permohonan berhasil disetujui.");
+                    }
+                    processModalObj.hide();
+
+                    // Clear state (Fixed in Milestone 9)
+                    var keyInput = document.getElementById('activation-key-input');
+                    if (keyInput) keyInput.value = '';
+                    var dynWrappers = document.querySelectorAll('.dynamic-borrow-wrapper');
+                    dynWrappers.forEach(function (w) { w.remove(); });
+
+                    var notesInput = document.getElementById('admin-notes');
+                    if (notesInput) notesInput.value = '';
+
+                    var docCheck = document.getElementById('check-doc');
+                    if (docCheck) docCheck.checked = false;
+
+                    var winUserCheck = document.getElementById('id-check-win-user');
+                    if (winUserCheck) winUserCheck.checked = false;
+
+                    loadRequests();
                 } else {
-                    ui.success("Permohonan berhasil disetujui.");
+                    ui.error("Gagal: " + res.message);
                 }
-                processModalObj.hide();
+            })
+            .catch(function (err) {
+                hideLoading();
+                ui.confirm('Terjadi kesalahan: ' + err.message + '<br><br>Apakah Anda ingin mencoba lagi?', 'Koneksi Bermasalah')
+                    .then(function (confirmed) {
+                        if (confirmed) {
+                            attemptApprove();
+                        }
+                    });
+            });
+    }
 
-                // Clear state (Fixed in Milestone 9)
-                var keyInput = document.getElementById('activation-key-input');
-                if (keyInput) keyInput.value = '';
-                var dynWrappers = document.querySelectorAll('.dynamic-borrow-wrapper');
-                dynWrappers.forEach(function (w) { w.remove(); });
-
-                var notesInput = document.getElementById('admin-notes');
-                if (notesInput) notesInput.value = '';
-
-                var docCheck = document.getElementById('check-doc');
-                if (docCheck) docCheck.checked = false;
-
-                var winUserCheck = document.getElementById('id-check-win-user');
-                if (winUserCheck) winUserCheck.checked = false;
-
-                loadRequests();
-            } else {
-                ui.error("Gagal: " + res.message);
-            }
-        })
-        .catch(function (err) {
-            ui.error("Error: " + err.message);
-        })
-        .finally(function () {
-            hideLoading();
-        });
+    attemptApprove();
 }
 
 function submitRejection() {
@@ -868,27 +876,35 @@ function submitRejection() {
         .then(function (reason) {
             if (!reason) return;
 
-            showLoading("Memproses Penolakan...");
-            api.jsonpRequest('admin-reject', {
-                requestId: currentRequest.requestId,
-                reason: reason,
-                sheetName: currentRequest.sheetName
-            })
-                .then(function (res) {
-                    if (res.success) {
-                        ui.success("Permohonan telah ditolak.");
-                        processModalObj.hide();
-                        loadRequests();
-                    } else {
-                        ui.error("Gagal: " + res.message);
-                    }
+            function attemptReject() {
+                showLoading("Memproses Penolakan...");
+                api.jsonpRequest('admin-reject', {
+                    requestId: currentRequest.requestId,
+                    reason: reason,
+                    sheetName: currentRequest.sheetName
                 })
-                .catch(function (err) {
-                    ui.error("Error: " + err.message);
-                })
-                .finally(function () {
-                    hideLoading();
-                });
+                    .then(function (res) {
+                        hideLoading();
+                        if (res.success) {
+                            ui.success("Permohonan telah ditolak.");
+                            processModalObj.hide();
+                            loadRequests();
+                        } else {
+                            ui.error("Gagal: " + res.message);
+                        }
+                    })
+                    .catch(function (err) {
+                        hideLoading();
+                        ui.confirm('Terjadi kesalahan: ' + err.message + '<br><br>Apakah Anda ingin mencoba lagi?', 'Koneksi Bermasalah')
+                            .then(function (confirmed) {
+                                if (confirmed) {
+                                    attemptReject();
+                                }
+                            });
+                    });
+            }
+
+            attemptReject();
         });
 }
 
@@ -958,23 +974,31 @@ function handleRevoke(requestId, name, rowIndex, requestType, sheetName) {
         .then(function (confirmed) {
             if (!confirmed) return;
 
-            showLoading("Mencabut akses...");
-            api.jsonpRequest('admin-revoke', { requestId: requestId, rowIndex: rowIndex, sheetName: sheetName })
-                .then(function (res) {
-                    if (res.success) {
-                        ui.success("Akses berhasil dicabut.");
-                        expiredModalObj.hide();
-                        loadRequests();
-                    } else {
-                        ui.error("Gagal: " + res.message);
-                    }
-                })
-                .catch(function (err) {
-                    ui.error("Error: " + err.message);
-                })
-                .finally(function () {
-                    hideLoading();
-                });
+            function attemptRevoke() {
+                showLoading("Mencabut akses...");
+                api.jsonpRequest('admin-revoke', { requestId: requestId, rowIndex: rowIndex, sheetName: sheetName })
+                    .then(function (res) {
+                        hideLoading();
+                        if (res.success) {
+                            ui.success("Akses berhasil dicabut.");
+                            expiredModalObj.hide();
+                            loadRequests();
+                        } else {
+                            ui.error("Gagal: " + res.message);
+                        }
+                    })
+                    .catch(function (err) {
+                        hideLoading();
+                        ui.confirm('Terjadi kesalahan: ' + err.message + '<br><br>Apakah Anda ingin mencoba lagi?', 'Koneksi Bermasalah')
+                            .then(function (confirmed) {
+                                if (confirmed) {
+                                    attemptRevoke();
+                                }
+                            });
+                    });
+            }
+
+            attemptRevoke();
         });
 }
 
