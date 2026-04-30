@@ -121,19 +121,39 @@ function setupDateRestrictions() {
         }
 
         if (isMitra) {
-            // Mitra: Minimal 30 days
-            var minAkhir = new Date(mulaiDate.getTime());
-            minAkhir.setDate(minAkhir.getDate() + 30);
+            var billingInfo = document.getElementById('mitra-billing-info');
+            
+            // Set minimum date to start date (freedom to choose any duration)
+            akhirEl.setAttribute('min', mulaiVal);
+            if (akhirEl.value && new Date(akhirEl.value) < mulaiDate) {
+                akhirEl.value = mulaiVal;
+            }
 
-            var minAkhirStr = minAkhir.toISOString().split('T')[0];
-            akhirEl.setAttribute('min', minAkhirStr);
+            if (billingInfo) {
+                billingInfo.classList.remove('d-none');
+                if (akhirEl.value) {
+                    var d1 = new Date(mulaiVal);
+                    var d2 = new Date(akhirEl.value);
+                    var diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+                    if (diff < 1) diff = 1; // Minimum 1 day calculation
 
-            // Auto adjust if empty or less than min
-            if (!akhirEl.value || new Date(akhirEl.value) < minAkhir) {
-                akhirEl.value = minAkhirStr;
+                    var billingMonths = Math.ceil(diff / 30);
+                    var billedDays = billingMonths * 30;
+
+                    if (diff <= 30) {
+                        billingInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i> Durasi ' + diff + ' hari. Mitra akan dikenakan tagihan minimal 1 Bulan (30 Hari).';
+                    } else {
+                        billingInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i> Durasi ' + diff + ' Hari akan dibulatkan ke atas. Akan dikenakan tagihan ' + billingMonths + ' Bulan (' + billedDays + ' Hari).';
+                    }
+                } else {
+                    billingInfo.innerHTML = '<i class="bi bi-info-circle me-1"></i> Tagihan Mitra dihitung per blok 30 hari (dibulatkan ke atas).';
+                }
             }
         } else {
-            // Regular: Minimal 1 day (same day or after)
+            // Regular Academic logic
+            var billingInfo = document.getElementById('mitra-billing-info');
+            if (billingInfo) billingInfo.classList.add('d-none');
+
             // Fix: If switching AWAY from Mitra, reset the value to empty for flexibility
             var wasMitra = akhirEl.getAttribute('min') && (new Date(akhirEl.getAttribute('min')) - mulaiDate > 86400000);
 
@@ -1279,6 +1299,15 @@ function collectFormData() {
             var d1 = new Date(m);
             var d2 = new Date(a);
             var diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+            if (diff < 1) diff = 1;
+
+            var mitraRadio = document.querySelector('input[name="keperluan"]:checked');
+            if (mitraRadio && mitraRadio.value === 'Mitra') {
+                var billingMonths = Math.ceil(diff / 30);
+                var billedDays = billingMonths * 30;
+                return billedDays + " Hari (" + billingMonths + " Bulan)";
+            }
+
             return diff + " Hari";
         })(),
         identitasMethod: (document.querySelector('input[name="identitasMethod"]:checked') || {}).value || 'upload',
