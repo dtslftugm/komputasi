@@ -462,6 +462,28 @@ function openProcessModal(requestId, rowIndex) {
     var dosenEl = document.getElementById('modal-dosen');
     if (dosenEl) dosenEl.textContent = req.dosen || '-';
 
+    // Mitra vs Academic View Toggles
+    var isMitra = req.sheetName === 'Mitra';
+    var prodiContainer = document.getElementById('prodi-container');
+    var dosenContainer = document.getElementById('dosen-container');
+    var asalInstitusiContainer = document.getElementById('asal-institusi-container');
+    
+    if (isMitra) {
+        if (prodiContainer) prodiContainer.style.display = 'none';
+        if (univContainer) univContainer.style.display = 'none';
+        if (dosenContainer) dosenContainer.style.display = 'none';
+        
+        if (asalInstitusiContainer) {
+            asalInstitusiContainer.style.display = 'block';
+            document.getElementById('modal-asal-institusi').textContent = req.asalInstitusi || '-';
+        }
+    } else {
+        if (prodiContainer) prodiContainer.style.display = 'block';
+        if (dosenContainer) dosenContainer.style.display = 'block';
+        if (asalInstitusiContainer) asalInstitusiContainer.style.display = 'none';
+        // univContainer is already handled by isNonUgm logic above
+    }
+
     // Renewal Identification & Badge
     var renewalBadge = document.getElementById('modal-renewal-badge');
     if (renewalBadge) {
@@ -490,7 +512,14 @@ function openProcessModal(requestId, rowIndex) {
     var catatanEl = document.getElementById('modal-catatan');
     if (catatanEl) catatanEl.textContent = req.catatan || '-';
 
-    document.getElementById('modal-request-type').textContent = req.requestType || '-';
+    var typeBadge = document.getElementById('modal-request-type');
+    if (typeBadge) {
+        if (isMitra && req.requestType === 'Standard') {
+            typeBadge.textContent = 'Standard (Mitra)';
+        } else {
+            typeBadge.textContent = req.requestType || '-';
+        }
+    }
     document.getElementById('modal-email').textContent = req.email || '-';
     document.getElementById('modal-email-ugm').textContent = req.emailUGM || '-';
 
@@ -660,7 +689,7 @@ function openProcessModal(requestId, rowIndex) {
     var reqType = req.requestType || "";
     var isLaptopPribadi = (req.roomPreference || "").toLowerCase().indexOf("laptop pribadi") !== -1;
     var isPureLicense = reqType.indexOf("Borrow License") !== -1 || reqType.indexOf("Cloud License") !== -1 || reqType.indexOf("Akses Lisensi Server") !== -1;
-    var noComputerNeeded = isLaptopPribadi || isPureLicense;
+    var noComputerNeeded = isLaptopPribadi || isPureLicense || (req.needsComputer === false);
 
     var computerToShow = req.preferredComputer;
     var hasValidComputer = computerToShow && computerToShow !== 'Auto Assign' && computerToShow !== 'Belum Dialokasikan';

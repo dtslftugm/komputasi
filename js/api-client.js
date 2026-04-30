@@ -110,11 +110,12 @@ APIClient.prototype.jsonpRequest = function (path, params) {
 
         var timeout = setTimeout(function () {
             if (window[callbackName]) {
-                delete window[callbackName];
+                // Do not delete outright; replace with a dummy to catch delayed GAS responses
+                window[callbackName] = function () { delete window[callbackName]; };
                 if (script.parentNode) script.parentNode.removeChild(script);
-                reject(new Error('Request Timeout - Google Script tidak merespon dalam 15 detik.'));
+                reject(new Error('Request Timeout - Google Script lambat merespon (>20s) atau koneksi tidak stabil.'));
             }
-        }, 15000);
+        }, 20000);
 
         window[callbackName] = function (response) {
             clearTimeout(timeout);
