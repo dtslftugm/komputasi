@@ -2015,8 +2015,8 @@ function checkLabAgendas(isManualCheck) {
         // Bila kode salah atau belum diisi, tampilkan peringatan dari konflik utama (pertama)
         var conflict = conflicts[0];
 
-        var mulaiDisp = new Date(conflict.mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-        var selesaiDisp = new Date(conflict.selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        var mulaiDisp = new Date(conflict.mulaiRaw || conflict.mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        var selesaiDisp = new Date(conflict.selesaiRaw || conflict.selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
         var rangeDisp = mulaiDisp;
         if (mulaiDisp !== selesaiDisp) rangeDisp = mulaiDisp + ' s.d ' + selesaiDisp;
 
