@@ -705,9 +705,18 @@ function openProcessModal(requestId, rowIndex) {
                         document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
                         document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
                         document.getElementById('spec-location').textContent = res.data.location || '-';
+                        var actualLocation = res.data.location || '';
 
-                        if (req.roomPreference === 'Ruang Penelitian' && anydeskPasswordInput) {
-                            if (res.data.anydeskPassword) anydeskPasswordInput.value = res.data.anydeskPassword;
+                        // Milestone Fix: Toggle AnyDesk visibility based on ACTUAL location of the computer
+                        if (actualLocation === 'Ruang Penelitian') {
+                            if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
+                            if (anydeskPasswordInput && res.data.anydeskPassword) {
+                                anydeskPasswordInput.value = res.data.anydeskPassword;
+                            } else {
+                                updateAnydeskPasswordUI(); // Fallback to generate if not provided
+                            }
+                        } else {
+                            if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
                         }
                     }
                 });
@@ -776,11 +785,30 @@ function applyReallocation() {
                 document.getElementById('spec-anydesk').textContent = res.data.anydeskId || '-';
                 document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
                 document.getElementById('spec-location').textContent = res.data.location || '-';
+                var actualLocation = res.data.location || '';
+                var anydeskPasswordContainer = document.getElementById('anydesk-password-container');
 
                 // Toggle back to details
                 toggleReallocate();
-                // Update AnyDesk Password display
-                updateAnydeskPasswordUI();
+                
+                // Milestone Fix: IMMEDIATELY update Preferred_Computer in sheet to prevent race condition
+                api.jsonpRequest('admin-update-preferred-computer', {
+                    requestId: currentRequest.requestId,
+                    newComputer: newComp,
+                    sheetName: currentRequest.sheetName
+                }).then(function(res) {
+                    if (res.success) {
+                        console.log("Computer reserved immediately: " + newComp);
+                    }
+                });
+
+                // Milestone Fix: Toggle AnyDesk visibility based on NEW computer's location
+                if (actualLocation === 'Ruang Penelitian') {
+                    if (anydeskPasswordContainer) anydeskPasswordContainer.classList.remove('d-none');
+                    updateAnydeskPasswordUI();
+                } else {
+                    if (anydeskPasswordContainer) anydeskPasswordContainer.classList.add('d-none');
+                }
             }
         });
 }
