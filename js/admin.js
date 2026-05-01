@@ -601,39 +601,8 @@ function openProcessModal(requestId, rowIndex) {
     }
 
     // 3. Logic-based Visibility & Content
-    // Milestone 17 Fix: STRICT equality check for room consistency
-    var isRuangPenelitian = (req.roomPreference === 'Ruang Penelitian');
-    var daysToAdd = isRuangPenelitian ? adminConfig.seatExpiration : adminConfig.durationRegular;
-
-    // Normalize Today to Midnight Local for calculation base
-    var baseDate = new Date();
-    baseDate.setHours(0, 0, 0, 0);
-
-    // Logic: If renewal, use prevExpirationDate (standard Date parsing)
-    if (req.isRenewal && req.prevExpirationDate) {
-        // Parse the ISO string or Date object passed from backend
-        var prevDate = new Date(req.prevExpirationDate);
-
-        if (!isNaN(prevDate.getTime())) {
-            // Ensure we only use the date part for comparison (prevent time-of-day edge cases)
-            var normalizedPrev = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
-
-            // If previous date is in the future, use it as building block
-            if (normalizedPrev > baseDate) {
-                baseDate = normalizedPrev;
-            }
-        }
-    }
-
-    // Final Calculation Result
-    var expDate = new Date(baseDate.getTime());
-    expDate.setDate(expDate.getDate() + daysToAdd);
-
-    // Milestone 17: Format using project-standard method (adhering to local time)
-    // toISOString() uses UTC, so we adjust by the timezone offset to keep it "Local"
-    var tzOffset = expDate.getTimezoneOffset() * 60000; // in ms
-    var localExpDate = new Date(expDate.getTime() - tzOffset);
-    document.getElementById('expiration-date-input').value = localExpDate.toISOString().split('T')[0];
+    // Milestone 17 Fix: Default calculation (will be updated once computer details are loaded)
+    calculateAndSetExpirationDate(req.roomPreference);
 
     // Activation Key / Borrow License (Dynamic Rule-Based Rendering)
     var borrowSoftwares = getBorrowSoftwares(req.software);
@@ -706,6 +675,9 @@ function openProcessModal(requestId, rowIndex) {
                         document.getElementById('spec-ip').textContent = res.data.ipAddress || '-';
                         document.getElementById('spec-location').textContent = res.data.location || '-';
                         var actualLocation = res.data.location || '';
+
+                        // Milestone Fix: Update Expiration Date based on ACTUAL location
+                        calculateAndSetExpirationDate(actualLocation);
 
                         // Milestone Fix: Toggle AnyDesk visibility based on ACTUAL location of the computer
                         if (actualLocation === 'Ruang Penelitian') {
@@ -801,6 +773,9 @@ function applyReallocation() {
                         console.log("Computer reserved immediately: " + newComp);
                     }
                 });
+
+                // Milestone Fix: Update Expiration Date based on NEW location
+                calculateAndSetExpirationDate(actualLocation);
 
                 // Milestone Fix: Toggle AnyDesk visibility based on NEW computer's location
                 if (actualLocation === 'Ruang Penelitian') {
@@ -963,6 +938,38 @@ function submitRejection() {
 
             attemptReject();
         });
+}
+
+function calculateAndSetExpirationDate(location) {
+    if (!currentRequest) return;
+
+    var isRuangPenelitian = (location === 'Ruang Penelitian');
+    var daysToAdd = isRuangPenelitian ? adminConfig.seatExpiration : adminConfig.durationRegular;
+
+    // Normalize Today to Midnight Local for calculation base
+    var baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+
+    // Logic: If renewal, use prevExpirationDate (standard Date parsing)
+    if (currentRequest.isRenewal && currentRequest.prevExpirationDate) {
+        var prevDate = new Date(currentRequest.prevExpirationDate);
+        if (!isNaN(prevDate.getTime())) {
+            var normalizedPrev = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate());
+            if (normalizedPrev > baseDate) {
+                baseDate = normalizedPrev;
+            }
+        }
+    }
+
+    // Final Calculation Result
+    var expDate = new Date(baseDate.getTime());
+    expDate.setDate(expDate.getDate() + daysToAdd);
+
+    // Format using project-standard method (adhering to local time)
+    var tzOffset = expDate.getTimezoneOffset() * 60000; // in ms
+    var localExpDate = new Date(expDate.getTime() - tzOffset);
+    var inputEl = document.getElementById('expiration-date-input');
+    if (inputEl) inputEl.value = localExpDate.toISOString().split('T')[0];
 }
 
 window.openProcessModal = openProcessModal;
