@@ -142,6 +142,9 @@ function loadRequests() {
                 // Update stats
                 if (res.stats) {
                     document.getElementById('count-pending').textContent = res.stats.pending || 0;
+                    if (document.getElementById('count-antrean')) {
+                        document.getElementById('count-antrean').textContent = res.stats.antrean || 0;
+                    }
                     document.getElementById('count-active-users').textContent = res.stats.activeUsers || 0;
                     document.getElementById('count-expired').textContent = res.stats.toRevoke || 0;
 
@@ -219,10 +222,17 @@ function renderTable(filter) {
 
     var query = filterValue.toLowerCase();
     var filtered = pendingRequests.filter(function (r) {
-        var nama = (r.nama || "").toLowerCase();
-        var rid = (r.requestId || "").toLowerCase();
-        var nim = (r.nim || "").toLowerCase();
-        return nama.indexOf(query) !== -1 || rid.indexOf(query) !== -1 || nim.indexOf(query) !== -1;
+        var statusMatch = true;
+        if (filterValue === 'ANTREAN') {
+            statusMatch = (r.status === 'ANTREAN');
+        } else if (filterValue) {
+            // General text search
+            var nama = (r.nama || "").toLowerCase();
+            var rid = (r.requestId || "").toLowerCase();
+            var nim = (r.nim || "").toLowerCase();
+            statusMatch = nama.indexOf(query) !== -1 || rid.indexOf(query) !== -1 || nim.indexOf(query) !== -1;
+        }
+        return statusMatch;
     });
 
     if (filtered.length === 0) {
@@ -826,6 +836,47 @@ function submitApproval() {
         var isLabPC = currentRequest.requestType === "Lisensi + Komputer" || currentRequest.requestType === "Komputer";
         if (!isLabPC && (!currentRequest.computerUsername || !currentRequest.computerHostname)) {
             ui.error("Data Username dan Hostname wajib diisi oleh mahasiswa untuk lisensi tipe Server (Perangkat Pribadi).", "Data Tidak Lengkap");
+            return;
+        }
+    }
+
+    // Validation for Borrow License Activation Key (Milestone 20)
+    if (currentRequest && (currentRequest.requestType === "Borrow License" || currentRequest.requestType === "Lisensi + Komputer")) {
+        var dynInputs = document.querySelectorAll('.dynamic-borrow-key');
+        var singleInput = document.getElementById('activation-key-input');
+        
+        var hasKey = false;
+        if (dynInputs.length > 0) {
+            dynInputs.forEach(function(inp) { 
+                if(inp.value.trim()) {
+                    hasKey = true;
+                    inp.classList.remove('is-invalid');
+                } else { 
+                    inp.classList.add('is-invalid'); 
+                } 
+            });
+        } else if (singleInput) {
+            if (singleInput.value.trim()) {
+                hasKey = true;
+                singleInput.classList.remove('is-invalid');
+            } else {
+                singleInput.classList.add('is-invalid');
+            }
+        }
+        
+        if (!hasKey) {
+            ui.error("Akses ditolak: Mohon isi Activation Key untuk tipe Borrow License.", "Activation Key Kosong");
+            
+            var targetInput = dynInputs.length > 0 ? dynInputs[0] : singleInput;
+            if (targetInput) {
+                targetInput.focus();
+                // Add shake effect to the container
+                var container = targetInput.closest('.mb-3') || targetInput.parentElement;
+                if (container) {
+                    container.classList.add('shake-animation');
+                    setTimeout(function() { container.classList.remove('shake-animation'); }, 500);
+                }
+            }
             return;
         }
     }

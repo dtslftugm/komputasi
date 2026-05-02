@@ -7,6 +7,7 @@
 var initialData = null;
 var dosenList = [];
 var softwareRules = {};
+var isQueueMode = false; // Milestone 20
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -55,10 +56,13 @@ document.addEventListener('DOMContentLoaded', function () {
             // Handle Renewal Prefill
             if (initialData && initialData.renewalData) {
                 prefillRenewalForm(initialData.renewalData);
-                // Mark as renewal
-                document.getElementById('main-content').insertAdjacentHTML('afterbegin',
-                    '<div class="alert alert-info shadow-sm mb-4"><strong>🔄 Mode Perpanjangan:</strong> Data Anda telah dimuat otomatis dari permohonan sebelumnya. Silahkan dicek kembali, lakukan edit sesuai kebutuhan.</div>'
-                );
+                // Mark as renewal / queue
+                var isQueue = getUrlParam('action') === 'queue';
+                var bannerHtml = isQueue ?
+                    '<div class="alert alert-info shadow-sm mb-4 border-start border-info border-4"><strong>📝 Mode Antrean:</strong> Anda sedang mendaftar antrean untuk menggunakan kembali unit <b>' + (initialData.renewalData.preferredComputer || '-') + '</b>. Silakan lengkapi data laporan progres di bawah.</div>' :
+                    '<div class="alert alert-info shadow-sm mb-4"><strong>🔄 Mode Perpanjangan:</strong> Data Anda telah dimuat otomatis dari permohonan sebelumnya. Silahkan dicek kembali, lakukan edit sesuai kebutuhan.</div>';
+
+                document.getElementById('main-content').insertAdjacentHTML('afterbegin', bannerHtml);
             }
 
             hideLoading();
@@ -122,7 +126,7 @@ function setupDateRestrictions() {
 
         if (isMitra) {
             var billingInfo = document.getElementById('mitra-billing-info');
-            
+
             // Set minimum date to start date (freedom to choose any duration)
             akhirEl.setAttribute('min', mulaiVal);
             if (akhirEl.value && new Date(akhirEl.value) < mulaiDate) {
@@ -1081,7 +1085,7 @@ function setupFormHandlers() {
 
         Promise.all(filePromises)
             .then(function (fileObjects) {
-                
+
                 function attemptSubmission() {
                     showLoading('Menyimpan data teks...');
                     return api.submitRequest(formData)
@@ -1126,7 +1130,7 @@ function setupFormHandlers() {
                         .catch(function (error) {
                             hideLoading();
                             console.error('Submission error:', error);
-                            
+
                             var errMsg = error.message || "Kesalahan tidak diketahui.";
                             ui.confirm('Terjadi kesalahan: ' + errMsg + '<br><br>Apakah Anda ingin mencoba mengirim ulang?', 'Koneksi Bermasalah')
                                 .then(function (confirmed) {
@@ -1312,7 +1316,12 @@ function collectFormData() {
         })(),
         identitasMethod: (document.querySelector('input[name="identitasMethod"]:checked') || {}).value || 'upload',
         linkIdentitas: (document.getElementById('linkIdentitas') || {}).value || '',
-        mitraDisclaimer: (document.getElementById('mitraDisclaimer') || {}).checked
+        mitraDisclaimer: (document.getElementById('mitraDisclaimer') || {}).checked,
+        // Automated Queueing Logic (Milestone 20)
+        status: (function () {
+            if (isQueueMode || getUrlParam('action') === 'queue') return 'Antrean';
+            return null;
+        })()
     };
 }
 
@@ -1863,6 +1872,60 @@ function prefillRenewalForm(data) {
         }
 
         rnName.innerHTML = htmlParts.join('<br>');
+
+        // --- MILESTONE 20: Hardened Renewal for Research Room (Expired Check) ---
+        var isQueueAction = getUrlParam('action') === 'queue';
+
+        if (data.latestStatus === 'expired' && data.assignedComputerLocation === 'Ruang Penelitian' && !isQueueAction) {
+            var warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning border-start border-warning border-4 shadow-sm mt-3';
+
+            var message = '<strong>⚠️ Auto-renewal Anda telah habis masa berlakunya.</strong><br>';
+
+            if (data.isComputerOccupied) {
+                if (data.renewalCount >= 2) {
+                    message += 'Unit komputer <b>' + (data.assignedComputer || '-') + '</b> saat ini telah dipesan oleh pengantre lain. ' +
+                        'Karena Anda telah menggunakan unit ini selama 2 periode (28 hari), Anda diwajibkan untuk bergantian dengan pengantre berikutnya.<br>' +
+                        '<div class="alert alert-danger mt-2 py-2 small border-0 shadow-none">' +
+                        '<strong>⚠️ PERINGATAN PENTING:</strong> Seluruh proses running/modeling yang sedang berjalan akan dihentikan secara paksa saat masa berlaku berakhir. ' +
+                        'Segera simpan data simulasi Anda dan bersihkan folder kerja sebelum waktu akses habis.' +
+                        '</div>' +
+                        '<p class="small mb-2"><i>Catatan: Jika proses simulasi Anda diperkirakan selesai sedikit melebihi batas waktu (misal: H+1), silakan segera berkoordinasi dengan Administrator Lab untuk negosiasi waktu dengan pengantre berikutnya.</i></p>';
+
+                    // Add Join Queue button
+                    message += '<div class="mt-3 d-flex gap-2">' +
+                        '<button type="button" class="btn btn-warning btn-sm fw-bold" onclick="handleJoinQueue()">📝 buat Antrean Baru</button>' +
+                        '<a href="https://ugm.id/komputasidtsl" class="btn btn-outline-dark btn-sm">🚪 Gunakan Unit Lain</a>' +
+                        '</div>';
+
+                    // Strictly block submission
+                    var submitBtn = document.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.className = 'btn btn-secondary btn-lg disabled w-100';
+                        submitBtn.innerHTML = '⚠️ Renewal Terkunci (Kuota Periode Habis)';
+                    }
+                } else {
+                    message += 'Terdapat antrean untuk unit komputer <b>' + (data.assignedComputer || '-') + '</b>. ' +
+                        'Namun, karena ini baru periode pertama Anda, Anda <b>masih diizinkan</b> untuk melakukan perpanjangan satu kali lagi (Periode ke-2).<br>' +
+                        '<span class="text-danger fw-bold">PENTING:</span> Setelah periode ini berakhir, Anda wajib memberikan giliran kepada pengantre berikutnya.';
+                }
+            } else {
+                message += 'Meskipun masa berlaku auto-renewal habis, unit komputer Anda saat ini masih tersedia. Silakan kirimkan permohonan dengan segera.';
+            }
+
+            warningDiv.innerHTML = message;
+            banner.after(warningDiv);
+        }
+
+        // Adjust UI for Queue Mode
+        if (isQueueAction) {
+            var submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerText = 'Kirim Permohonan Antrean';
+                submitBtn.className = 'btn btn-info btn-lg w-100 fw-bold';
+            }
+        }
     }
 
     if (data.computerUserName) document.getElementById('computerUserName').value = data.computerUserName;
@@ -2077,4 +2140,38 @@ function parseAppDate(dateInput) {
     }
 
     return null;
+}
+
+/**
+ * Handle Joining the Queue for Research Room
+ * Milestone 20: Switches current form into Queue Mode
+ */
+function handleJoinQueue() {
+    isQueueMode = true;
+    
+    // Update Banners
+    var banner = document.getElementById('renewalInfoBanner');
+    if (banner) {
+        banner.className = 'alert alert-info shadow-sm mb-4 border-start border-info border-4';
+        var computerName = (initialData && initialData.renewalData) ? initialData.renewalData.preferredComputer : '-';
+        banner.innerHTML = '<strong>📝 Mode Antrean:</strong> Anda sedang mendaftar antrean untuk menggunakan kembali unit <b>' + computerName + '</b>. Silakan lengkapi data laporan progres di bawah.';
+    }
+    
+    // Remove the Warning Div (the one with the buttons)
+    var warnings = document.querySelectorAll('.alert-warning');
+    warnings.forEach(function(w) {
+        if (w.innerHTML.includes('masa berlakunya') || w.innerHTML.includes('Antrean')) {
+            w.remove();
+        }
+    });
+    
+    // Re-enable and update Submit Button
+    var submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.className = 'btn btn-info btn-lg w-100 fw-bold';
+        submitBtn.innerText = 'Kirim Permohonan Antrean';
+    }
+    
+    ui.success("Mode Antrean Aktif. Silakan lengkapi form dan klik 'Kirim Permohonan Antrean'.", "Antrean Teraktivasi");
 }
