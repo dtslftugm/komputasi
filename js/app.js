@@ -1877,6 +1877,9 @@ function prefillRenewalForm(data) {
         console.log('%c [VALIDASI DATA KOMPUTER] ', 'background: #222; color: #bada55; font-weight: bold;');
         console.log('Unit Komputer:', data.assignedComputer || data.preferredComputer || '-');
         console.log('Request ID (Current Occupant):', data.currentOccupantRequestId || '(KOSONG / TIDAK TERDETEKSI)');
+        if (data.debugTrace) {
+            console.log('%c [BACKEND TRACE]: ', 'color: #0dcaf0;', data.debugTrace);
+        }
         console.log('-------------------------------------------');
 
         // --- MILESTONE 20: Hardened Renewal for Research Room (Expired Check) ---
