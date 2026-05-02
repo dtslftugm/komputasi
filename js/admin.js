@@ -223,11 +223,12 @@ function renderTable(filter) {
     var query = filterValue.toLowerCase();
     var filtered = pendingRequests.filter(function (r) {
         var statusMatch = true;
+        var rStatus = (r.status || "").toUpperCase();
         
         if (filterValue === 'ANTREAN') {
-            statusMatch = (r.status === 'ANTREAN');
+            statusMatch = (rStatus === 'ANTREAN');
         } else if (filterValue === 'PENDING') {
-            statusMatch = (r.status === 'PENDING' || r.status === '');
+            statusMatch = (rStatus === 'PENDING' || rStatus === '');
         } else if (filterValue) {
             // General text search
             var nama = (r.nama || "").toLowerCase();
@@ -236,7 +237,7 @@ function renderTable(filter) {
             statusMatch = nama.indexOf(query) !== -1 || rid.indexOf(query) !== -1 || nim.indexOf(query) !== -1;
         } else {
             // Default: Show PENDING only for the main "Permohonan Baru" view
-            statusMatch = (r.status === 'PENDING' || r.status === '');
+            statusMatch = (rStatus === 'PENDING' || rStatus === '');
         }
         return statusMatch;
     });
