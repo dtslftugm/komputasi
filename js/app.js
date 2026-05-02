@@ -1878,28 +1878,29 @@ function prefillRenewalForm(data) {
 
         if (data.latestStatus === 'expired' && data.assignedComputerLocation === 'Ruang Penelitian' && !isQueueAction) {
             var warningDiv = document.createElement('div');
-            warningDiv.className = 'alert alert-warning border-start border-warning border-4 shadow-sm mt-3';
+            warningDiv.className = 'renewal-warning-box alert shadow-sm mt-3 p-3';
 
             var message = '<strong>⚠️ Auto-renewal Anda telah habis masa berlakunya.</strong><br>';
 
             if (data.isComputerOccupied) {
                 // MILESTONE 20 Fix: Check if occupied by SAME user or DIFFERENT user
-                var isSameUser = (data.currentOccupantRequestId && data.currentOccupantRequestId === data.previousRequestId);
+                var currentOccupantId = (data.currentOccupantRequestId || '').trim();
+                var isSameUser = (currentOccupantId && currentOccupantId === data.previousRequestId);
 
                 if (isSameUser) {
                     if (data.renewalCount >= 2) {
                         message += 'Unit komputer <b>' + (data.assignedComputer || '-') + '</b> saat ini telah dipesan oleh pengantre lain. ' +
                             'Karena Anda telah menggunakan unit ini selama 2 periode (28 hari), Anda diwajibkan untuk bergantian dengan pengantre berikutnya.<br>' +
-                            '<div class="alert alert-danger mt-2 py-2 small border-0 shadow-none">' +
+                            '<div class="renewal-danger-box p-3 mt-2 small">' +
                             '<strong>⚠️ PERINGATAN PENTING:</strong> Seluruh proses running/modeling yang sedang berjalan akan dihentikan secara paksa saat masa berlaku berakhir. ' +
                             'Segera simpan data simulasi Anda dan bersihkan folder kerja sebelum waktu akses habis.' +
                             '</div>' +
-                            '<p class="small mb-2"><i>Catatan: Jika proses simulasi Anda diperkirakan selesai sedikit melebihi batas waktu (misal: H+1), silakan segera berkoordinasi dengan Administrator Lab untuk negosiasi waktu dengan pengantre berikutnya.</i></p>';
+                            '<p class="small mb-2 mt-2"><i>Catatan: Jika proses simulasi Anda diperkirakan selesai sedikit melebihi batas waktu (misal: H+1), silakan segera berkoordinasi dengan Administrator Lab untuk negosiasi waktu dengan pengantre berikutnya.</i></p>';
 
                         // Add Join Queue button
                         message += '<div class="mt-3 d-flex gap-2">' +
-                            '<button type="button" class="btn btn-warning btn-sm fw-bold" onclick="handleJoinQueue()">📝 buat Antrean Baru</button>' +
-                            '<a href="https://ugm.id/komputasidtsl" class="btn btn-outline-dark btn-sm">🚪 Gunakan Unit Lain</a>' +
+                            '<button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="handleJoinQueue()">📝 buat Antrean Baru</button>' +
+                            '<a href="https://ugm.id/komputasidtsl" class="btn btn-outline-info btn-sm">🚪 Gunakan Unit Lain</a>' +
                             '</div>';
 
                         // Strictly block submission
@@ -1916,13 +1917,14 @@ function prefillRenewalForm(data) {
                     }
                 } else {
                     // OCCUPIED BY DIFFERENT USER
-                    message += 'Unit komputer <b>' + (data.assignedComputer || '-') + '</b> yang dahulu pernah Anda gunakan, saat ini telah dialokasikan/digunakan oleh user lain (ID: ' + (data.currentOccupantRequestId || 'Unknown') + ').<br>' +
+                    var displayId = currentOccupantId || 'ID Tidak Terdeteksi';
+                    message += 'Unit komputer <b>' + (data.assignedComputer || '-') + '</b> yang dahulu pernah Anda gunakan, saat ini telah dialokasikan/digunakan oleh user lain (ID: ' + displayId + ').<br>' +
                         'Silakan mengajukan antrean untuk unit tersebut atau pilih gunakan unit baru lainnya melalui jalur permohonan normal.';
 
                     // Add Buttons
                     message += '<div class="mt-3 d-flex gap-2">' +
-                        '<button type="button" class="btn btn-warning btn-sm fw-bold" onclick="handleJoinQueue()">📝 buat Antrean</button>' +
-                        '<a href="https://ugm.id/komputasidtsl" class="btn btn-outline-dark btn-sm">🚪 Gunakan Unit Baru</a>' +
+                        '<button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="handleJoinQueue()">📝 buat Antrean</button>' +
+                        '<a href="https://ugm.id/komputasidtsl" class="btn btn-outline-info btn-sm">🚪 Gunakan Unit Baru</a>' +
                         '</div>';
 
                     // Strictly block submission

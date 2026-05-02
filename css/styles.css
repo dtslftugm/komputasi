@@ -50,6 +50,10 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-main);
+}
+
 .container {
   background-color: var(--bg-container);
   padding: 30px;
@@ -478,6 +482,11 @@ body:not(.light-mode) .modal-header .btn-close:not(.btn-close-white) {
   border-color: #dc3545 !important;
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
 }
+/* Fix for form-text visibility */
+.form-text {
+  color: var(--text-muted) !important;
+}
+
 /* 13. COMPONENT: MITRA DISCLAIMER (THEME AWARE) */
 .mitra-disclaimer-card {
   background-color: rgba(255, 193, 7, 0.05) !important;
@@ -509,4 +518,43 @@ body.light-mode .mitra-disclaimer-switch {
 
 body.light-mode .mitra-disclaimer-header {
   color: #212529 !important; /* Dark for Light Mode */
+}
+/* 14. MILESTONE 20: RENEWAL & QUEUE UI ENHANCEMENTS */
+.renewal-warning-box {
+  border-radius: 12px !important;
+  border-left-width: 5px !important;
+  background-color: rgba(255, 193, 7, 0.1) !important;
+  border-color: #ffc107 !important;
+  color: var(--text-main) !important;
+}
+
+body.light-mode .renewal-warning-box {
+  background-color: #fff3cd !important;
+  border-color: #ffc107 !important;
+  color: #856404 !important;
+}
+
+.renewal-danger-box {
+  border-radius: 10px !important;
+  border: 1px solid rgba(220, 53, 69, 0.3) !important;
+  background-color: rgba(220, 53, 69, 0.1) !important;
+  color: var(--text-main) !important;
+}
+
+body.light-mode .renewal-danger-box {
+  background-color: #f8d7da !important;
+  border-color: #f5c6cb !important;
+  color: #721c24 !important;
+  border: none !important;
+}
+
+/* Fix for dark mode outline buttons */
+body:not(.light-mode) .btn-outline-dark {
+  color: #fff !important;
+  border-color: #666 !important;
+}
+
+body:not(.light-mode) .btn-outline-dark:hover {
+  background-color: #444 !important;
+  border-color: #888 !important;
 }
