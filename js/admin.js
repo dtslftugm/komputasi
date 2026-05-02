@@ -848,7 +848,8 @@ function submitApproval() {
     }
 
     // Validation for Borrow License Activation Key (Milestone 20)
-    if (currentRequest && (currentRequest.requestType === "Borrow License" || currentRequest.requestType === "Lisensi + Komputer")) {
+    // Use the dynamic needsKey property from the backend instead of hardcoded types
+    if (currentRequest && currentRequest.needsKey) {
         var dynInputs = document.querySelectorAll('.dynamic-borrow-key');
         var singleInput = document.getElementById('activation-key-input');
         
