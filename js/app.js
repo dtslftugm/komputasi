@@ -1873,6 +1873,12 @@ function prefillRenewalForm(data) {
 
         rnName.innerHTML = htmlParts.join('<br>');
 
+        // [LOG VALIDASI] Browser Console Log for GetComputerDetails validation
+        console.log('%c [VALIDASI DATA KOMPUTER] ', 'background: #222; color: #bada55; font-weight: bold;');
+        console.log('Unit Komputer:', data.assignedComputer || data.preferredComputer || '-');
+        console.log('Request ID (Current Occupant):', data.currentOccupantRequestId || '(KOSONG / TIDAK TERDETEKSI)');
+        console.log('-------------------------------------------');
+
         // --- MILESTONE 20: Hardened Renewal for Research Room (Expired Check) ---
         var isQueueAction = getUrlParam('action') === 'queue';
 
@@ -1917,7 +1923,7 @@ function prefillRenewalForm(data) {
                     }
                 } else {
                     // OCCUPIED BY DIFFERENT USER
-                    var displayId = currentOccupantId || 'ID Tidak Terdeteksi';
+                    var displayId = currentOccupantId || 'Tidak Terdeteksi';
                     message += 'Unit komputer <b>' + (data.assignedComputer || '-') + '</b> yang dahulu pernah Anda gunakan, saat ini telah dialokasikan/digunakan oleh user lain (ID: ' + displayId + ').<br>' +
                         'Silakan mengajukan antrean untuk unit tersebut atau pilih gunakan unit baru lainnya melalui jalur permohonan normal.';
 
@@ -2173,7 +2179,7 @@ function parseAppDate(dateInput) {
  */
 function handleJoinQueue() {
     isQueueMode = true;
-    
+
     // Update Banners
     var banner = document.getElementById('renewalInfoBanner');
     if (banner) {
@@ -2181,15 +2187,15 @@ function handleJoinQueue() {
         var computerName = (initialData && initialData.renewalData) ? initialData.renewalData.preferredComputer : '-';
         banner.innerHTML = '<strong>📝 Mode Antrean:</strong> Anda sedang mendaftar antrean untuk menggunakan kembali unit <b>' + computerName + '</b>. Silakan lengkapi data laporan progres di bawah.';
     }
-    
+
     // Remove the Warning Div (the one with the buttons)
     var warnings = document.querySelectorAll('.alert-warning');
-    warnings.forEach(function(w) {
+    warnings.forEach(function (w) {
         if (w.innerHTML.includes('masa berlakunya') || w.innerHTML.includes('Antrean')) {
             w.remove();
         }
     });
-    
+
     // Re-enable and update Submit Button
     var submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) {
@@ -2197,6 +2203,6 @@ function handleJoinQueue() {
         submitBtn.className = 'btn btn-info btn-lg w-100 fw-bold';
         submitBtn.innerText = 'Kirim Permohonan Antrean';
     }
-    
+
     ui.success("Mode Antrean Aktif. Silakan lengkapi form dan klik 'Kirim Permohonan Antrean'.", "Antrean Teraktivasi");
 }
