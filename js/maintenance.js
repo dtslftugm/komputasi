@@ -574,7 +574,9 @@ function startScanner() {
     html5QrScanner = new Html5QrcodeScanner("reader", { 
         fps: 10, 
         qrbox: { width: 250, height: 150 },
-        aspectRatio: 1.777778
+        aspectRatio: 1.777778,
+        showTorchButton: true, // Fitur senter (jika didukung HP)
+        rememberLastUsedCamera: true
     });
     
     html5QrScanner.render(onScanSuccess, onScanFailure);
