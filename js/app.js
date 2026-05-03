@@ -1154,6 +1154,11 @@ function setupFormHandlers() {
             hideLoading();
             showSuccessModal(requestId || 'Berhasil');
             resetForm();
+            
+            // Poll for Gemini Audit result (Asynchronously)
+            if (requestId) {
+                pollGeminiAudit(requestId);
+            }
         };
     });
 }
@@ -1638,6 +1643,19 @@ function showSuccessModal(requestId) {
         message.textContent = 'Permohonan berhasil dikirim! Request ID: ' + requestId + '. Email konfirmasi telah dikirim.';
     }
 
+    // Reset Gemini feedback container
+    var geminiContainer = document.getElementById('gemini-feedback-container');
+    var geminiLoading = document.getElementById('gemini-loading');
+    var geminiResult = document.getElementById('gemini-result');
+    if (geminiContainer) {
+        geminiContainer.classList.remove('d-none');
+        if (geminiLoading) geminiLoading.classList.remove('d-none');
+        if (geminiResult) {
+            geminiResult.classList.add('d-none');
+            geminiResult.innerHTML = '';
+        }
+    }
+
     // Get or create instance to avoid duplicate objects
     var modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
 
@@ -1665,6 +1683,88 @@ function showSuccessModal(requestId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         try { window.parent.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
     }, 100);
+}
+
+/**
+ * Poll for Gemini Audit Result
+ */
+function pollGeminiAudit(requestId) {
+    var maxAttempts = 5;
+    var attempt = 0;
+    var interval = 3500; // 3.5 seconds
+
+    var doPoll = function () {
+        attempt++;
+        console.log('Polling Gemini Audit (' + attempt + '/' + maxAttempts + ') for ' + requestId);
+
+        api.checkAuditResult(requestId)
+            .then(function (response) {
+                if (response && response.success && response.processed) {
+                    displayGeminiAudit(response.data);
+                } else if (attempt < maxAttempts) {
+                    setTimeout(doPoll, interval);
+                } else {
+                    displayGeminiTimeout();
+                }
+            })
+            .catch(function (error) {
+                console.error('Audit Polling Error:', error);
+                if (attempt < maxAttempts) setTimeout(doPoll, interval);
+                else displayGeminiTimeout();
+            });
+    };
+
+    // Delay first poll slightly to allow GAS to finish writing
+    setTimeout(doPoll, 2000);
+}
+
+function displayGeminiAudit(data) {
+    var geminiLoading = document.getElementById('gemini-loading');
+    var geminiResult = document.getElementById('gemini-result');
+    if (!geminiResult) return;
+
+    if (geminiLoading) geminiLoading.classList.add('d-none');
+    geminiResult.classList.remove('d-none');
+
+    if (!data) {
+        geminiResult.innerHTML = '<div class="text-muted small">Hasil audit tidak tersedia secara detail. Admin akan melakukan pengecekan manual.</div>';
+        return;
+    }
+
+    var icon = data.is_valid ? '✅' : '⚠️';
+    var badgeClass = data.is_valid ? 'text-success' : 'text-danger';
+    var summaryText = data.summary || (data.is_valid ? "Dokumen sesuai kriteria." : "Terdapat ketidaksesuaian pada dokumen.");
+
+    var html = '<div class="fw-bold ' + badgeClass + ' mb-2">' + icon + ' Hasil Audit AI (Beta)</div>' +
+        '<div class="mb-2 small"><strong>Kesimpulan:</strong> ' + summaryText + '</div>';
+
+    if (data.details) {
+        html += '<ul class="ps-3 mb-0 small text-muted" style="font-size: 0.75rem;">';
+        if (data.details.title_match) html += '<li>' + data.details.title_match + '</li>';
+        if (data.details.expiry_check) html += '<li>' + data.details.expiry_check + '</li>';
+        if (data.details.remote_access_check) html += '<li>' + data.details.remote_access_check + '</li>';
+        html += '</ul>';
+    }
+
+    if (!data.is_valid) {
+        html += '<div class="mt-2 p-2 bg-warning bg-opacity-10 border border-warning rounded small" style="font-size: 0.75rem;">' +
+            '💡 <strong>Saran:</strong> Jika ada kesalahan input, Anda dapat segera menghubungi admin via WhatsApp untuk perbaikan.' +
+            '</div>';
+    }
+
+    geminiResult.innerHTML = html;
+}
+
+function displayGeminiTimeout() {
+    var geminiLoading = document.getElementById('gemini-loading');
+    var geminiResult = document.getElementById('gemini-result');
+    if (!geminiResult) return;
+
+    if (geminiLoading) geminiLoading.classList.add('d-none');
+    geminiResult.classList.remove('d-none');
+    geminiResult.innerHTML = '<div class="text-muted" style="font-size: 0.75rem;">' +
+        '🔎 Verifikasi AI memerlukan waktu lebih lama. Admin akan melakukan pengecekan dokumen Anda secara manual. Anda dapat menutup jendela ini.' +
+        '</div>';
 }
 
 // ===== LOADING OVERLAY =====

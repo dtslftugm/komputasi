@@ -31,6 +31,7 @@ function APIClient() {
         'apiSetManualMaintenance': 'admin-maintenance-manual',
         'apiGetReportingFilters': 'admin-reporting-filters',
         'apiGetStatisticsData': 'admin-statistics',
+        'apiCheckAuditResult': 'admin-check-audit',
         'apiLogout': 'admin-logout'
     };
     console.log('APIClient (ES5) initialized');
@@ -213,6 +214,10 @@ APIClient.prototype.uploadFile = function (data) {
     }).then(function () {
         return { success: true, opaque: true };
     });
+};
+
+APIClient.prototype.checkAuditResult = function (requestId) {
+    return this.run('apiCheckAuditResult', { requestId: requestId });
 };
 
 // Create instance
