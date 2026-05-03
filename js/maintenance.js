@@ -112,11 +112,35 @@ function renderLogTable(logs) {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    // This part depends on backend giving separate logs
     if (!logs || logs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Histori belum tersedia.</td></tr>';
         return;
     }
+
+    logs.forEach(function (log) {
+        var tr = document.createElement('tr');
+        
+        var dateStr = log.timestamp;
+        if (dateStr && dateStr.indexOf(' ') !== -1) {
+            var parts = dateStr.split(' ');
+            dateStr = '<div class="fw-bold">' + parts[0] + '</div><div class="extra-small text-muted">' + parts[1] + '</div>';
+        }
+
+        var typeBadge = 'bg-secondary';
+        if (log.type === 'Cleanup') typeBadge = 'bg-danger';
+        else if (log.type === 'License') typeBadge = 'bg-info';
+        else if (log.type === 'Repair' || log.type === 'Perbaikan') typeBadge = 'bg-warning text-dark';
+
+        var findings = (log.issues && log.issues !== '-') ? log.issues : '-';
+        var resolution = (log.resolution && log.resolution !== '-') ? '<div class="text-success small mt-1"><i class="bi bi-check-circle"></i> ' + log.resolution + '</div>' : '';
+
+        tr.innerHTML = '<td>' + dateStr + '</td>' +
+            '<td><span class="fw-bold">' + log.unit + '</span></td>' +
+            '<td><span class="badge ' + typeBadge + ' px-2">' + log.type + '</span><br><small class="text-muted">' + (log.tasks || '') + '</small></td>' +
+            '<td><div class="small">' + findings + '</div>' + resolution + '</td>' +
+            '<td><span class="badge bg-success-subtle text-success border border-success-subtle">SELESAI</span></td>';
+        tbody.appendChild(tr);
+    });
 }
 
 function openMaintenanceModal(reqId, type, originalName) {
