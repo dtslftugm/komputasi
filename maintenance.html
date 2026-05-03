@@ -16,6 +16,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap"
         rel="stylesheet">
+    <!-- QR/Barcode Scanner -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         :root {
@@ -129,6 +131,56 @@
             white-space: nowrap;
             display: inline-block;
         }
+
+        /* Mobile Specific Styles */
+        .mobile-only {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-hide {
+                display: none !important;
+            }
+            .mobile-only {
+                display: block;
+            }
+            body {
+                padding-top: 10px;
+            }
+        }
+
+        .vendor-btn {
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 2px solid #eee;
+            background: #fff;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .vendor-btn.active {
+            border-color: var(--primary);
+            background: rgba(13, 110, 253, 0.05);
+            color: var(--primary);
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            border: none !important;
+        }
+
+        #reader__dashboard_section_csr button {
+            background: var(--primary) !important;
+            color: white !important;
+            border: none !important;
+            padding: 8px 16px !important;
+            border-radius: 20px !important;
+            font-weight: bold !important;
+        }
     </style>
 </head>
 
@@ -138,8 +190,84 @@
         <h5 id="loading-text" class="outfit fw-bold">Memuat...</h5>
     </div>
 
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
+    <!-- Mobile Maintenance View (Hidden by default) -->
+    <div id="mobile-maintenance-view" class="container-fluid p-3" style="display: none;">
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <button class="btn btn-light rounded-circle shadow-sm" onclick="exitMobileMode()">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </button>
+            <h4 class="fw-bold mb-0 outfit">QR/Barcode Maint</h4>
+        </div>
+
+        <!-- Step 1: Scanner Section -->
+        <div id="m-step-scan" class="card border-0 shadow-sm p-3 text-center mb-4">
+            <div id="reader" class="mb-3"></div>
+            <div id="scan-result-manual" class="mt-2">
+                <p class="text-muted small">Scan Barcode Aset pada unit komputer</p>
+                <div class="input-group">
+                    <input type="text" id="manual-asset-input" class="form-control rounded-pill-start" placeholder="Input Asset Code Manual...">
+                    <button class="btn btn-primary rounded-pill-end" onclick="handleManualAssetSubmit()">Cari</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Form Section (Hidden until scanned) -->
+        <div id="m-step-form" style="display: none;">
+            <div class="card border-0 shadow-sm p-3 mb-4 bg-primary text-white" style="border-radius: 20px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 opacity-75 small">Identitas Unit</h6>
+                        <h3 class="fw-bold outfit mb-0" id="m-display-hostname">---</h3>
+                    </div>
+                    <div class="text-end">
+                        <h6 class="mb-0 opacity-75 small">Asset Code</h6>
+                        <span class="fw-bold outfit" id="m-display-asset">---</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Linking Section (Show if unit not found by asset) -->
+            <div id="m-linking-section" class="card border-0 shadow-sm p-3 mb-4 border-warning bg-light" style="display: none;">
+                <label class="form-label small fw-bold">⚠️ Tautkan ke Hostname:</label>
+                <select id="m-select-hostname" class="form-select rounded-pill">
+                    <option value="">-- Pilih Hostname --</option>
+                    <!-- Options from metadata -->
+                </select>
+                <p class="extra-small text-muted mt-2 mb-0">Scan barcode ini terdeteksi baru. Hubungkan dengan hostname yang sesuai.</p>
+            </div>
+
+            <!-- Main Form Info -->
+            <div class="card border-0 shadow-sm p-3 mb-4">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Verifikasi Lokasi</label>
+                    <select id="m-input-location" class="form-select rounded-pill">
+                        <!-- Options from metadata -->
+                    </select>
+                </div>
+
+                <hr class="my-3 opacity-10">
+
+                <label class="form-label small fw-bold mb-3">Install / Update Software</label>
+                <div class="row g-2 mb-3" id="m-vendor-grid">
+                    <!-- Vendor buttons -->
+                </div>
+
+                <div id="m-software-selection" style="display: none;" class="p-3 bg-light rounded mb-3">
+                    <label class="form-label extra-small fw-bold text-muted text-uppercase">Pilih Aplikasi</label>
+                    <select id="m-input-software" class="form-select border-0 bg-white">
+                        <!-- Options filtered by vendor -->
+                    </select>
+                </div>
+
+                <button class="btn btn-success w-100 rounded-pill py-3 fw-bold shadow mt-2" onclick="submitMobileMaintenance()">
+                    <i class="bi bi-check-circle me-2"></i>Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar (Original) -->
+    <aside class="sidebar mobile-hide" id="sidebar">
         <div class="mb-4 text-center">
             <h5 class="fw-bold mb-0 outfit">Komputasi DTSL</h5>
         </div>
@@ -154,8 +282,8 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
+    <!-- Main Content (Original) -->
+    <main class="main-content mobile-hide" id="desktop-view">
         <header class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center gap-3">
                 <div class="d-lg-none">
