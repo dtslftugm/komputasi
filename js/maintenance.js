@@ -540,18 +540,9 @@ function generateVendorAllowlist() {
  */
 
 function initMobileMode(initialHostname) {
-    // Hide desktop views
-    const desktopView = document.getElementById('desktop-view');
-    const sidebar = document.getElementById('sidebar');
-    const mobileView = document.getElementById('mobile-maintenance-view');
-    
-    if (desktopView) desktopView.style.display = 'none';
-    if (sidebar) sidebar.style.display = 'none';
-    if (mobileView) mobileView.style.display = 'block';
-    
     document.body.style.paddingTop = '0';
     
-    if (typeof ui !== 'undefined') ui.loading("Menyiapkan mode mobile...");
+    // Fetch metadata in background
     
     // Load metadata (Software, Locations, Hostnames)
     api.run('admin-maintenance-meta')
