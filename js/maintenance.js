@@ -534,3 +534,234 @@ function generateVendorAllowlist() {
             if (typeof ui !== 'undefined') ui.error("Error mengambil list dari server: " + err);
         });
 }
+
+/**
+ * MOBILE MODE LOGIC
+ */
+
+function initMobileMode(initialHostname) {
+    // Hide desktop views
+    const desktopView = document.getElementById('desktop-view');
+    const sidebar = document.getElementById('sidebar');
+    const mobileView = document.getElementById('mobile-maintenance-view');
+    
+    if (desktopView) desktopView.style.display = 'none';
+    if (sidebar) sidebar.style.display = 'none';
+    if (mobileView) mobileView.style.display = 'block';
+    
+    document.body.style.paddingTop = '0';
+    
+    if (typeof ui !== 'undefined') ui.loading("Menyiapkan mode mobile...");
+    
+    // Load metadata (Software, Locations, Hostnames)
+    api.run('admin-maintenance-meta')
+        .then(function(res) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            if (res.success) {
+                mobileMetadata = res;
+                renderMobileMetadata();
+                startScanner();
+            } else {
+                if (typeof ui !== 'undefined') ui.error("Gagal memuat metadata mobile");
+            }
+        })
+        .catch(function(err) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            if (typeof ui !== 'undefined') ui.error("Error loading mobile meta: " + err);
+        });
+}
+
+function exitMobileMode() {
+    window.location.href = 'maintenance.html';
+}
+
+function startScanner() {
+    if (html5QrScanner) {
+        try { html5QrScanner.clear(); } catch(e) {}
+    }
+    
+    html5QrScanner = new Html5QrcodeScanner("reader", { 
+        fps: 10, 
+        qrbox: { width: 250, height: 150 },
+        aspectRatio: 1.777778
+    });
+    
+    html5QrScanner.render(onScanSuccess, onScanFailure);
+}
+
+function onScanSuccess(decodedText) {
+    const formattedCode = formatAssetCode(decodedText);
+    if (typeof ui !== 'undefined') ui.success("Barcode Terbaca: " + formattedCode);
+    
+    if (html5QrScanner) {
+        html5QrScanner.clear();
+    }
+    
+    searchUnitByAsset(formattedCode);
+}
+
+function onScanFailure(error) {
+    // Silent
+}
+
+function formatAssetCode(raw) {
+    if (!raw) return "";
+    let clean = raw.split('.')[0].trim();
+    if (clean.length === 14 && /^\d+$/.test(clean)) {
+        return clean.substring(0, 1) + '.' + 
+               clean.substring(1, 3) + '.' + 
+               clean.substring(3, 5) + '.' + 
+               clean.substring(5, 7) + '.' + 
+               clean.substring(7, 10) + '.' + 
+               clean.substring(10, 14);
+    }
+    return clean;
+}
+
+function handleManualAssetSubmit() {
+    const input = document.getElementById('manual-asset-input').value.trim();
+    if (!input) return;
+    const formatted = formatAssetCode(input);
+    searchUnitByAsset(formatted);
+}
+
+function searchUnitByAsset(assetCode) {
+    if (typeof ui !== 'undefined') ui.loading("Mencari unit...");
+    currentScannedAsset = assetCode;
+    
+    api.run('admin-unit-by-asset', { assetCode: assetCode })
+        .then(function(res) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            document.getElementById('m-step-form').style.display = 'block';
+            document.getElementById('m-display-asset').textContent = assetCode;
+            
+            if (res.success && res.found) {
+                currentUnitData = res.data;
+                document.getElementById('m-display-hostname').textContent = res.data.hostname;
+                document.getElementById('m-input-location').value = res.data.location;
+                document.getElementById('m-linking-section').style.display = 'none';
+                if (typeof ui !== 'undefined') ui.success("Unit ditemukan: " + res.data.hostname);
+            } else {
+                currentUnitData = null;
+                document.getElementById('m-display-hostname').textContent = "Unit Baru";
+                document.getElementById('m-linking-section').style.display = 'block';
+                if (typeof ui !== 'undefined') ui.warning("Asset belum tertaut ke hostname");
+            }
+            
+            document.getElementById('m-step-form').scrollIntoView({ behavior: 'smooth' });
+        })
+        .catch(function(err) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            if (typeof ui !== 'undefined') ui.error("Error mencari unit: " + err);
+        });
+}
+
+function renderMobileMetadata() {
+    if (!mobileMetadata) return;
+    
+    const locSelect = document.getElementById('m-input-location');
+    locSelect.innerHTML = '<option value="">-- Pilih Lokasi --</option>';
+    mobileMetadata.locations.forEach(function(loc) {
+        const opt = document.createElement('option');
+        opt.value = loc;
+        opt.textContent = loc;
+        locSelect.appendChild(opt);
+    });
+    
+    const hostSelect = document.getElementById('m-select-hostname');
+    hostSelect.innerHTML = '<option value="">-- Pilih Hostname --</option>';
+    mobileMetadata.hostnames.forEach(function(host) {
+        const opt = document.createElement('option');
+        opt.value = host;
+        opt.textContent = host;
+        hostSelect.appendChild(opt);
+    });
+    
+    const vendorGrid = document.getElementById('m-vendor-grid');
+    vendorGrid.innerHTML = '';
+    
+    const specialVendors = ['Cek Rutin', 'Perbaikan Hardware'];
+    const allVendors = specialVendors.concat(mobileMetadata.vendors.filter(function(v) { 
+        return specialVendors.indexOf(v) === -1; 
+    }));
+    
+    allVendors.forEach(function(vendor) {
+        const col = document.createElement('div');
+        col.className = 'col-6';
+        col.innerHTML = '<div class="vendor-btn" onclick="selectVendor(\'' + vendor + '\', this)">' + vendor + '</div>';
+        vendorGrid.appendChild(col);
+    });
+}
+
+function selectVendor(vendor, el) {
+    document.querySelectorAll('.vendor-btn').forEach(function(btn) { btn.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    
+    const swSection = document.getElementById('m-software-selection');
+    const swSelect = document.getElementById('m-input-software');
+    
+    if (vendor === 'Cek Rutin' || vendor === 'Perbaikan Hardware') {
+        swSection.style.display = 'none';
+        swSelect.value = "";
+        return;
+    }
+    
+    swSection.style.display = 'block';
+    swSelect.innerHTML = '<option value="">-- Pilih Software --</option>';
+    
+    const filtered = mobileMetadata.software.filter(function(s) { return s.vendor === vendor; });
+    filtered.forEach(function(sw) {
+        const opt = document.createElement('option');
+        opt.value = sw.name;
+        opt.textContent = sw.name;
+        swSelect.appendChild(opt);
+    });
+}
+
+function submitMobileMaintenance() {
+    const hostname = currentUnitData ? currentUnitData.hostname : document.getElementById('m-select-hostname').value;
+    const location = document.getElementById('m-input-location').value;
+    const software = document.getElementById('m-input-software').value;
+    const assetCode = currentScannedAsset;
+    
+    if (!hostname) {
+        if (typeof ui !== 'undefined') ui.error("Hostname belum dipilih / tertaut");
+        return;
+    }
+    
+    let taskName = "Update via Mobile";
+    const activeVendor = document.querySelector('.vendor-btn.active');
+    if (activeVendor) {
+        const vName = activeVendor.textContent;
+        if (vName === 'Cek Rutin') taskName = "Pemeriksaan Rutin";
+        else if (vName === 'Perbaikan Hardware') taskName = "Perbaikan Fisik";
+        else taskName = "Instalasi Software: " + vName;
+    }
+    
+    if (typeof ui !== 'undefined') ui.loading("Menyimpan data...");
+    
+    const payload = {
+        hostname: hostname,
+        assetCode: assetCode,
+        location: location,
+        newSoftware: software,
+        tasks: taskName
+    };
+    
+    api.run('admin-mobile-maint-log', payload)
+        .then(function(res) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            if (res.success) {
+                if (typeof ui !== 'undefined') ui.success("Data berhasil disimpan!");
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                if (typeof ui !== 'undefined') ui.error("Gagal menyimpan: " + res.message);
+            }
+        })
+        .catch(function(err) {
+            if (typeof ui !== 'undefined') ui.hideLoading();
+            if (typeof ui !== 'undefined') ui.error("Error submitting: " + err);
+        });
+}
