@@ -10,11 +10,31 @@ var allComputers = [];
 var processModal;
 var manualModal;
 
+// Mobile State
+var mobileMetadata = null;
+var currentScannedAsset = null;
+var currentUnitData = null;
+var html5QrScanner = null;
+
 document.addEventListener('DOMContentLoaded', function () {
     processModal = new bootstrap.Modal(document.getElementById('processMaintenanceModal'));
     manualModal = new bootstrap.Modal(document.getElementById('manualMaintenanceModal'));
-    loadMaintenanceData();
-    loadAllComputers();
+    
+    // Auth check
+    var token = localStorage.getItem('adminAuthToken');
+    if (!token) {
+        window.location.href = 'admin.html';
+        return;
+    }
+
+    // Check for Mobile Mode
+    var params = new URLSearchParams(window.location.search);
+    if (params.has('comp') || params.has('c') || window.innerWidth < 768) {
+        initMobileMode(params.get('comp') || params.get('c'));
+    } else {
+        loadMaintenanceData();
+        loadAllComputers();
+    }
 
     // Search listener
     var searchInput = document.getElementById('maintenanceSearch');
@@ -22,12 +42,6 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput.addEventListener('input', function (e) {
             renderMaintenanceTable(e.target.value);
         });
-    }
-
-    // Auth check (Optional but recommended)
-    var token = localStorage.getItem('adminAuthToken');
-    if (!token) {
-        window.location.href = 'admin.html';
     }
 });
 
