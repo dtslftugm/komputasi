@@ -78,23 +78,29 @@ function renderMaintenanceTable(query) {
         if (cleanStatus.indexOf('maintenance') !== -1) { statusClass = 'bg-warning text-dark'; }
         else if (cleanStatus.indexOf('repair') !== -1) { statusClass = 'bg-danger'; }
         else if (cleanStatus.indexOf('revoked') !== -1) { statusClass = 'bg-warning text-dark'; }
+        else if (cleanStatus.indexOf('overdue') !== -1) { statusClass = 'bg-danger'; }
+        else if (cleanStatus.indexOf('soon') !== -1) { statusClass = 'bg-warning text-dark'; }
         else if (cleanStatus.indexOf('available') !== -1) { statusClass = 'bg-success'; }
 
+        var typeClass = item.type === 'PC' ? 'bg-primary' : (item.type === 'Cleanup' ? 'bg-danger' : 'bg-info');
+        var warningHtml = item.currentOccupancy && item.currentOccupancy.isBlocked ? 
+            '<div class="text-danger extra-small mt-1"><i class="bi bi-exclamation-triangle"></i> ' + item.currentOccupancy.warning + '</div>' : '';
+
         tr.innerHTML = '<td>' +
-            '<span class="badge ' + (item.type === 'PC' ? 'bg-primary' : 'bg-info') + ' mb-1" style="font-size: 10px;">' + item.type + '</span><br>' +
+            '<span class="badge ' + typeClass + ' mb-1" style="font-size: 10px;">' + item.type + '</span><br>' +
             '<span class="fw-bold">' + item.targetName + '</span>' +
+            warningHtml +
             '</td>' +
             '<td><span class="status-badge ' + statusClass + '">' + statusText.toUpperCase() + '</span></td>' +
             '<td>' +
-            '<div class="small fw-bold">' + (item.lastUser || '-') + '</div>' +
+            '<div class="small fw-bold">' + (item.userName || item.lastUser || '-') + '</div>' +
             '<div class="text-muted extra-small">ID: ' + (item.requestId || '-') + '</div>' +
             '</td>' +
             '<td>' +
-            '<div class="small">' + (item.lastMaintenance || '-') + '</div>' +
-            '<div class="text-muted extra-small">' + (item.daysAgo || 0) + ' hari lalu</div>' +
+            '<div class="small">' + (item.dateRef || item.lastMaintenance || '-') + '</div>' +
+            '<div class="text-muted extra-small">' + (item.daysAgo || 0) + (item.type === 'Cleanup' ? ' hari ' + (item.isOverdue ? 'terlambat' : 'lagi') : ' hari lalu') + '</div>' +
             '</td>' +
             '<td class="text-center pe-4">' +
-            // Use rowIndex + requestId as a pseudo-unique identifier so identical software names don't clash
             '<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openMaintenanceModal(\'' + (item.requestId || 'N/A') + '\', \'' + item.type + '\', \'' + item.targetName.replace(/'/g, "\\'") + '\')">Proses</button>' +
             '</td>';
         tbody.appendChild(tr);
@@ -156,13 +162,10 @@ function openMaintenanceModal(reqId, type, originalName) {
         // Show Vendor Instructions
         if (vendorSection) {
             vendorSection.style.display = 'block';
-
-            // Hide the unified check-vendor for standalone licenses to avoid double-checkboxes
             var checkVendorWrapper = document.getElementById('check-vendor').closest('.form-check');
             if (checkVendorWrapper) checkVendorWrapper.style.display = 'none';
 
             var vendorName = (item.vendor || "").toString().toLowerCase();
-
             if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1) {
                 vendorManualSearch.style.display = 'block';
                 vendorAllowlistGen.style.display = 'none';
@@ -171,13 +174,28 @@ function openMaintenanceModal(reqId, type, originalName) {
             } else if (vendorName.indexOf('fine') !== -1 || vendorName.indexOf('rocscience') !== -1) {
                 vendorManualSearch.style.display = 'none';
                 vendorAllowlistGen.style.display = 'block';
-                vendorAllowlistResult.style.display = 'none'; // hidden until generated
-
-                // Store software name on the button for the generator
+                vendorAllowlistResult.style.display = 'none';
                 document.getElementById('btnGenerateAllowlist').dataset.software = item.targetName;
             } else {
-                vendorSection.style.display = 'none'; // fallback
+                vendorSection.style.display = 'none';
             }
+        }
+    } else if (type === 'Cleanup') {
+        lblStorage.textContent = 'Hapus Profil Windows';
+        lblJunk.textContent = 'Hapus Folder & Data User';
+        lblAnydesk.textContent = 'Kirim Email "Data Terhapus"';
+        document.getElementById('m-storage').placeholder = 'Status Pembersihan';
+
+        var anydeskSection = document.getElementById('m-anydesk-section');
+        if (anydeskSection) {
+            anydeskSection.style.display = 'block';
+            document.getElementById('m-anydesk-id').value = item.anydeskId || '-';
+            document.getElementById('m-anydesk-pass').value = item.anydeskPassword || '';
+        }
+        if (vendorSection) vendorSection.style.display = 'none';
+
+        if (item.currentOccupancy && item.currentOccupancy.isBlocked) {
+            ui.warning(item.currentOccupancy.warning + ". Pastikan unit sedang stand-by sebelum menghapus data.", "Unit Sedang Digunakan");
         }
     } else {
         lblStorage.textContent = 'Cek Storage';
@@ -192,16 +210,13 @@ function openMaintenanceModal(reqId, type, originalName) {
             document.getElementById('m-anydesk-pass').value = item.anydeskPassword || '';
         }
 
-        // Feature: Consolidated License + PC card support
         if (vendorSection) {
             if (item.pendingLicenseCleanup && item.pendingLicenses && item.pendingLicenses.length > 0) {
                 vendorSection.style.display = 'block';
-
                 var checkVendorWrapper = document.getElementById('check-vendor').closest('.form-check');
                 if (checkVendorWrapper) checkVendorWrapper.style.display = 'block';
                 document.getElementById('check-vendor').checked = false;
 
-                // For simplicity in the UI, we take the primary/first license vendor rules
                 var primaryLicense = item.pendingLicenses[0];
                 var vendorName = (primaryLicense.vendor || "").toString().toLowerCase();
 
@@ -214,13 +229,11 @@ function openMaintenanceModal(reqId, type, originalName) {
                 } else if (vendorName.indexOf('fine') !== -1 || vendorName.indexOf('rocscience') !== -1) {
                     vendorManualSearch.style.display = 'none';
                     vendorAllowlistGen.style.display = 'block';
-                    vendorAllowlistResult.style.display = 'none'; // hidden until generated
-
-                    // Store software name on the button for the generator
+                    vendorAllowlistResult.style.display = 'none';
                     document.getElementById('btnGenerateAllowlist').dataset.software = primaryLicense.name;
                     document.getElementById('lbl-vendor').textContent = '✅ Saya telah menerapkan Allowlist baru di Server';
                 } else {
-                    vendorSection.style.display = 'none'; // fallback
+                    vendorSection.style.display = 'none';
                 }
             } else {
                 vendorSection.style.display = 'none';
@@ -377,8 +390,9 @@ function completeMaintenance() {
         status: 'Available'
     };
 
-    // Include the requestId
+    // Include the requestId and taskType
     data.requestId = document.getElementById('m-target-name').dataset.reqid || "";
+    data.taskType = type;
 
     console.log("[DEBUG] completeMaintenance: payload", data);
     console.log("[DEBUG] isPcPlusLicense", isPcPlusLicense, "requestId", data.requestId);
