@@ -599,8 +599,21 @@ function onScanFailure(error) {
 
 function formatAssetCode(raw) {
     if (!raw) return "";
-    let clean = raw.split('.')[0].trim();
-    if (clean.length === 14 && /^\d+$/.test(clean)) {
+    // Bersihkan dari titik atau karakter non-digit untuk re-formatting
+    let clean = raw.toString().replace(/\D/g, '').trim(); 
+    
+    // Handle 13 digits: 3.10.01.01.002.199
+    if (clean.length === 13) {
+        return clean.substring(0, 1) + '.' + 
+               clean.substring(1, 3) + '.' + 
+               clean.substring(3, 5) + '.' + 
+               clean.substring(5, 7) + '.' + 
+               clean.substring(7, 10) + '.' + 
+               clean.substring(10, 13);
+    }
+    
+    // Handle 14 digits (Legacy/Existing)
+    if (clean.length === 14) {
         return clean.substring(0, 1) + '.' + 
                clean.substring(1, 3) + '.' + 
                clean.substring(3, 5) + '.' + 
@@ -608,6 +621,7 @@ function formatAssetCode(raw) {
                clean.substring(7, 10) + '.' + 
                clean.substring(10, 14);
     }
+    
     return clean;
 }
 
