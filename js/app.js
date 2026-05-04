@@ -1157,6 +1157,11 @@ function setupFormHandlers() {
             
             // Poll for Gemini Audit result (Asynchronously)
             if (requestId) {
+                // Update loading text with estimation
+                var geminiLoadingText = document.querySelector('#gemini-loading span');
+                if (geminiLoadingText) {
+                    geminiLoadingText.innerHTML = 'Sistem AI sedang meninjau dokumen Anda...<br><span class="text-muted mt-1 d-block" style="font-size: 0.75rem;">Mohon tunggu sekitar 30-60 detik.</span>';
+                }
                 pollGeminiAudit(requestId);
             }
         };
@@ -1689,7 +1694,7 @@ function showSuccessModal(requestId) {
  * Poll for Gemini Audit Result
  */
 function pollGeminiAudit(requestId) {
-    var maxAttempts = 5;
+    var maxAttempts = 10; // Increased to 10 attempts
     var attempt = 0;
     var interval = 3500; // 3.5 seconds
 
