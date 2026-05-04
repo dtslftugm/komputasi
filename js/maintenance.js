@@ -19,7 +19,7 @@ var html5QrScanner = null;
 document.addEventListener('DOMContentLoaded', function () {
     processModal = new bootstrap.Modal(document.getElementById('processMaintenanceModal'));
     manualModal = new bootstrap.Modal(document.getElementById('manualMaintenanceModal'));
-    
+
     // Auth check
     var token = localStorage.getItem('adminAuthToken');
     if (!token) {
@@ -97,7 +97,7 @@ function renderMaintenanceTable(query) {
         else if (cleanStatus.indexOf('available') !== -1) { statusClass = 'bg-success'; }
 
         var typeClass = item.type === 'PC' ? 'bg-primary' : (item.type === 'Cleanup' ? 'bg-danger' : 'bg-info');
-        var warningHtml = item.currentOccupancy && item.currentOccupancy.isBlocked ? 
+        var warningHtml = item.currentOccupancy && item.currentOccupancy.isBlocked ?
             '<div class="text-danger extra-small mt-1"><i class="bi bi-exclamation-triangle"></i> ' + item.currentOccupancy.warning + '</div>' : '';
 
         tr.innerHTML = '<td>' +
@@ -133,7 +133,7 @@ function renderLogTable(logs) {
 
     logs.forEach(function (log) {
         var tr = document.createElement('tr');
-        
+
         var dateStr = log.timestamp;
         if (dateStr && dateStr.indexOf(' ') !== -1) {
             var parts = dateStr.split(' ');
@@ -541,12 +541,12 @@ function generateVendorAllowlist() {
 
 function initMobileMode(initialHostname) {
     document.body.style.paddingTop = '0';
-    
+
     // Fetch metadata in background
-    
+
     // Load metadata (Software, Locations, Hostnames)
     api.run('admin-maintenance-meta')
-        .then(function(res) {
+        .then(function (res) {
             if (typeof ui !== 'undefined') ui.hideLoading();
             if (res.success) {
                 mobileMetadata = res;
@@ -556,7 +556,7 @@ function initMobileMode(initialHostname) {
                 if (typeof ui !== 'undefined') ui.error("Gagal memuat metadata mobile");
             }
         })
-        .catch(function(err) {
+        .catch(function (err) {
             if (typeof ui !== 'undefined') ui.hideLoading();
             if (typeof ui !== 'undefined') ui.error("Error loading mobile meta: " + err);
         });
@@ -568,28 +568,32 @@ function exitMobileMode() {
 
 function startScanner() {
     if (html5QrScanner) {
-        try { html5QrScanner.clear(); } catch(e) {}
+        try { html5QrScanner.clear(); } catch (e) { }
     }
-    
-    html5QrScanner = new Html5QrcodeScanner("reader", { 
-        fps: 10, 
-        qrbox: { width: 250, height: 150 },
+
+    html5QrScanner = new Html5QrcodeScanner("reader", {
+        fps: 20,
+        qrbox: function (viewfinderWidth, viewfinderHeight) {
+            let boxWidth = Math.min(viewfinderWidth * 0.85, 450);
+            let boxHeight = Math.min(viewfinderHeight * 0.5, 200);
+            return { width: boxWidth, height: boxHeight };
+        },
         aspectRatio: 1.777778,
         showTorchButton: true, // Fitur senter (jika didukung HP)
         rememberLastUsedCamera: true
     });
-    
+
     html5QrScanner.render(onScanSuccess, onScanFailure);
 }
 
 function onScanSuccess(decodedText) {
     const formattedCode = formatAssetCode(decodedText);
     if (typeof ui !== 'undefined') ui.success("Barcode Terbaca: " + formattedCode);
-    
+
     if (html5QrScanner) {
         html5QrScanner.clear();
     }
-    
+
     searchUnitByAsset(formattedCode);
 }
 
@@ -628,13 +632,13 @@ function handleManualAssetSubmit() {
 function searchUnitByAsset(assetCode) {
     if (typeof ui !== 'undefined') ui.loading("Mencari unit...");
     currentScannedAsset = assetCode;
-    
+
     api.run('admin-unit-by-asset', { assetCode: assetCode })
-        .then(function(res) {
+        .then(function (res) {
             if (typeof ui !== 'undefined') ui.hideLoading();
             document.getElementById('m-step-form').style.display = 'block';
             document.getElementById('m-display-asset').textContent = assetCode;
-            
+
             if (res.success && res.found) {
                 currentUnitData = res.data;
                 document.getElementById('m-display-hostname').textContent = res.data.hostname;
@@ -647,10 +651,10 @@ function searchUnitByAsset(assetCode) {
                 document.getElementById('m-linking-section').style.display = 'block';
                 if (typeof ui !== 'undefined') ui.warning("Asset belum tertaut ke hostname");
             }
-            
+
             document.getElementById('m-step-form').scrollIntoView({ behavior: 'smooth' });
         })
-        .catch(function(err) {
+        .catch(function (err) {
             if (typeof ui !== 'undefined') ui.hideLoading();
             if (typeof ui !== 'undefined') ui.error("Error mencari unit: " + err);
         });
@@ -658,34 +662,34 @@ function searchUnitByAsset(assetCode) {
 
 function renderMobileMetadata() {
     if (!mobileMetadata) return;
-    
+
     const locSelect = document.getElementById('m-input-location');
     locSelect.innerHTML = '<option value="">-- Pilih Lokasi --</option>';
-    mobileMetadata.locations.forEach(function(loc) {
+    mobileMetadata.locations.forEach(function (loc) {
         const opt = document.createElement('option');
         opt.value = loc;
         opt.textContent = loc;
         locSelect.appendChild(opt);
     });
-    
+
     const hostSelect = document.getElementById('m-select-hostname');
     hostSelect.innerHTML = '<option value="">-- Pilih Hostname --</option>';
-    mobileMetadata.hostnames.forEach(function(host) {
+    mobileMetadata.hostnames.forEach(function (host) {
         const opt = document.createElement('option');
         opt.value = host;
         opt.textContent = host;
         hostSelect.appendChild(opt);
     });
-    
+
     const vendorGrid = document.getElementById('m-vendor-grid');
     vendorGrid.innerHTML = '';
-    
+
     const specialVendors = ['Cek Rutin', 'Perbaikan Hardware'];
-    const allVendors = specialVendors.concat(mobileMetadata.vendors.filter(function(v) { 
-        return specialVendors.indexOf(v) === -1; 
+    const allVendors = specialVendors.concat(mobileMetadata.vendors.filter(function (v) {
+        return specialVendors.indexOf(v) === -1;
     }));
-    
-    allVendors.forEach(function(vendor) {
+
+    allVendors.forEach(function (vendor) {
         const col = document.createElement('div');
         col.className = 'col-6';
         col.innerHTML = '<div class="vendor-btn" onclick="selectVendor(\'' + vendor + '\', this)">' + vendor + '</div>';
@@ -694,23 +698,23 @@ function renderMobileMetadata() {
 }
 
 function selectVendor(vendor, el) {
-    document.querySelectorAll('.vendor-btn').forEach(function(btn) { btn.classList.remove('active'); });
+    document.querySelectorAll('.vendor-btn').forEach(function (btn) { btn.classList.remove('active'); });
     if (el) el.classList.add('active');
-    
+
     const swSection = document.getElementById('m-software-selection');
     const swSelect = document.getElementById('m-input-software');
-    
+
     if (vendor === 'Cek Rutin' || vendor === 'Perbaikan Hardware') {
         swSection.style.display = 'none';
         swSelect.value = "";
         return;
     }
-    
+
     swSection.style.display = 'block';
     swSelect.innerHTML = '<option value="">-- Pilih Software --</option>';
-    
-    const filtered = mobileMetadata.software.filter(function(s) { return s.vendor === vendor; });
-    filtered.forEach(function(sw) {
+
+    const filtered = mobileMetadata.software.filter(function (s) { return s.vendor === vendor; });
+    filtered.forEach(function (sw) {
         const opt = document.createElement('option');
         opt.value = sw.name;
         opt.textContent = sw.name;
@@ -723,12 +727,12 @@ function submitMobileMaintenance() {
     const location = document.getElementById('m-input-location').value;
     const software = document.getElementById('m-input-software').value;
     const assetCode = currentScannedAsset;
-    
+
     if (!hostname) {
         if (typeof ui !== 'undefined') ui.error("Hostname belum dipilih / tertaut");
         return;
     }
-    
+
     let taskName = "Update via Mobile";
     const activeVendor = document.querySelector('.vendor-btn.active');
     if (activeVendor) {
@@ -737,9 +741,9 @@ function submitMobileMaintenance() {
         else if (vName === 'Perbaikan Hardware') taskName = "Perbaikan Fisik";
         else taskName = "Instalasi Software: " + vName;
     }
-    
+
     if (typeof ui !== 'undefined') ui.loading("Menyimpan data...");
-    
+
     const payload = {
         hostname: hostname,
         assetCode: assetCode,
@@ -747,20 +751,20 @@ function submitMobileMaintenance() {
         newSoftware: software,
         tasks: taskName
     };
-    
+
     api.run('admin-mobile-maint-log', payload)
-        .then(function(res) {
+        .then(function (res) {
             if (typeof ui !== 'undefined') ui.hideLoading();
             if (res.success) {
                 if (typeof ui !== 'undefined') ui.success("Data berhasil disimpan!");
-                setTimeout(function() {
+                setTimeout(function () {
                     window.location.reload();
                 }, 1500);
             } else {
                 if (typeof ui !== 'undefined') ui.error("Gagal menyimpan: " + res.message);
             }
         })
-        .catch(function(err) {
+        .catch(function (err) {
             if (typeof ui !== 'undefined') ui.hideLoading();
             if (typeof ui !== 'undefined') ui.error("Error submitting: " + err);
         });
