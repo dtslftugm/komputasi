@@ -597,32 +597,25 @@ function onScanFailure(error) {
     // Silent
 }
 
-function formatAssetCode(raw) {
-    if (!raw) return "";
-    // Bersihkan dari titik atau karakter non-digit untuk re-formatting
-    let clean = raw.toString().replace(/\D/g, '').trim(); 
-    
-    // Handle 13 digits: 3.10.01.01.002.199
-    if (clean.length === 13) {
-        return clean.substring(0, 1) + '.' + 
-               clean.substring(1, 3) + '.' + 
-               clean.substring(3, 5) + '.' + 
-               clean.substring(5, 7) + '.' + 
-               clean.substring(7, 10) + '.' + 
-               clean.substring(10, 13);
+function formatAssetCode(scan) {
+    if (!scan) return "";
+    let s = String(scan).trim();
+
+    // Jika sudah terformat benar (3.xx.xx.xx.xxx.xxx), jangan diubah
+    if (/^\d\.\d{2}\.\d{2}\.\d{2}\.\d{3}\.\d+$/.test(s)) return s;
+
+    // Jika mengandung titik (misal akhiran .187800), ambil bagian sebelum titik terakhir
+    const dotMatch = s.match(/^(.*)\..*$/);
+    if (dotMatch) {
+        s = dotMatch[1];
     }
-    
-    // Handle 14 digits (Legacy/Existing)
-    if (clean.length === 14) {
-        return clean.substring(0, 1) + '.' + 
-               clean.substring(1, 3) + '.' + 
-               clean.substring(3, 5) + '.' + 
-               clean.substring(5, 7) + '.' + 
-               clean.substring(7, 10) + '.' + 
-               clean.substring(10, 14);
-    }
-    
-    return clean;
+
+    // Pastikan hanya angka yang tersisa untuk diformat ulang
+    s = s.replace(/\D/g, '');
+
+    // Terapkan format titik standar secara dinamis
+    // (\d+) di akhir akan menangkap baik 3 digit maupun 4 digit terakhir secara otomatis
+    return s.replace(/^(\d)(\d{2})(\d{2})(\d{2})(\d{3})(\d+)$/, "$1.$2.$3.$4.$5.$6");
 }
 
 function handleManualAssetSubmit() {
