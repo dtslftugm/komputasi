@@ -1739,11 +1739,19 @@ function displayGeminiAudit(data) {
         '<div class="mb-2 small"><strong>Kesimpulan:</strong> ' + summaryText + '</div>';
 
     if (data.details) {
-        html += '<ul class="ps-3 mb-0 small text-muted" style="font-size: 0.75rem;">';
+        html += '<ul class="ps-3 mb-2 small text-muted" style="font-size: 0.75rem;">';
         if (data.details.title_match) html += '<li>' + data.details.title_match + '</li>';
         if (data.details.expiry_check) html += '<li>' + data.details.expiry_check + '</li>';
         if (data.details.remote_access_check) html += '<li>' + data.details.remote_access_check + '</li>';
         html += '</ul>';
+    }
+
+    // Add Timing Information
+    if (data.audit_start && data.audit_finished) {
+        var durationText = data.duration ? ' (' + data.duration + ')' : '';
+        html += '<div class="text-end border-top pt-1 mt-2" style="font-size: 0.65rem; color: #adb5bd;">' +
+            '<i class="bi bi-clock me-1"></i> Diproses: ' + data.audit_start + ' - ' + data.audit_finished + durationText +
+            '</div>';
     }
 
     if (!data.is_valid) {
