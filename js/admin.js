@@ -1067,13 +1067,21 @@ function loadExpiredUsage() {
 function renderExpiredTable(data) {
     var tbody = document.getElementById('expiredTableBody');
     tbody.innerHTML = '';
-
     data.forEach(function (item) {
-        var emailDisplay = item.email || "-";
-        // If UGM email is available and different from the primary email, show both
-        if (item.emailUgm && item.emailUgm !== "-" && item.emailUgm.toLowerCase() !== emailDisplay.toLowerCase()) {
-            emailDisplay = '<span title="University Email">' + item.emailUgm + '</span><br>' + 
-                           '<span class="text-secondary" title="Personal Email" style="font-size: 0.7rem;">' + item.email + '</span>';
+        var emailDisplay = "";
+        var uEmail = (item.emailUgm && item.emailUgm !== "-") ? item.emailUgm : "";
+        var pEmail = (item.email && item.email !== "-") ? item.email : "";
+
+        if (uEmail && pEmail && uEmail.toLowerCase() !== pEmail.toLowerCase()) {
+            emailDisplay = '<div>' + uEmail + '</div>' + 
+                           '<div class="text-secondary" style="font-size: 0.7rem;">' + pEmail + '</div>';
+        } else {
+            emailDisplay = '<div>' + (uEmail || pEmail || "-") + '</div>';
+        }
+
+        var computerInfo = "";
+        if ((item.computer && item.computer !== "-") || (item.room && item.room !== "-")) {
+            computerInfo = '<div class="extra-small text-muted">' + (item.computer || "-") + ' (' + (item.room || "-") + ')</div>';
         }
 
         var tr = document.createElement('tr');
@@ -1083,7 +1091,7 @@ function renderExpiredTable(data) {
             '</td>' +
             '<td>' +
             '<div class="small fw-bold">' + item.software + '</div>' +
-            '<div class="extra-small text-muted">' + (item.computer || "-") + ' (' + (item.room || "-") + ')</div>' +
+            computerInfo +
             '</td>' +
             '<td class="text-danger fw-bold small">' + item.expirationDate + '</td>' +
             '<td class="text-center">' +
