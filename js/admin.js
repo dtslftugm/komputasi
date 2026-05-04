@@ -1069,14 +1069,21 @@ function renderExpiredTable(data) {
     tbody.innerHTML = '';
 
     data.forEach(function (item) {
+        var emailDisplay = item.email || "-";
+        // If UGM email is available and different from the primary email, show both
+        if (item.emailUgm && item.emailUgm !== "-" && item.emailUgm.toLowerCase() !== emailDisplay.toLowerCase()) {
+            emailDisplay = '<span title="University Email">' + item.emailUgm + '</span><br>' + 
+                           '<span class="text-secondary" title="Personal Email" style="font-size: 0.7rem;">' + item.email + '</span>';
+        }
+
         var tr = document.createElement('tr');
         tr.innerHTML = '<td>' +
             '<div class="fw-bold">' + item.nama + '</div>' +
-            '<div class="extra-small text-muted">' + item.email + '</div>' +
+            '<div class="extra-small text-muted">' + emailDisplay + '</div>' +
             '</td>' +
             '<td>' +
             '<div class="small fw-bold">' + item.software + '</div>' +
-            '<div class="extra-small text-muted">' + item.computer + ' (' + item.room + ')</div>' +
+            '<div class="extra-small text-muted">' + (item.computer || "-") + ' (' + (item.room || "-") + ')</div>' +
             '</td>' +
             '<td class="text-danger fw-bold small">' + item.expirationDate + '</td>' +
             '<td class="text-center">' +
