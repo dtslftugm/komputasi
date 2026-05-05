@@ -914,6 +914,10 @@ function submitApproval() {
     };
 
     function attemptApprove() {
+        console.log("=== BROWSER DEBUG: SUBMIT APPROVAL ===");
+        console.log("Target Software:", currentRequest.software);
+        console.log("Full Data Payload:", data);
+        
         showLoading("Memproses Approval...");
         api.jsonpRequest('admin-approve', data)
             .then(function (res) {
