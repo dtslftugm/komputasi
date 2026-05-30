@@ -926,10 +926,8 @@ function submitApproval() {
                     if (res.debugLogs && res.debugLogs.length > 0) {
                         console.log("=== BACKEND DEBUG LOGS ===");
                         console.log(res.debugLogs.join("\n"));
-                        ui.success("Disetujui.\nLOGS: " + res.debugLogs.join(" | "));
-                    } else {
-                        ui.success("Permohonan berhasil disetujui.");
                     }
+                    ui.success("Permohonan berhasil disetujui.");
                     processModalObj.hide();
 
                     // Clear state (Fixed in Milestone 9)

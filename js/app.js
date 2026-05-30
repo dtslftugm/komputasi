@@ -283,6 +283,7 @@ function showAnnouncement() {
 // ===== HISTORICAL USER TRACKING =====
 function setupHistoricalTracker() {
     var nimInput = document.getElementById('nim');
+    var topikInput = document.getElementById('topik');
     var badge = document.getElementById('returningUserBadge');
     var trackingContainer = document.getElementById('renewalTrackingContainer');
 
@@ -293,29 +294,56 @@ function setupHistoricalTracker() {
 
         var rawNim = nimInput ? nimInput.value : '';
         var currentNim = rawNim.replace(/\s/g, '').toUpperCase();
-
-        console.log("--- HISTORICAL NIM CHECK ---");
-        console.log("Raw Input NIM:", rawNim);
-        console.log("Cleaned Input NIM:", currentNim);
-        console.log("Total Historical NIMs in DB:", initialData.historicalNims ? initialData.historicalNims.length : 0);
+        var currentTopik = topikInput ? topikInput.value.trim().toLowerCase().substring(0, 100) : '';
 
         var isHistoricalNim = currentNim.length > 3 && initialData.historicalNims && initialData.historicalNims.includes(currentNim);
-        console.log("NIM Match Result:", isHistoricalNim);
 
         if (isHistoricalNim) {
+            // Compare topic with last submission
+            var historicalTopics = initialData.historicalTopics || {};
+            var lastTopik = historicalTopics[currentNim] || '';
+            var isSameTopic = currentTopik.length > 3 && lastTopik.length > 3 && currentTopik === lastTopik;
+
             if (badge) {
                 badge.classList.remove('d-none');
-                badge.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <div class="fs-4 me-3">👋</div>
-                        <div>
-                            <strong class="d-block mb-1" style="color: var(--text-color);">Selamat Datang Kembali!</strong>
-                            <span class="small text-muted">Senang melihat Anda menggunakan layanan kami lagi. Silakan lanjutkan pengisian form permohonan baru.</span>
-                        </div>
-                    </div>
-                `;
+                if (isSameTopic) {
+                    badge.innerHTML = '\
+                        <div class="d-flex align-items-center">\
+                            <div class="fs-4 me-3">\ud83d\udc4b</div>\
+                            <div>\
+                                <strong class="d-block mb-1" style="color: var(--text-color);">Selamat Datang Kembali!</strong>\
+                                <span class="small text-muted">Topik yang sama terdeteksi. Silakan isi laporan progres di bawah sebagai syarat pengajuan baru.</span>\
+                            </div>\
+                        </div>';
+                } else if (currentTopik.length > 3) {
+                    badge.innerHTML = '\
+                        <div class="d-flex align-items-center">\
+                            <div class="fs-4 me-3">\ud83d\udc4b</div>\
+                            <div>\
+                                <strong class="d-block mb-1" style="color: var(--text-color);">Selamat Datang Kembali!</strong>\
+                                <span class="small text-muted">Topik baru terdeteksi. Laporan progres tidak diperlukan untuk topik yang berbeda.</span>\
+                            </div>\
+                        </div>';
+                } else {
+                    badge.innerHTML = '\
+                        <div class="d-flex align-items-center">\
+                            <div class="fs-4 me-3">\ud83d\udc4b</div>\
+                            <div>\
+                                <strong class="d-block mb-1" style="color: var(--text-color);">Selamat Datang Kembali!</strong>\
+                                <span class="small text-muted">Rekam jejak penggunaan Anda sebelumnya ditemukan.</span>\
+                            </div>\
+                        </div>';
+                }
             }
-            if (trackingContainer) trackingContainer.classList.add('d-none');
+
+            // Show progress form only if same topic
+            if (trackingContainer) {
+                if (isSameTopic) {
+                    trackingContainer.classList.remove('d-none');
+                } else {
+                    trackingContainer.classList.add('d-none');
+                }
+            }
         } else {
             if (badge) badge.classList.add('d-none');
             if (trackingContainer) trackingContainer.classList.add('d-none');
@@ -324,6 +352,10 @@ function setupHistoricalTracker() {
 
     if (nimInput) {
         nimInput.addEventListener('change', checkHistory);
+    }
+    // Re-evaluate when topic changes (user may type topic after NIM)
+    if (topikInput) {
+        topikInput.addEventListener('change', checkHistory);
     }
 }
 
@@ -1154,7 +1186,7 @@ function setupFormHandlers() {
             hideLoading();
             showSuccessModal(requestId || 'Berhasil');
             resetForm();
-            
+
             // Poll for Gemini Audit result (Asynchronously)
             if (requestId) {
                 // Update loading text with estimation
@@ -1606,11 +1638,19 @@ function validateFormData(data) {
     // Renewal Usage Tracking Validation
     let nim = (document.getElementById('nim') || {}).value || "";
     let cleanNim = nim.replace(/\s/g, '').toUpperCase();
-    let isHistoricalUser = window.initialData && window.initialData.historicalNims && window.initialData.historicalNims.includes(cleanNim);
+    let currentTopik = (document.getElementById('topik') || {}).value || "";
+    let cleanTopik = currentTopik.trim().toLowerCase().substring(0, 100);
 
     let isContextRenewal = !!getUrlParam('renewal_id') || (window.initialData && window.initialData.renewalData);
 
-    if (isContextRenewal) {
+    // Historical user with same topic = must fill progress (prevents renewal bypass)
+    let isHistoricalSameTopic = false;
+    if (!isContextRenewal && cleanNim.length > 3 && window.initialData && window.initialData.historicalTopics) {
+        let lastTopik = window.initialData.historicalTopics[cleanNim] || '';
+        isHistoricalSameTopic = cleanTopik.length > 3 && lastTopik.length > 3 && cleanTopik === lastTopik;
+    }
+
+    if (isContextRenewal || isHistoricalSameTopic) {
         if (!data.progres || data.progres.trim().length < 20) {
             ui.alert('Harap isi Progres/Capaian Sebelumnya dengan detail (minimal 20 karakter). Penjelasan ini digunakan sebagai pertimbangan perpanjangan.', 'Progres Diperlukan', 'warning')
                 .then(function () {
@@ -1740,7 +1780,7 @@ function displayGeminiAudit(data) {
     var badgeClass = data.is_valid ? 'text-success' : 'text-danger';
     var summaryText = data.summary || (data.is_valid ? "Dokumen sesuai kriteria." : "Terdapat ketidaksesuaian pada dokumen.");
 
-    var html = '<div class="fw-bold ' + badgeClass + ' mb-2">' + icon + ' Hasil Audit AI (Beta)</div>' +
+    var html = '<div class="fw-bold ' + badgeClass + ' mb-2">' + icon + ' Hasil Audit AI (Beta Version)</div>' +
         '<div class="mb-2 small"><strong>Kesimpulan:</strong> ' + summaryText + '</div>';
 
     if (data.details) {
@@ -1761,7 +1801,7 @@ function displayGeminiAudit(data) {
 
     if (!data.is_valid) {
         html += '<div class="mt-2 p-2 bg-warning bg-opacity-10 border border-warning rounded small" style="font-size: 0.75rem;">' +
-            '💡 <strong>Saran:</strong> Jika ada kesalahan input, Anda dapat segera menghubungi admin via WhatsApp untuk perbaikan.' +
+            '💡 <strong>Saran:</strong> Jika ada kesalahan input, Anda dapat segera menghubungi admin via <a href="https://wa.me/08174114800">WhatsApp</a> untuk perbaikan.' +
             '</div>';
     }
 
