@@ -1742,6 +1742,11 @@ function pollGeminiAudit(requestId) {
         attempt++;
         console.log('Polling Gemini Audit (' + attempt + '/' + maxAttempts + ') for ' + requestId);
 
+        var geminiLoadingText = document.querySelector('#gemini-loading span');
+        if (geminiLoadingText) {
+            geminiLoadingText.innerHTML = 'Sistem sedang meninjau dokumen Anda (Pengecekan ' + attempt + '/' + maxAttempts + ')...<br><span class="text-muted mt-1 d-block" style="font-size: 0.75rem;">Mohon tunggu sekitar 30-60 detik.</span>';
+        }
+
         api.checkAuditResult(requestId)
             .then(function (response) {
                 if (response && response.success && response.processed) {
