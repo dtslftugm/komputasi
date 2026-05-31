@@ -1422,6 +1422,16 @@ function renderExpirationBanner(licenses) {
     var container = document.getElementById('license-banner-container');
     if (!container) return;
 
+    var grouped = {};
+    licenses.forEach(function(lic) {
+        var key = lic.vendor && lic.vendor !== "-" ? lic.vendor + '_' + lic.expiry : lic.name + '_' + lic.expiry;
+        if (!grouped[key]) {
+            grouped[key] = { vendor: lic.vendor, expiry: lic.expiry, daysLeft: lic.daysLeft, count: 0, names: [] };
+        }
+        grouped[key].count++;
+        grouped[key].names.push(lic.name);
+    });
+
     var html = '<div class="alert alert-warning alert-dismissible fade show shadow-sm border-start border-warning border-5" role="alert" style="border-radius: 12px; margin-bottom: 2rem;">' +
         '<div class="d-flex align-items-center">' +
         '<div class="fs-4 me-3">⚠️</div>' +
@@ -1429,9 +1439,11 @@ function renderExpirationBanner(licenses) {
         '<strong class="outfit">Peringatan Lisensi:</strong> ' + licenses.length + ' software akan berakhir dalam waktu dekat.' +
         '<div class="small mt-1">';
 
-    licenses.forEach(function (lic, idx) {
-        var badgeColor = lic.daysLeft < 7 ? 'bg-danger' : 'bg-warning text-dark';
-        html += '<span class="badge ' + badgeColor + ' me-2 mb-1">' + lic.name + ' (' + lic.daysLeft + ' hari)</span>';
+    Object.keys(grouped).forEach(function(key) {
+        var g = grouped[key];
+        var badgeColor = g.daysLeft < 7 ? 'bg-danger' : 'bg-warning text-dark';
+        var displaySoftware = g.count > 1 ? g.vendor + ' Bundle (' + g.count + ' lisensi)' : g.names[0];
+        html += '<span class="badge ' + badgeColor + ' me-2 mb-1">' + displaySoftware + ' (' + g.daysLeft + ' hari)</span>';
     });
 
     html += '</div></div></div>' +
