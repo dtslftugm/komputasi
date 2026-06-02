@@ -141,9 +141,11 @@
             .mobile-hide {
                 display: none !important;
             }
+
             .mobile-only {
                 display: block;
             }
+
             body {
                 padding-top: 10px;
             }
@@ -183,7 +185,7 @@
         }
 
         /* Hide ScanApp Branding */
-        #reader__dashboard_section_csr > div > a {
+        #reader__dashboard_section_csr>div>a {
             display: none !important;
         }
 
@@ -221,7 +223,8 @@
             <div id="scan-result-manual" class="mt-2">
                 <p class="text-muted small">Scan Barcode Aset pada unit komputer</p>
                 <div class="input-group">
-                    <input type="text" id="manual-asset-input" class="form-control rounded-pill-start" placeholder="Input Asset Code Manual...">
+                    <input type="text" id="manual-asset-input" class="form-control rounded-pill-start"
+                        placeholder="Input Asset Code Manual...">
                     <button class="btn btn-primary rounded-pill-end" onclick="handleManualAssetSubmit()">Cari</button>
                 </div>
             </div>
@@ -243,13 +246,15 @@
             </div>
 
             <!-- Linking Section (Show if unit not found by asset) -->
-            <div id="m-linking-section" class="card border-0 shadow-sm p-3 mb-4 border-warning bg-light" style="display: none;">
+            <div id="m-linking-section" class="card border-0 shadow-sm p-3 mb-4 border-warning bg-light"
+                style="display: none;">
                 <label class="form-label small fw-bold">⚠️ Tautkan ke Hostname:</label>
                 <select id="m-select-hostname" class="form-select rounded-pill">
                     <option value="">-- Pilih Hostname --</option>
                     <!-- Options from metadata -->
                 </select>
-                <p class="extra-small text-muted mt-2 mb-0">Scan barcode ini terdeteksi baru. Hubungkan dengan hostname yang sesuai.</p>
+                <p class="extra-small text-muted mt-2 mb-0">Scan barcode ini terdeteksi baru. Hubungkan dengan hostname
+                    yang sesuai.</p>
             </div>
 
             <!-- Main Form Info -->
@@ -275,7 +280,8 @@
                     </select>
                 </div>
 
-                <button class="btn btn-success w-100 rounded-pill py-3 fw-bold shadow mt-2" onclick="submitMobileMaintenance()">
+                <button class="btn btn-success w-100 rounded-pill py-3 fw-bold shadow mt-2"
+                    onclick="submitMobileMaintenance()">
                     <i class="bi bi-check-circle me-2"></i>Simpan Perubahan
                 </button>
             </div>
@@ -458,7 +464,7 @@
                                         <i class="bi bi-shield-lock me-2"></i>Instruksi Vendor
                                     </h6>
 
-                                    <!-- Geoslope & Bentley Logic -->
+                                    <!-- Geoslope, Bentley & Midas Logic -->
                                     <div id="vendor-manual-search" style="display: none;">
                                         <p class="small text-muted mb-2">Silakan cari akun pengguna ini pada dashboard
                                             vendor untuk dihapus aksesnya.</p>
