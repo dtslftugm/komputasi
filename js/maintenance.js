@@ -204,7 +204,7 @@ function openMaintenanceModal(reqId, type, originalName) {
             if (checkVendorWrapper) checkVendorWrapper.style.display = 'none';
 
             var vendorName = (item.vendor || "").toString().toLowerCase();
-            if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1) {
+            if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1 || vendorName.indexOf('midas') !== -1) {
                 vendorManualSearch.style.display = 'block';
                 vendorAllowlistGen.style.display = 'none';
                 document.getElementById('m-vendor-name').value = item.userName || "";
@@ -258,7 +258,7 @@ function openMaintenanceModal(reqId, type, originalName) {
                 var primaryLicense = item.pendingLicenses[0];
                 var vendorName = (primaryLicense.vendor || "").toString().toLowerCase();
 
-                if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1) {
+                if (vendorName.indexOf('geoslope') !== -1 || vendorName.indexOf('bentley') !== -1 || vendorName.indexOf('midas') !== -1) {
                     vendorManualSearch.style.display = 'block';
                     vendorAllowlistGen.style.display = 'none';
                     document.getElementById('m-vendor-name').value = item.licenseUserName || "";
