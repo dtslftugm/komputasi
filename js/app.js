@@ -1883,6 +1883,24 @@ function resetForm() {
     var dosenManual = document.getElementById('dosenPembimbingManual');
     // Removed forceful hide here because handleProdiChange handles the new default state
 
+    // Reset historical tracker containers and values
+    var returningUserBadge = document.getElementById('returningUserBadge');
+    if (returningUserBadge) returningUserBadge.classList.add('d-none');
+    
+    var renewalTrackingContainer = document.getElementById('renewalTrackingContainer');
+    if (renewalTrackingContainer) {
+        renewalTrackingContainer.classList.add('d-none');
+    }
+    
+    var progresLaporan = document.getElementById('progresLaporan');
+    if (progresLaporan) progresLaporan.value = '';
+    
+    var targetLaporan = document.getElementById('targetLaporan');
+    if (targetLaporan) targetLaporan.value = '';
+    
+    var kendalaLaporan = document.getElementById('kendalaLaporan');
+    if (kendalaLaporan) kendalaLaporan.value = '';
+
     // Trigger UI synchronization for Prodi-dependent fields
     handleProdiChange();
 
