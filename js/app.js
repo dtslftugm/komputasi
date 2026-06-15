@@ -1563,7 +1563,9 @@ function validateFormData(data) {
             return false;
         }
 
-        if (!data.preferredComputer || data.preferredComputer === "") {
+        // Skip computer selection check if user is in queue mode (unit akan ditentukan Admin)
+        var isInQueueMode = isQueueMode || (data.preferredComputer === 'ANTREAN') || (getUrlParam('action') === 'queue');
+        if (!isInQueueMode && (!data.preferredComputer || data.preferredComputer === "")) {
             ui.alert('Silakan pilih salah satu unit komputer yang tersedia di daftar.', 'Unit Diperlukan', 'warning')
                 .then(function () {
                     var container = document.getElementById('computer-selection-container');
@@ -2184,26 +2186,7 @@ function prefillRenewalForm(data) {
     if (trackingContainer) trackingContainer.classList.remove('d-none');
 }
 
-// Global handler for Join Queue
-function handleJoinQueue() {
-    selectedComputer = {
-        name: 'ANTREAN',
-        location: document.getElementById('roomPreference').value,
-        softwareInstalled: 'Semua'
-    };
-
-    ui.success('Berhasil memilih pendaftaran via Antrean. Silakan lengkapi form dan kirim permohonon Anda.', 'Antrean Terpilih');
-
-    // Feedback in UI
-    var noComputers = document.getElementById('no-computers');
-    if (noComputers) {
-        noComputers.innerHTML = '<div class="alert alert-info py-4 mb-0 shadow-sm border-0" style="border-radius: 12px; background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);">' +
-            '<div class="mb-2 fs-3">✅</div>' +
-            '<h6 class="fw-bold mb-1" style="color: #1864ab;">Mode Antrean Aktif</h6>' +
-            '<p class="small mb-0" style="color: #1971c2;">Anda akan didaftarkan ke dalam antrean <strong>' + selectedComputer.location + '</strong>. Unit komputer akan ditentukan oleh Admin setelah meninjau antrean. Tambahkan pada catatan jika ada preferensi unit.</p>' +
-            '</div>';
-    }
-}
+// Placeholder removed: handleJoinQueue() Milestone 20 is defined below at line ~2359
 
 // ===== AGENDA CONFLICT CHECK =====
 function checkLabAgendas(isManualCheck) {
@@ -2359,6 +2342,15 @@ function parseAppDate(dateInput) {
 function handleJoinQueue() {
     isQueueMode = true;
 
+    // Pastikan selectedComputer diisi dengan sentinel 'ANTREAN'
+    // agar validasi preferredComputer pada validateFormData() tidak memblokir
+    var roomVal = (document.getElementById('roomPreference') || {}).value || '';
+    selectedComputer = {
+        name: 'ANTREAN',
+        location: roomVal,
+        softwareInstalled: 'Semua'
+    };
+
     // Update Banners
     var banner = document.getElementById('renewalInfoBanner');
     if (banner) {
@@ -2368,12 +2360,8 @@ function handleJoinQueue() {
     }
 
     // Remove the Warning Div (the one with the buttons)
-    var warnings = document.querySelectorAll('.alert-warning');
-    warnings.forEach(function (w) {
-        if (w.innerHTML.includes('masa berlakunya') || w.innerHTML.includes('Antrean')) {
-            w.remove();
-        }
-    });
+    var warnings = document.querySelectorAll('.renewal-warning-box');
+    warnings.forEach(function (w) { w.remove(); });
 
     // Re-enable and update Submit Button
     var submitBtn = document.querySelector('button[type="submit"]');
