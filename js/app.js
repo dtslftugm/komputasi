@@ -2186,8 +2186,6 @@ function prefillRenewalForm(data) {
     if (trackingContainer) trackingContainer.classList.remove('d-none');
 }
 
-// Placeholder removed: handleJoinQueue() Milestone 20 is defined below at line ~2359
-
 // ===== AGENDA CONFLICT CHECK =====
 function checkLabAgendas(isManualCheck) {
     var roomEl = document.getElementById('roomPreference');
