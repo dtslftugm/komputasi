@@ -1118,62 +1118,153 @@ function setupFormHandlers() {
         Promise.all(filePromises)
             .then(function (fileObjects) {
 
+                // ============================================================
+                // STRATEGI FIRE-AND-VERIFY
+                // Verifikasi menggunakan composite key yang SUDAH ADA di sheet:
+                //   NIM (atau email untuk Mitra) + Timestamp dalam window ±10 menit.
+                // Tidak perlu kolom baru — memanfaatkan data yang sudah ada.
+                // ============================================================
+
+
                 function attemptSubmission() {
-                    showLoading('Menyimpan data teks...');
-                    return api.submitRequest(formData)
+                    // submissionStartTime di-set ULANG setiap percobaan.
+                    // Ini memastikan verifikasi polling menggunakan window waktu
+                    // yang tepat, bahkan jika user melakukan retry setelah jeda panjang
+                    // (misalnya 1-2 jam setelah error pertama).
+                    var submissionStartTime = new Date().toISOString();
+
+                    showLoading('Mengirim data... (Harap tunggu, proses ini mungkin memerlukan beberapa saat)');
+
+                    var submissionResolved = false;
+
+                    api.submitRequest(formData)
                         .then(function (result) {
-                            console.log('Submission Result:', result);
-                            if (!result.success) throw new Error(result.message || 'Gagal menyimpan data teks');
-
-                            // Robustly extract data from either top-level or nested 'data' property
+                            if (submissionResolved) return;
+                            submissionResolved = true;
+                            console.log('Submission OK via JSONP:', result);
                             var resData = result.data || result;
-                            var rowIndex = resData.rowIndex;
-                            var sheetName = resData.sheetName;
                             var requestId = resData.requestId;
-
-                            console.log('Targeting Sheet:', sheetName, 'Row:', rowIndex, 'ID:', requestId);
-
-                            // --- Step 2: Upload Files sequentially if they exist ---
-                            if (fileObjects.length > 0) {
-                                var uploadChain = Promise.resolve();
-
-                                fileObjects.forEach(function (fileObj, index) {
-                                    uploadChain = uploadChain.then(function () {
-                                        showLoading('Mengunggah berkas ' + (index + 1) + '/' + fileObjects.length + '...');
-                                        return api.uploadFile({
-                                            rowIndex: rowIndex,
-                                            sheetName: sheetName,
-                                            requestId: requestId,
-                                            targetCol: fileObj.targetCol,
-                                            fileData: fileObj.data,
-                                            mimeType: fileObj.mimeType,
-                                            fileName: fileObj.name
-                                        });
-                                    });
-                                });
-
-                                return uploadChain.then(function () {
-                                    finalizeSuccess(requestId);
-                                });
-                            } else {
-                                finalizeSuccess(requestId);
-                            }
+                            proceedWithFiles(requestId, resData.rowIndex, resData.sheetName, fileObjects);
                         })
                         .catch(function (error) {
-                            hideLoading();
-                            console.error('Submission error:', error);
+                            if (submissionResolved) return;
+                            var errMsg = error.message || '';
+                            var isTimeout = errMsg.indexOf('Timeout') !== -1 || errMsg.indexOf('timeout') !== -1;
 
-                            var errMsg = error.message || "Kesalahan tidak diketahui.";
-                            ui.confirm('Terjadi kesalahan: ' + errMsg + '<br><br>Apakah Anda ingin mencoba mengirim ulang?', 'Koneksi Bermasalah')
-                                .then(function (confirmed) {
-                                    if (confirmed) {
-                                        attemptSubmission();
+                            if (isTimeout) {
+                                console.warn('JSONP timeout — memulai verifikasi polling via NIM/email + Timestamp...');
+                                showLoading('Koneksi lambat. Memverifikasi apakah data sudah tersimpan...');
+                                pollVerifySubmission(formData, submissionStartTime, function (verified, serverRequestId) {
+                                    if (submissionResolved) return;
+                                    submissionResolved = true;
+                                    if (verified) {
+                                        console.log('Data terverifikasi tersimpan via polling. ID:', serverRequestId);
+                                        proceedWithFiles(serverRequestId, null, 'Response', fileObjects);
+                                    } else {
+                                        console.log('Tidak terverifikasi — kirim ulang via POST no-cors');
+                                        fireAndForgetSubmit(formData, fileObjects);
                                     }
                                 });
+                            } else {
+                                submissionResolved = true;
+                                hideLoading();
+                                ui.confirm('Terjadi kesalahan: ' + errMsg + '<br><br>Apakah Anda ingin mencoba mengirim ulang?', 'Koneksi Bermasalah')
+                                    .then(function (confirmed) { if (confirmed) { submissionResolved = false; attemptSubmission(); } });
+                            }
                         });
                 }
 
-                // Start the first attempt
+                // Lanjutkan upload file setelah data teks tersimpan
+                function proceedWithFiles(requestId, rowIndex, sheetName, fileObjects) {
+                    if (fileObjects.length > 0) {
+                        showLoading('Mengunggah berkas...');
+                        fileObjects.forEach(function (fileObj) {
+                            api.uploadFile({
+                                rowIndex: rowIndex || 0,
+                                sheetName: sheetName || 'Response',
+                                requestId: requestId,
+                                targetCol: fileObj.targetCol,
+                                fileData: fileObj.data,
+                                mimeType: fileObj.mimeType,
+                                fileName: fileObj.name
+                            }).catch(function (e) {
+                                console.warn('Upload berkas (opaque/no-cors):', e);
+                            });
+                        });
+                        setTimeout(function () { finalizeSuccess(requestId); }, 500);
+                    } else {
+                        finalizeSuccess(requestId);
+                    }
+                }
+
+                // Fire-and-forget: kirim via POST no-cors saat polling gagal menemukan data
+                function fireAndForgetSubmit(formData, fileObjects) {
+                    showLoading('Mengirim ulang data...');
+                    var baseUrl = api.getBaseURL();
+                    var payload = JSON.stringify(Object.assign({}, formData, { path: 'submit-request' }));
+                    fetch(baseUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: payload
+                    }).then(function () {
+                        fileObjects.forEach(function (fileObj) {
+                            var fPayload = JSON.stringify({ path: 'upload-file', sheetName: 'Response', rowIndex: 0, targetCol: fileObj.targetCol, fileData: fileObj.data, mimeType: fileObj.mimeType, fileName: fileObj.name });
+                            fetch(baseUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: fPayload }).catch(function () { });
+                        });
+                        hideLoading();
+                        showSuccessModalWithNote('Terkirim',
+                            '<div class="alert alert-warning small mt-2 mb-0"><strong>⚠️ Catatan:</strong> Koneksi lambat saat verifikasi. Data sudah dikirim ke server. Cek email Anda dalam 1-2 menit untuk konfirmasi. Jika tidak ada email dalam 5 menit, hubungi admin.</div>');
+                        resetForm();
+                    }).catch(function (err) {
+                        hideLoading();
+                        console.error('Fire-and-forget POST gagal:', err);
+                        ui.alert('Gagal mengirim data. Periksa koneksi internet Anda dan coba lagi.', 'Gagal Terkirim', 'error');
+                    });
+                }
+
+                // Polling: verifikasi menggunakan NIM/email + window Timestamp
+                // Tidak memerlukan kolom baru — data sudah ada di sheet Response
+                function pollVerifySubmission(formData, submissionStartTime, callback) {
+                    var maxAttempts = 6;
+                    var attempt = 0;
+                    var pollInterval = 4000;
+
+                    // Kunci identifikasi: NIM untuk mahasiswa, email untuk Mitra
+                    var identifierNim = (formData.nim || '').toString().trim();
+                    var identifierEmail = (formData.emailAddress || '').toString().trim().toLowerCase();
+
+                    function doPoll() {
+                        attempt++;
+                        showLoading('Memverifikasi pengiriman (' + attempt + '/' + maxAttempts + ')...');
+                        console.log('Polling verifikasi: NIM=' + identifierNim + ', Email=' + identifierEmail + ', Attempt=' + attempt);
+
+                        api.run('apiVerifySubmission', {
+                            nim: identifierNim,
+                            email: identifierEmail,
+                            submissionStartTime: submissionStartTime
+                        })
+                            .then(function (res) {
+                                if (res && res.success && res.found) {
+                                    console.log('Verifikasi berhasil:', res);
+                                    callback(true, res.requestId);
+                                } else if (attempt < maxAttempts) {
+                                    setTimeout(doPoll, pollInterval);
+                                } else {
+                                    callback(false, null);
+                                }
+                            })
+                            .catch(function () {
+                                if (attempt < maxAttempts) setTimeout(doPoll, pollInterval);
+                                else callback(false, null);
+                            });
+                    }
+
+                    // Delay awal: beri waktu GAS menyelesaikan proses penyimpanan
+                    setTimeout(doPoll, 5000);
+                }
+
+                // Start
                 attemptSubmission();
             })
             .catch(function (error) {
@@ -1189,10 +1280,9 @@ function setupFormHandlers() {
 
             // Poll for Gemini Audit result (Asynchronously)
             if (requestId) {
-                // Update loading text with estimation
                 var geminiLoadingText = document.querySelector('#gemini-loading span');
                 if (geminiLoadingText) {
-                    geminiLoadingText.innerHTML = 'Sistem AI sedang meninjau dokumen Anda...<br><span class="text-muted mt-1 d-block" style="font-size: 0.75rem;">Mohon tunggu sekitar 30-60 detik.</span>';
+                    geminiLoadingText.innerHTML = 'Sistem sedang meninjau dokumen Anda...<br><span class="text-muted mt-1 d-block" style="font-size: 0.75rem;">Mohon tunggu sekitar 30-60 detik.</span>';
                 }
                 pollGeminiAudit(requestId);
             }
@@ -1682,12 +1772,17 @@ function validateFormData(data) {
 
 // ===== SUCCESS MODAL =====
 function showSuccessModal(requestId) {
+    showSuccessModalWithNote(requestId, null);
+}
+
+function showSuccessModalWithNote(requestId, extraHtml) {
     var modalEl = document.getElementById('success-modal');
     if (!modalEl) return;
 
     var message = document.getElementById('success-message');
     if (message) {
-        message.textContent = 'Permohonan berhasil dikirim! Request ID: ' + requestId + '. Email konfirmasi telah dikirim.';
+        message.innerHTML = 'Permohonan berhasil dikirim! Request ID: <strong>' + requestId + '</strong>. Email konfirmasi akan dikirim ke email Anda.';
+        if (extraHtml) message.insertAdjacentHTML('afterend', extraHtml);
     }
 
     // Reset Gemini feedback container
@@ -1703,20 +1798,13 @@ function showSuccessModal(requestId) {
         }
     }
 
-    // Get or create instance to avoid duplicate objects
     var modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
-
-    // Fix ARIA Warning: remove aria-hidden before showing
     modalEl.removeAttribute('aria-hidden');
 
-    // Add hidden listener to ensure focus is moved properly when closed
     modalEl.addEventListener('hide.bs.modal', function () {
-        // Blur any focused element inside to prevent "Blocked aria-hidden"
         if (document.activeElement && modalEl.contains(document.activeElement)) {
             document.activeElement.blur();
         }
-
-        // Ensure we are at the top when modal closes
         setTimeout(function () {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             try { window.parent.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
@@ -1725,7 +1813,6 @@ function showSuccessModal(requestId) {
 
     modalInstance.show();
 
-    // Smooth scroll to top when showing success modal
     setTimeout(function () {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         try { window.parent.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { }
@@ -1888,18 +1975,18 @@ function resetForm() {
     // Reset historical tracker containers and values
     var returningUserBadge = document.getElementById('returningUserBadge');
     if (returningUserBadge) returningUserBadge.classList.add('d-none');
-    
+
     var renewalTrackingContainer = document.getElementById('renewalTrackingContainer');
     if (renewalTrackingContainer) {
         renewalTrackingContainer.classList.add('d-none');
     }
-    
+
     var progresLaporan = document.getElementById('progresLaporan');
     if (progresLaporan) progresLaporan.value = '';
-    
+
     var targetLaporan = document.getElementById('targetLaporan');
     if (targetLaporan) targetLaporan.value = '';
-    
+
     var kendalaLaporan = document.getElementById('kendalaLaporan');
     if (kendalaLaporan) kendalaLaporan.value = '';
 

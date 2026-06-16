@@ -10,6 +10,7 @@ function APIClient() {
         'apiGetBranding': 'branding',
         'apiCheckSoftwareRestrictions': 'check-restrictions',
         'apiSubmitRequest': 'submit-request',
+        'apiVerifySubmission': 'verify-submission',
         'apiAdminLogin': 'admin-login',
         'apiCheckAuth': 'admin-check-auth',
         'apiGetAdminRequests': 'admin-requests',
@@ -109,14 +110,16 @@ APIClient.prototype.jsonpRequest = function (path, params) {
         script.crossOrigin = 'anonymous';
         script.src = finalURL;
 
+        // Timeout ditingkatkan ke 35s untuk mengakomodasi GAS cold start
+        // (rata-rata GAS butuh 8-25s untuk eksekusi submit)
         var timeout = setTimeout(function () {
             if (window[callbackName]) {
                 // Do not delete outright; replace with a dummy to catch delayed GAS responses
                 window[callbackName] = function () { delete window[callbackName]; };
                 if (script.parentNode) script.parentNode.removeChild(script);
-                reject(new Error('Request Timeout - Google Script lambat merespon (>20s) atau koneksi tidak stabil.'));
+                reject(new Error('Request Timeout - Google Script lambat merespon (>35s) atau koneksi tidak stabil.'));
             }
-        }, 20000);
+        }, 35000);
 
         window[callbackName] = function (response) {
             clearTimeout(timeout);
