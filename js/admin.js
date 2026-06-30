@@ -722,7 +722,177 @@ function openProcessModal(requestId, rowIndex) {
         winUserContainer.classList.remove('d-none');
     }
 
+    // --- Mitra Workflow Panel Control ---
+    var mitraContainer = document.getElementById('mitra-workflow-container');
+    var standardAction = document.getElementById('standard-action-container');
+    var panelSurat = document.getElementById('mitra-panel-surat');
+    var panelInvoice = document.getElementById('mitra-panel-invoice');
+    var panelPayment = document.getElementById('mitra-panel-payment');
+
+    if (mitraContainer && standardAction) {
+        if (isMitra) {
+            mitraContainer.classList.remove('d-none');
+            
+            // Default hide all sub-panels
+            panelSurat.classList.add('d-none');
+            panelInvoice.classList.add('d-none');
+            panelPayment.classList.add('d-none');
+
+            // Reset inputs
+            document.getElementById('mitra-upload-surat').value = '';
+            document.getElementById('mitra-link-surat').value = '';
+            document.getElementById('mitra-upload-invoice').value = '';
+            document.getElementById('mitra-link-invoice').value = '';
+
+            var reqStatus = req.status || 'PENDING';
+            
+            if (reqStatus === 'PENDING') {
+                // Tahap 1: Biro setujui dan upload Surat Kadep
+                panelSurat.classList.remove('d-none');
+                standardAction.classList.add('d-none'); // Hide Reject/Grant buttons for now
+            } else if (reqStatus === 'Menunggu Invoice') {
+                // Tahap 2: Keuangan upload Invoice
+                panelInvoice.classList.remove('d-none');
+                standardAction.classList.add('d-none');
+            } else if (reqStatus === 'Menunggu Pembayaran' || reqStatus === 'Menunggu Konfirmasi') {
+                // Tahap 3: Mitra upload bukti, Admin/Keuangan cek
+                panelPayment.classList.remove('d-none');
+                standardAction.classList.remove('d-none'); // Munculkan Reject/Grant untuk finalisasi
+
+                var proofContainer = document.getElementById('mitra-payment-proof-container');
+                var proofLink = document.getElementById('mitra-payment-proof-link');
+                
+                if (req.buktiPembayaran) {
+                    proofContainer.classList.remove('d-none');
+                    proofLink.href = req.buktiPembayaran;
+                } else {
+                    proofContainer.classList.add('d-none');
+                }
+            } else {
+                // Jika Granted, dsb.
+                mitraContainer.classList.add('d-none');
+                standardAction.classList.remove('d-none');
+            }
+        } else {
+            // Not Mitra
+            mitraContainer.classList.add('d-none');
+            standardAction.classList.remove('d-none');
+        }
+    }
+
     processModalObj.show();
+}
+
+
+/**
+ * --- MITRA WORKFLOW ACTIONS ---
+ */
+function submitMitraSurat() {
+    if (!currentRequest) return;
+    
+    var fileInput = document.getElementById('mitra-upload-surat');
+    var linkInput = document.getElementById('mitra-link-surat');
+    
+    if (fileInput.files.length === 0 && !linkInput.value.trim()) {
+        ui.error("Mohon pilih file atau masukkan link Surat Persetujuan Kadep.");
+        return;
+    }
+
+    var uploadPromise;
+    if (fileInput.files.length > 0) {
+        var f = fileInput.files[0];
+        if (f.size > 5 * 1024 * 1024) {
+            ui.error("Ukuran file maksimal 5 MB.");
+            return;
+        }
+        var reader = new FileReader();
+        uploadPromise = new Promise(function(resolve, reject) {
+            reader.onload = function(e) {
+                var base64 = e.target.result.split(',')[1];
+                resolve({
+                    fileData: base64,
+                    fileName: f.name,
+                    mimeType: f.type || 'application/pdf'
+                });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(f);
+        });
+    } else {
+        uploadPromise = Promise.resolve({ linkUrl: linkInput.value.trim() });
+    }
+
+    showLoading("Menyimpan Surat & Memberitahu Keuangan...");
+    uploadPromise.then(function(payload) {
+        payload.requestId = currentRequest.requestId;
+        return api.updateMitraSuratKadep(payload);
+    }).then(function(res) {
+        if (res.success) {
+            ui.success("Surat Persetujuan berhasil disimpan. Email notifikasi dikirim ke Keuangan.");
+            processModalObj.hide();
+            loadRequests(); // Refresh table
+        } else {
+            ui.error("Gagal: " + res.message);
+        }
+    }).catch(function(err) {
+        ui.error("Error: " + err);
+    }).finally(function() {
+        hideLoading();
+    });
+}
+
+function submitMitraInvoice() {
+    if (!currentRequest) return;
+    
+    var fileInput = document.getElementById('mitra-upload-invoice');
+    var linkInput = document.getElementById('mitra-link-invoice');
+    
+    if (fileInput.files.length === 0 && !linkInput.value.trim()) {
+        ui.error("Mohon pilih file atau masukkan link Invoice / Kode Bayar.");
+        return;
+    }
+
+    var uploadPromise;
+    if (fileInput.files.length > 0) {
+        var f = fileInput.files[0];
+        if (f.size > 5 * 1024 * 1024) {
+            ui.error("Ukuran file maksimal 5 MB.");
+            return;
+        }
+        var reader = new FileReader();
+        uploadPromise = new Promise(function(resolve, reject) {
+            reader.onload = function(e) {
+                var base64 = e.target.result.split(',')[1];
+                resolve({
+                    fileData: base64,
+                    fileName: f.name,
+                    mimeType: f.type || 'application/pdf'
+                });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(f);
+        });
+    } else {
+        uploadPromise = Promise.resolve({ linkUrl: linkInput.value.trim() });
+    }
+
+    showLoading("Menyimpan Invoice & Mengirim Tagihan ke Mitra...");
+    uploadPromise.then(function(payload) {
+        payload.requestId = currentRequest.requestId;
+        return api.updateMitraInvoice(payload);
+    }).then(function(res) {
+        if (res.success) {
+            ui.success("Invoice berhasil dikirim. Email tagihan dikirim ke Mitra pemohon.");
+            processModalObj.hide();
+            loadRequests();
+        } else {
+            ui.error("Gagal: " + res.message);
+        }
+    }).catch(function(err) {
+        ui.error("Error: " + err);
+    }).finally(function() {
+        hideLoading();
+    });
 }
 
 function toggleReallocate() {

@@ -549,7 +549,41 @@
                             <textarea id="admin-notes" class="form-control mb-4" rows="4"
                                 placeholder="tidak ada catatan"></textarea>
 
-                            <div class="mt-auto">
+                            <!-- Mitra Workflow Panels -->
+                            <div id="mitra-workflow-container" class="mb-4 d-none p-3 bg-light border rounded-3">
+                                <h6 class="fw-bold outfit text-primary mb-3"><i class="bi bi-briefcase"></i> Mitra Workflow</h6>
+                                
+                                <!-- Surat Kadep Panel (Pending) -->
+                                <div id="mitra-panel-surat" class="d-none">
+                                    <label class="form-label small fw-bold">Upload Surat Persetujuan Kadep (PDF/Image)</label>
+                                    <input type="file" id="mitra-upload-surat" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png">
+                                    <p class="text-center text-muted small my-1">Atau masukkan Link (Google Drive, dll)</p>
+                                    <input type="url" id="mitra-link-surat" class="form-control form-control-sm mb-2" placeholder="https://...">
+                                    <button class="btn btn-primary btn-sm w-100 fw-bold rounded-pill" onclick="submitMitraSurat()">📤 Simpan & Beritahu Keuangan</button>
+                                </div>
+
+                                <!-- Invoice Panel (Menunggu Invoice) -->
+                                <div id="mitra-panel-invoice" class="d-none">
+                                    <label class="form-label small fw-bold">Upload Invoice Tagihan (PDF/Image)</label>
+                                    <input type="file" id="mitra-upload-invoice" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png">
+                                    <p class="text-center text-muted small my-1">Atau masukkan Link Invoice</p>
+                                    <input type="url" id="mitra-link-invoice" class="form-control form-control-sm mb-2" placeholder="https://...">
+                                    <button class="btn btn-primary btn-sm w-100 fw-bold rounded-pill" onclick="submitMitraInvoice()">📤 Simpan & Kirim Tagihan ke Mitra</button>
+                                </div>
+
+                                <!-- Payment Verification Panel (Menunggu Pembayaran) -->
+                                <div id="mitra-panel-payment" class="d-none">
+                                    <div class="alert alert-warning small mb-2 p-2">
+                                        <i class="bi bi-exclamation-triangle"></i> Menunggu pembayaran dari Mitra.
+                                    </div>
+                                    <div id="mitra-payment-proof-container" class="mb-2 d-none">
+                                        <label class="form-label small fw-bold">Bukti Pembayaran dari Mitra:</label>
+                                        <a href="#" id="mitra-payment-proof-link" target="_blank" class="btn btn-outline-success btn-sm w-100 rounded-pill"><i class="bi bi-file-earmark-check"></i> Lihat Bukti Pembayaran</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto" id="standard-action-container">
                                 <h6 class="text-muted text-uppercase small fw-bold mb-3">Checklist Verifikasi</h6>
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" id="check-doc">

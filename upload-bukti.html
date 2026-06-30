@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Bukti Pembayaran – Layanan Komputasi DTSL</title>
+  <meta name="description" content="Unggah bukti pembayaran permohonan Mitra Layanan Komputasi DTSL FT UGM.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="js/config.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1a0533 0%, #0d1b4a 60%, #0a2a1a 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.97);
+      border-radius: 18px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+      width: 100%;
+      max-width: 560px;
+      overflow: hidden;
+    }
+    .card-header {
+      background: linear-gradient(135deg, #6f42c1, #4a1fa0);
+      padding: 28px 28px 20px;
+      color: white;
+      text-align: center;
+    }
+    .card-header h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .card-header p  { font-size: 0.85rem; opacity: 0.85; }
+    .card-body { padding: 28px; }
+
+    /* Info Permohonan */
+    .info-box {
+      background: #f3f0fa;
+      border: 1px solid #d8c8f0;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 22px;
+      font-size: 0.88rem;
+    }
+    .info-box h3 { font-size: 0.95rem; font-weight: 600; color: #6f42c1; margin-bottom: 10px; }
+    .info-row { display: flex; margin-bottom: 6px; }
+    .info-label { width: 130px; font-weight: 600; color: #555; flex-shrink: 0; }
+    .info-value { color: #222; }
+    .invoice-link { color: #6f42c1; font-weight: 600; text-decoration: none; }
+    .invoice-link:hover { text-decoration: underline; }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed #c8a8f0;
+      border-radius: 10px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #faf7ff;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: #6f42c1; background: #f0e8ff; }
+    .upload-zone svg { color: #9b6dda; margin-bottom: 10px; }
+    .upload-zone p { color: #6c757d; font-size: 0.88rem; }
+    .upload-zone strong { color: #6f42c1; }
+    #fileInput { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #edf7ed;
+      border: 1px solid #b0d8b0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+    }
+    .file-preview.show { display: flex; }
+    .file-preview .file-name { font-weight: 600; color: #1a6b1a; flex: 1; word-break: break-all; }
+    .file-preview .remove-btn { cursor: pointer; color: #dc3545; font-size: 1.1rem; flex-shrink: 0; }
+
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 16px; display: none; }
+    .alert.show { display: block; }
+    .alert-warning { background: #fff3cd; border: 1px solid #ffe69c; color: #856404; }
+    .alert-danger  { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    .alert-success { background: #d1e7dd; border: 1px solid #a3cfbb; color: #0a3622; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #6f42c1, #4a1fa0);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(111,66,193,0.4); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* States */
+    #loadingState, #successState, #errorState { display: none; text-align: center; padding: 20px 0; }
+    #loadingState.show, #successState.show, #errorState.show { display: block; }
+    .spinner {
+      width: 48px; height: 48px; border: 4px solid #e0d0f5;
+      border-top-color: #6f42c1; border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .success-icon { font-size: 3rem; margin-bottom: 12px; }
+    #successState h2 { color: #198754; font-size: 1.3rem; margin-bottom: 8px; }
+    #successState p  { color: #555; font-size: 0.9rem; }
+    #errorState h2   { color: #dc3545; font-size: 1.1rem; margin-bottom: 8px; }
+    #errorState p    { color: #555; font-size: 0.88rem; }
+
+    .step-indicator { display: flex; justify-content: center; gap: 6px; margin-bottom: 20px; }
+    .step { width: 28px; height: 4px; border-radius: 2px; background: #ddd; }
+    .step.active { background: #6f42c1; }
+    .step.done   { background: #198754; }
+
+    footer { text-align: center; font-size: 0.78rem; color: #aaa; padding: 14px; border-top: 1px solid #eee; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <h1>&#128196; Unggah Bukti Pembayaran</h1>
+    <p>Layanan Komputasi DTSL FT UGM – Portal Mitra</p>
+  </div>
+  <div class="card-body">
+
+    <!-- Loading initial state -->
+    <div id="loadingState" class="show">
+      <div class="spinner"></div>
+      <p style="color:#555;">Memuat informasi permohonan...</p>
+    </div>
+
+    <!-- Error state (bad ID / expired) -->
+    <div id="errorState">
+      <h2>&#10060; Permohonan Tidak Ditemukan</h2>
+      <p id="errorMsg">Link tidak valid atau permohonan tidak ditemukan. Silakan hubungi admin.</p>
+    </div>
+
+    <!-- Main form -->
+    <div id="mainForm" style="display:none;">
+      <div class="step-indicator">
+        <div class="step done"></div>
+        <div class="step done"></div>
+        <div class="step active"></div>
+        <div class="step"></div>
+      </div>
+
+      <div class="info-box" id="infoBox">
+        <h3>&#128203; Detail Permohonan</h3>
+        <div class="info-row"><span class="info-label">Request ID</span><span class="info-value" id="infoReqId">–</span></div>
+        <div class="info-row"><span class="info-label">Nama PIC</span><span class="info-value" id="infoNama">–</span></div>
+        <div class="info-row"><span class="info-label">Institusi</span><span class="info-value" id="infoInstitusi">–</span></div>
+        <div class="info-row"><span class="info-label">Software</span><span class="info-value" id="infoSoftware">–</span></div>
+        <div class="info-row"><span class="info-label">Jangka Waktu</span><span class="info-value" id="infoJangka">–</span></div>
+        <div class="info-row" id="invoiceRow" style="display:none;">
+          <span class="info-label">Invoice</span>
+          <span class="info-value"><a id="invoiceLink" href="#" target="_blank" class="invoice-link">Lihat Invoice &amp; Kode Bayar &#10132;</a></span>
+        </div>
+      </div>
+
+      <div id="alertNotValid" class="alert alert-warning">
+        Status permohonan saat ini adalah <strong id="currentStatus">–</strong>. Upload bukti bayar hanya dapat dilakukan saat status <em>Menunggu Pembayaran</em>.
+      </div>
+
+      <div id="uploadSection">
+        <label style="font-weight:600;font-size:0.92rem;color:#333;display:block;margin-bottom:8px;">File Bukti Pembayaran <span style="color:#dc3545;">*</span></label>
+        <p style="font-size:0.8rem;color:#777;margin-bottom:10px;">Format: PDF, JPG, atau PNG. Ukuran maksimal 5 MB.</p>
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" />
+          <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+          </svg>
+          <p><strong>Klik untuk pilih file</strong> atau seret ke sini</p>
+          <p style="margin-top:4px;">PDF, JPG, PNG — maks. 5 MB</p>
+        </div>
+
+        <div class="file-preview" id="filePreview">
+          <span>&#128196;</span>
+          <span class="file-name" id="previewName"></span>
+          <span class="remove-btn" id="removeBtn" title="Hapus file">&#10005;</span>
+        </div>
+
+        <div id="alertSize" class="alert alert-danger">Ukuran file melebihi batas 5 MB. Mohon kompres atau pilih file yang lebih kecil.</div>
+
+        <button class="btn-submit" id="btnSubmit" disabled>
+          &#128229; Kirim Bukti Pembayaran
+        </button>
+      </div>
+    </div>
+
+    <!-- Success state -->
+    <div id="successState">
+      <div class="success-icon">&#127881;</div>
+      <h2>Bukti Pembayaran Terkirim!</h2>
+      <p>Terima kasih. Tim keuangan kami akan memverifikasi pembayaran Anda dalam 1×24 jam kerja. Anda akan mendapat email konfirmasi setelah akses Anda aktif.</p>
+      <p style="margin-top:12px;font-size:0.8rem;color:#888;">Nomor permohonan: <strong id="successReqId"></strong></p>
+    </div>
+
+  </div>
+  <footer>Sistem Layanan Komputasi DTSL FT UGM &bull; Email otomatis, harap tidak membalas langsung.</footer>
+</div>
+
+<script>
+(function() {
+  var API_URL = (typeof CONFIG !== 'undefined' && CONFIG.API_URL) ? CONFIG.API_URL : '';
+  var callbackCounter = 0;
+  var currentRequestId = '';
+  var selectedFile = null;
+
+  // --- Helpers ---
+  function getUrlParam(name) {
+    var url = new URL(window.location.href);
+    return url.searchParams.get(name) || '';
+  }
+
+  function jsonpGet(path, params, onSuccess, onError) {
+    callbackCounter++;
+    var cbName = 'cb_bukti_' + callbackCounter + '_' + Date.now();
+    var qs = 'path=' + encodeURIComponent(path) + '&callback=' + encodeURIComponent(cbName);
+    if (params) {
+      Object.keys(params).forEach(function(k) {
+        qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k] || '');
+      });
+    }
+    var url = API_URL + (API_URL.indexOf('?') === -1 ? '?' : '&') + qs + '&_t=' + Date.now();
+    var script = document.createElement('script');
+    var timer = setTimeout(function() {
+      if (window[cbName]) { window[cbName] = function() {}; }
+      if (script.parentNode) script.parentNode.removeChild(script);
+      onError && onError('Timeout. Mohon coba lagi.');
+    }, 35000);
+    window[cbName] = function(resp) {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      if (resp && resp.success) { onSuccess(resp); }
+      else { onError((resp && resp.message) || 'Gagal.'); }
+    };
+    script.onerror = function() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      onError('Koneksi gagal. Periksa jaringan Anda.');
+    };
+    script.crossOrigin = 'anonymous';
+    script.src = url;
+    document.body.appendChild(script);
+  }
+
+  function postFetch(path, body, onSuccess, onError) {
+    body.path = path;
+    fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body)
+    }).then(function() {
+      // no-cors = opaque, assume success and poll via JSONP
+      onSuccess && onSuccess();
+    }).catch(function(err) {
+      onError && onError(err.toString());
+    });
+  }
+
+  function showState(id) {
+    ['loadingState','errorState','mainForm','successState'].forEach(function(s) {
+      document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+    });
+  }
+
+  // --- Load request info ---
+  function loadRequestInfo() {
+    currentRequestId = getUrlParam('id') || getUrlParam('requestId');
+    if (!currentRequestId) {
+      showState('errorState');
+      document.getElementById('errorMsg').textContent = 'Parameter Request ID tidak ditemukan pada URL.';
+      return;
+    }
+    if (!API_URL) {
+      showState('errorState');
+      document.getElementById('errorMsg').textContent = 'Konfigurasi API belum diatur (config.js).';
+      return;
+    }
+    jsonpGet('mitra-request-info', { id: currentRequestId }, function(resp) {
+      var d = resp.data;
+      document.getElementById('infoReqId').textContent    = d.requestId    || '–';
+      document.getElementById('infoNama').textContent     = d.nama         || '–';
+      document.getElementById('infoInstitusi').textContent= d.asalInstitusi|| '–';
+      document.getElementById('infoSoftware').textContent = d.software     || '–';
+      document.getElementById('infoJangka').textContent   = d.jangkaWaktu  || '–';
+      if (d.invoice) {
+        document.getElementById('invoiceLink').href = d.invoice;
+        document.getElementById('invoiceRow').style.display = 'flex';
+      }
+      if (!d.isValidForUpload) {
+        document.getElementById('currentStatus').textContent = d.status || 'tidak diketahui';
+        document.getElementById('alertNotValid').classList.add('show');
+        document.getElementById('uploadSection').style.display = 'none';
+      }
+      showState('mainForm');
+    }, function(err) {
+      showState('errorState');
+      document.getElementById('errorMsg').textContent = err || 'Gagal memuat data permohonan.';
+    });
+  }
+
+  // --- File handling ---
+  var fileInput   = document.getElementById('fileInput');
+  var uploadZone  = document.getElementById('uploadZone');
+  var filePreview = document.getElementById('filePreview');
+  var previewName = document.getElementById('previewName');
+  var removeBtn   = document.getElementById('removeBtn');
+  var btnSubmit   = document.getElementById('btnSubmit');
+  var alertSize   = document.getElementById('alertSize');
+
+  function setFile(file) {
+    if (!file) { clearFile(); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      alertSize.classList.add('show');
+      clearFile();
+      return;
+    }
+    alertSize.classList.remove('show');
+    selectedFile    = file;
+    previewName.textContent = file.name;
+    filePreview.classList.add('show');
+    btnSubmit.disabled = false;
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    filePreview.classList.remove('show');
+    btnSubmit.disabled = true;
+  }
+
+  fileInput.addEventListener('change', function() { setFile(this.files[0]); });
+  removeBtn.addEventListener('click', function(e) { e.stopPropagation(); clearFile(); });
+
+  uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+  uploadZone.addEventListener('drop', function(e) {
+    e.preventDefault(); this.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+  });
+
+  // --- Submit ---
+  document.getElementById('btnSubmit').addEventListener('click', function() {
+    if (!selectedFile) return;
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Mengunggah... Harap tunggu';
+
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var base64 = ev.target.result.split(',')[1];
+      var payload = {
+        requestId: currentRequestId,
+        fileData:  base64,
+        fileName:  selectedFile.name,
+        mimeType:  selectedFile.type || 'application/octet-stream'
+      };
+
+      // Try JSONP first (GET), fallback to POST no-cors
+      jsonpGet('submit-bukti-bayar', {
+        requestId: payload.requestId,
+        fileName:  payload.fileName,
+        mimeType:  payload.mimeType,
+        fileData:  payload.fileData
+      }, function() {
+        document.getElementById('successReqId').textContent = currentRequestId;
+        showState('successState');
+      }, function() {
+        // Fallback: POST no-cors (fire-and-forget)
+        postFetch('submit-bukti-bayar', payload, function() {
+          document.getElementById('successReqId').textContent = currentRequestId;
+          showState('successState');
+        }, function(err) {
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = '📥 Kirim Bukti Pembayaran';
+          alert('Gagal mengirim: ' + err + '\nMohon coba lagi atau hubungi admin.');
+        });
+      });
+    };
+    reader.onerror = function() {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = '📥 Kirim Bukti Pembayaran';
+      alert('Gagal membaca file. Silakan coba lagi.');
+    };
+    reader.readAsDataURL(selectedFile);
+  });
+
+  // --- Init ---
+  loadRequestInfo();
+})();
+</script>
+</body>
+</html>

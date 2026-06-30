@@ -33,7 +33,12 @@ function APIClient() {
         'apiGetReportingFilters': 'admin-reporting-filters',
         'apiGetStatisticsData': 'admin-statistics',
         'apiCheckAuditResult': 'admin-check-audit',
-        'apiLogout': 'admin-logout'
+        'apiLogout': 'admin-logout',
+        // Mitra workflow
+        'apiGetMitraRequestInfo':    'mitra-request-info',
+        'apiSubmitBuktiBayar':       'submit-bukti-bayar',
+        'apiUpdateMitraSuratKadep':  'admin-update-mitra-surat',
+        'apiUpdateMitraInvoice':     'admin-update-mitra-invoice'
     };
     console.log('APIClient (ES5) initialized');
 }
@@ -221,6 +226,24 @@ APIClient.prototype.uploadFile = function (data) {
 
 APIClient.prototype.checkAuditResult = function (requestId) {
     return this.run('apiCheckAuditResult', { requestId: requestId });
+};
+
+// --- Mitra workflow endpoints ---
+
+APIClient.prototype.getMitraRequestInfo = function (requestId) {
+    return this.run('apiGetMitraRequestInfo', { id: requestId });
+};
+
+APIClient.prototype.submitBuktiBayar = function (data) {
+    return this.run('apiSubmitBuktiBayar', data);
+};
+
+APIClient.prototype.updateMitraSuratKadep = function (data) {
+    return this.run('apiUpdateMitraSuratKadep', data);
+};
+
+APIClient.prototype.updateMitraInvoice = function (data) {
+    return this.run('apiUpdateMitraInvoice', data);
 };
 
 // Create instance

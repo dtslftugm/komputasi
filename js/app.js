@@ -1098,8 +1098,35 @@ function setupFormHandlers() {
             return;
         }
 
+        // --- KONFIRMASI PEMBULATAN DURASI MITRA ---
+        if (formData.keperluanPenggunaan === 'Mitra') {
+            var mulaiVal = document.getElementById('mulai').value;
+            var akhirVal = document.getElementById('akhir').value;
+            if (mulaiVal && akhirVal) {
+                var diffDays = Math.ceil((new Date(akhirVal) - new Date(mulaiVal)) / (1000 * 60 * 60 * 24));
+                if (diffDays > 0 && (diffDays % 30) !== 0) {
+                    var billingMonths = Math.ceil(diffDays / 30);
+                    var billedDays    = billingMonths * 30;
+                    // Tampilkan modal konfirmasi — submit dilanjutkan hanya jika user setuju
+                    showMitraBillingConfirmModal(diffDays, billingMonths, billedDays, function onConfirmed() {
+                        proceedWithSubmission(formData);
+                    });
+                    return; // Tahan submit hingga user konfirmasi
+                }
+            }
+        }
+
+        // Normal flow (durasi genap atau non-Mitra): langsung proses
+        proceedWithSubmission(formData);
+    });
+
+    /**
+     * Melanjutkan proses submit setelah validasi (dan konfirmasi billing jika perlu).
+     */
+    function proceedWithSubmission(formData) {
         // --- Step 1: Prepare Files ---
         var filePromises = [];
+
 
         // Letter File
         var suratInput = document.getElementById('uploadSurat');
@@ -2457,4 +2484,54 @@ function handleJoinQueue() {
     }
 
     ui.success("Mode Antrean Aktif. Silakan lengkapi form dan klik 'Kirim Permohonan Antrean'.", "Antrean Teraktivasi");
+}
+
+/**
+ * Modal konfirmasi pembulatan durasi untuk Mitra.
+ * Muncul ketika durasi yang dipilih tidak genap 30 hari.
+ */
+function showMitraBillingConfirmModal(actualDays, billingMonths, billedDays, onConfirm) {
+    var existing = document.getElementById('mitraBillingConfirmModal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'mitraBillingConfirmModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = [
+        '<div style="background:#fff;border-radius:16px;max-width:480px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.4);overflow:hidden;">',
+        '  <div style="background:linear-gradient(135deg,#6f42c1,#4a1fa0);padding:20px 24px;color:white;">',
+        '    <h3 style="margin:0;font-size:1.1rem;">&#128179; Konfirmasi Jangka Waktu Billing</h3>',
+        '  </div>',
+        '  <div style="padding:24px;">',
+        '    <p style="color:#444;margin-bottom:12px;">Durasi yang Anda pilih adalah <strong>' + actualDays + ' hari</strong>.</p>',
+        '    <div style="background:#f3f0fa;border:1px solid #d8c8f0;border-radius:10px;padding:14px;margin-bottom:16px;">',
+        '      <p style="margin:0 0 8px;color:#6f42c1;font-weight:600;">&#8505; Ketentuan Billing Mitra</p>',
+        '      <p style="margin:0;font-size:0.9rem;color:#555;">Untuk penghitungan tagihan, durasi dihitung per bulan (30 hari). Durasi <strong>' + actualDays + ' hari</strong> akan ditagih sebagai <strong>' + billingMonths + ' bulan (' + billedDays + ' hari)</strong>.</p>',
+        '    </div>',
+        '    <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px;margin-bottom:20px;">',
+        '      <p style="margin:0;font-size:0.87rem;color:#2e7d32;"><strong>&#10003; Masa aktif akses</strong> tetap sesuai tanggal akhir yang Anda pilih. Pembulatan hanya berlaku untuk penghitungan tagihan.</p>',
+        '    </div>',
+        '    <div style="display:flex;gap:10px;">',
+        '      <button id="mitraBillCancel" style="flex:1;padding:11px;border:2px solid #6c757d;background:white;border-radius:8px;font-weight:600;color:#6c757d;cursor:pointer;">Ubah Tanggal</button>',
+        '      <button id="mitraBillConfirm" style="flex:1;padding:11px;border:none;background:linear-gradient(135deg,#6f42c1,#4a1fa0);color:white;border-radius:8px;font-weight:600;cursor:pointer;">Ya, Lanjutkan</button>',
+        '    </div>',
+        '  </div>',
+        '</div>'
+    ].join('');
+
+    document.body.appendChild(modal);
+
+    document.getElementById('mitraBillConfirm').addEventListener('click', function() {
+        modal.remove();
+        onConfirm();
+    });
+    document.getElementById('mitraBillCancel').addEventListener('click', function() {
+        modal.remove();
+        var akhirEl = document.getElementById('akhir');
+        if (akhirEl) {
+            akhirEl.focus();
+            akhirEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+    modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
 }

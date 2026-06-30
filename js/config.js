@@ -1,6 +1,6 @@
 /**
  * Configuration File
- * Update API_URL with your actual Google Apps Script deployment URL
+ * Update API_URL dengan Google Apps Script deployment URL
  */
 var CONFIG = {
   // URL Beta Tester
