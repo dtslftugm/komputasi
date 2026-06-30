@@ -867,10 +867,12 @@ function setupComputerToggle() {
     });
 
     // Room change listener
-    roomPreference.addEventListener('change', function () {
-        loadAvailableComputers();
-        autoSetTipeAkses();
-    });
+    if (roomPreference) {
+        roomPreference.addEventListener('change', function () {
+            // loadAvailableComputers() dihapus dari sini karena sudah dipanggil di checkInputs di bawah (mencegah double-request)
+            autoSetTipeAkses();
+        });
+    }
 
     // Search listener
     computerSearch.addEventListener('input', filterComputers);
