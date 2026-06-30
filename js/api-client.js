@@ -35,10 +35,10 @@ function APIClient() {
         'apiCheckAuditResult': 'admin-check-audit',
         'apiLogout': 'admin-logout',
         // Mitra workflow
-        'apiGetMitraRequestInfo':    'mitra-request-info',
-        'apiSubmitBuktiBayar':       'submit-bukti-bayar',
-        'apiUpdateMitraSuratKadep':  'admin-update-mitra-surat',
-        'apiUpdateMitraInvoice':     'admin-update-mitra-invoice'
+        'apiGetMitraRequestInfo': 'mitra-request-info',
+        'apiSubmitBuktiBayar': 'submit-bukti-bayar',
+        'apiUpdateMitraSuratKadep': 'admin-update-mitra-surat',
+        'apiUpdateMitraInvoice': 'admin-update-mitra-invoice'
     };
     console.log('APIClient (ES5) initialized');
 }
@@ -84,71 +84,83 @@ APIClient.prototype.run = function (functionName, params) {
  */
 APIClient.prototype.jsonpRequest = function (path, params) {
     var _this = this;
-    return new Promise(function (resolve, reject) {
-        var rawURL = _this.getBaseURL();
-        var cleanBaseURL = (rawURL || '').trim();
 
-        if (!cleanBaseURL) {
-            reject(new Error('API URL (CONFIG.API_URL) belum diatur di config.js'));
-            return;
-        }
+    var executeTask = function () {
+        return new Promise(function (resolve, reject) {
+            var rawURL = _this.getBaseURL();
+            var cleanBaseURL = (rawURL || '').trim();
 
-        _this.callbackCounter++;
-        var callbackName = 'cb' + _this.callbackCounter + '_' + Date.now();
-        var script = document.createElement('script');
+            if (!cleanBaseURL) {
+                reject(new Error('API URL (CONFIG.API_URL) belum diatur di config.js'));
+                return;
+            }
 
-        var queryString = 'path=' + encodeURIComponent(path) + '&callback=' + encodeURIComponent(callbackName);
-        if (params && typeof params === 'object') {
-            for (var key in params) {
-                if (Object.prototype.hasOwnProperty.call(params, key)) {
-                    var val = params[key];
-                    if (val === null || val === undefined) val = "";
-                    queryString += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(val);
+            _this.callbackCounter++;
+            var callbackName = 'cb' + _this.callbackCounter + '_' + Date.now();
+            var script = document.createElement('script');
+
+            var queryString = 'path=' + encodeURIComponent(path) + '&callback=' + encodeURIComponent(callbackName);
+            if (params && typeof params === 'object') {
+                for (var key in params) {
+                    if (Object.prototype.hasOwnProperty.call(params, key)) {
+                        var val = params[key];
+                        if (val === null || val === undefined) val = "";
+                        queryString += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(val);
+                    }
                 }
             }
-        }
 
-        var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString + '&_t=' + Date.now();
-        console.log('JSONP Request attempt:', finalURL);
+            var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString + '&_t=' + Date.now();
+            console.log('JSONP Request attempt:', finalURL);
 
-        // Force anonymous request to avoid Google Multiple-Account redirect issues
-        script.crossOrigin = 'anonymous';
-        script.src = finalURL;
+            // Force anonymous request to avoid Google Multiple-Account redirect issues
+            script.crossOrigin = 'anonymous';
+            script.src = finalURL;
 
-        // Timeout ditingkatkan ke 35s untuk mengakomodasi GAS cold start
-        // (rata-rata GAS butuh 8-25s untuk eksekusi submit)
-        var timeout = setTimeout(function () {
-            if (window[callbackName]) {
-                // Do not delete outright; replace with a dummy to catch delayed GAS responses
-                window[callbackName] = function () { delete window[callbackName]; };
+            // Timeout ditingkatkan ke 35s untuk mengakomodasi GAS cold start
+            // (rata-rata GAS butuh 8-25s untuk eksekusi submit)
+            var timeout = setTimeout(function () {
+                if (window[callbackName]) {
+                    // Do not delete outright; replace with a dummy to catch delayed GAS responses
+                    window[callbackName] = function () { delete window[callbackName]; };
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    reject(new Error('Request Timeout - Google Script lambat merespon (>35s) atau koneksi tidak stabil.'));
+                }
+            }, 35000);
+
+            window[callbackName] = function (response) {
+                clearTimeout(timeout);
+                delete window[callbackName];
                 if (script.parentNode) script.parentNode.removeChild(script);
-                reject(new Error('Request Timeout - Google Script lambat merespon (>35s) atau koneksi tidak stabil.'));
-            }
-        }, 35000);
 
-        window[callbackName] = function (response) {
-            clearTimeout(timeout);
-            delete window[callbackName];
-            if (script.parentNode) script.parentNode.removeChild(script);
+                if (response && response.success) {
+                    resolve(response);
+                } else {
+                    var msg = (response && response.message) ? response.message : 'Request failed at backend';
+                    reject(new Error(msg));
+                }
+            };
 
-            if (response && response.success) {
-                resolve(response);
-            } else {
-                var msg = (response && response.message) ? response.message : 'Request failed at backend';
-                reject(new Error(msg));
-            }
+            script.onerror = function () {
+                clearTimeout(timeout);
+                delete window[callbackName];
+                if (script.parentNode) script.parentNode.removeChild(script);
+                console.error('Script failed to load:', finalURL);
+                var diag = "\nBaseURL: " + cleanBaseURL + "\nCallback: " + callbackName;
+                reject(new Error('Script load failed.' + diag + '\nFull URL: ' + finalURL));
+            };
+
+            document.body.appendChild(script);
+        });
+    };
+
+    if (!this.requestQueue) this.requestQueue = Promise.resolve();
+
+    return new Promise(function (resolve, reject) {
+        var runAndForward = function () {
+            return executeTask().then(resolve).catch(reject);
         };
-
-        script.onerror = function () {
-            clearTimeout(timeout);
-            delete window[callbackName];
-            if (script.parentNode) script.parentNode.removeChild(script);
-            console.error('Script failed to load:', finalURL);
-            var diag = "\nBaseURL: " + cleanBaseURL + "\nCallback: " + callbackName;
-            reject(new Error('Script load failed.' + diag + '\nFull URL: ' + finalURL));
-        };
-
-        document.body.appendChild(script);
+        _this.requestQueue = _this.requestQueue.then(runAndForward, runAndForward);
     });
 };
 
