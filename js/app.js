@@ -1314,7 +1314,7 @@ function setupFormHandlers() {
                 pollGeminiAudit(requestId);
             }
         };
-    });
+    }
 }
 
 /**
