@@ -819,7 +819,7 @@ function submitMitraSurat() {
             reader.readAsDataURL(f);
         });
     } else {
-        uploadPromise = Promise.resolve({ linkUrl: linkInput.value.trim() });
+        uploadPromise = Promise.resolve({ suratLink: linkInput.value.trim() });
     }
 
     showLoading("Menyimpan Surat & Memberitahu Keuangan...");
@@ -874,7 +874,7 @@ function submitMitraInvoice() {
             reader.readAsDataURL(f);
         });
     } else {
-        uploadPromise = Promise.resolve({ linkUrl: linkInput.value.trim() });
+        uploadPromise = Promise.resolve({ invoiceLink: linkInput.value.trim() });
     }
 
     showLoading("Menyimpan Invoice & Mengirim Tagihan ke Mitra...");
