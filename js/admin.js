@@ -825,6 +825,7 @@ function submitMitraSurat() {
     showLoading("Menyimpan Surat & Memberitahu Keuangan...");
     uploadPromise.then(function(payload) {
         payload.requestId = currentRequest.requestId;
+        payload.token = sessionToken; // Fix: Add auth token for Mitra backend validation
         return api.updateMitraSuratKadep(payload);
     }).then(function(res) {
         if (res.success) {
@@ -879,6 +880,7 @@ function submitMitraInvoice() {
     showLoading("Menyimpan Invoice & Mengirim Tagihan ke Mitra...");
     uploadPromise.then(function(payload) {
         payload.requestId = currentRequest.requestId;
+        payload.token = sessionToken; // Fix: Add auth token for Mitra backend validation
         return api.updateMitraInvoice(payload);
     }).then(function(res) {
         if (res.success) {
