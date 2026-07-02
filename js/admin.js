@@ -833,12 +833,23 @@ function openProcessModal(requestId, rowIndex) {
 
                 var proofContainer = document.getElementById('mitra-payment-proof-container');
                 var proofLink = document.getElementById('mitra-payment-proof-link');
+                var statusMsg = document.getElementById('mitra-payment-status-msg');
 
-                if (req.buktiPembayaran) {
+                if (req.buktiPembayaran && req.buktiPembayaran.trim()) {
+                    // Bukti sudah diterima
                     proofContainer.classList.remove('d-none');
                     proofLink.href = req.buktiPembayaran;
+                    if (statusMsg) {
+                        statusMsg.className = 'alert alert-success small mb-2 p-2';
+                        statusMsg.innerHTML = '<i class="bi bi-check-circle"></i> <strong>Bukti Pembayaran sudah diterima.</strong> Silakan verifikasi lalu klik Grant untuk menyelesaikan proses.';
+                    }
                 } else {
+                    // Belum ada bukti
                     proofContainer.classList.add('d-none');
+                    if (statusMsg) {
+                        statusMsg.className = 'alert alert-warning small mb-2 p-2';
+                        statusMsg.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Pending Payment: Menunggu pembayaran dari Mitra.';
+                    }
                 }
             } else {
                 // Jika Granted, dsb.
