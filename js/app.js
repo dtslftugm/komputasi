@@ -2451,41 +2451,128 @@ function parseAppDate(dateInput) {
 
 /**
  * Handle Joining the Queue for Research Room
- * Milestone 20: Switches current form into Queue Mode
+ * Shows a confirmation modal FIRST, then activates queue mode after user confirms.
  */
 function handleJoinQueue() {
-    isQueueMode = true;
+    var nimInput = document.getElementById('nim');
+    var currentNim = nimInput ? nimInput.value.replace(/\s/g, '').toUpperCase() : '';
+    var historicalComputers = [];
 
-    // Pastikan selectedComputer diisi dengan sentinel 'ANTREAN'
-    // agar validasi preferredComputer pada validateFormData() tidak memblokir
+    if (currentNim.length > 3 && initialData && initialData.historicalComputerMap) {
+        historicalComputers = initialData.historicalComputerMap[currentNim] || [];
+    }
+
+    showQueueEntryModal(historicalComputers, function (preferredComputer) {
+        _activateQueueMode(preferredComputer);
+    });
+}
+
+/**
+ * Displays the Queue Entry Confirmation Modal.
+ * Explains the queue system and lets returning users choose a preferred computer.
+ * @param {string[]} historicalComputers - Array of unit names previously used by this NIM.
+ * @param {function} onConfirm - Callback with selected preferredComputer value.
+ */
+function showQueueEntryModal(historicalComputers, onConfirm) {
+    var existing = document.getElementById('queueEntryModal');
+    if (existing) existing.remove();
+
+    // Build the computer options section
+    var computerOptionsHtml = '';
+    if (historicalComputers && historicalComputers.length > 0) {
+        computerOptionsHtml += '<div class="mb-3">';
+        computerOptionsHtml += '<label class="form-label fw-bold small mb-2">&#128187; Unit yang pernah Anda gunakan (pilih preferensi):</label>';
+        computerOptionsHtml += '<div class="d-flex flex-column gap-2">';
+
+        historicalComputers.forEach(function (comp) {
+            var safeId = 'queueComp_' + comp.replace(/[^a-zA-Z0-9]/g, '_');
+            computerOptionsHtml +=
+                '<label class="d-flex align-items-center gap-2 p-2 border rounded" style="cursor:pointer;">' +
+                '<input type="radio" name="queueComputerPref" value="' + comp + '" id="' + safeId + '">' +
+                '<span><strong>' + comp + '</strong></span>' +
+                '</label>';
+        });
+
+        computerOptionsHtml +=
+            '<label class="d-flex align-items-center gap-2 p-2 border border-primary rounded" style="cursor:pointer;">' +
+            '<input type="radio" name="queueComputerPref" value="ANTREAN" id="queueComp_bebas" checked>' +
+            '<span><strong>&#128256; Bebas</strong> <small class="text-muted ms-1">Admin mengalokasikan unit pertama yang tersedia</small></span>' +
+            '</label>';
+
+        computerOptionsHtml += '</div></div>';
+    }
+
+    var modal = document.createElement('div');
+    modal.id = 'queueEntryModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;';
+
+    var confirmScript = "(function(){" +
+        "var sel=document.querySelector('input[name=queueComputerPref]:checked');" +
+        "var pref=sel?sel.value:'ANTREAN';" +
+        "document.getElementById('queueEntryModal').remove();" +
+        "if(window._queueEntryCallback)window._queueEntryCallback(pref);" +
+        "})()";
+
+    modal.innerHTML = [
+        '<div style="background:#fff;border-radius:16px;max-width:520px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.4);overflow:hidden;">',
+        '  <div style="background:linear-gradient(135deg,#0d6efd,#0a58ca);padding:20px 24px;color:white;">',
+        '    <h5 style="margin:0;">&#128221; Konfirmasi Daftar Antrean</h5>',
+        '    <small style="opacity:0.85;">Ruang Penelitian &mdash; Sistem Antrean Aktif</small>',
+        '  </div>',
+        '  <div style="padding:20px 24px;">',
+        '    <div class="alert alert-warning border-start border-warning border-4 py-2 small mb-3">',
+        '      <strong>&#9203; Perkiraan waktu tunggu:</strong> Pengguna aktif berhak melakukan perpanjangan hingga 2 periode (4 minggu). Estimasi waktu tunggu antrean bisa mencapai <strong>3 periode (6 minggu kalender)</strong>.',
+        '    </div>',
+        '    <ul class="small text-muted mb-3 ps-3">',
+        '      <li>Permohonan antrean Anda akan tercatat dan dipantau Admin.</li>',
+        '      <li>Admin akan menghubungi Anda saat unit tersedia.</li>',
+        '      <li>Prioritas alokasi ditentukan Admin berdasarkan urutan dan kebutuhan akademis.</li>',
+        '    </ul>',
+        computerOptionsHtml,
+        '    <div class="d-flex gap-2 justify-content-end mt-3">',
+        '      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById(\' queueEntryModal\').remove()">Batal</button>',
+        '      <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="' + confirmScript + '">&#9989; Konfirmasi &amp; Masuk Antrean</button>',
+        '    </div>',
+        '  </div>',
+        '</div>'
+    ].join('');
+
+    window._queueEntryCallback = onConfirm;
+    document.body.appendChild(modal);
+}
+
+/**
+ * Internal: Actually activates queue mode on the form after user confirms.
+ * @param {string} preferredComputer - 'ANTREAN' for any, or specific computer name.
+ */
+function _activateQueueMode(preferredComputer) {
+    isQueueMode = true;
     var roomVal = (document.getElementById('roomPreference') || {}).value || '';
+
     selectedComputer = {
-        name: 'ANTREAN',
+        name: preferredComputer || 'ANTREAN',
         location: roomVal,
         softwareInstalled: 'Semua'
     };
 
-    // Update Banners
     var banner = document.getElementById('renewalInfoBanner');
     if (banner) {
         banner.className = 'alert alert-info shadow-sm mb-4 border-start border-info border-4';
-        var computerName = (initialData && initialData.renewalData) ? initialData.renewalData.preferredComputer : '-';
-        banner.innerHTML = '<strong>📝 Mode Antrean:</strong> Anda sedang mendaftar antrean untuk menggunakan kembali unit <b>' + computerName + '</b>. Silakan lengkapi data laporan progres di bawah.';
+        var unitLabel = (preferredComputer && preferredComputer !== 'ANTREAN')
+            ? 'unit <b>' + preferredComputer + '</b>'
+            : 'unit <b>pertama yang tersedia</b> (Bebas)';
+        banner.innerHTML = '<strong>&#128221; Mode Antrean Aktif:</strong> Anda mendaftar antrean untuk ' + unitLabel + '. Silakan lengkapi form dan kirim permohonan.';
     }
 
-    // Remove the Warning Div (the one with the buttons)
     var warnings = document.querySelectorAll('.renewal-warning-box');
     warnings.forEach(function (w) { w.remove(); });
 
-    // Re-enable and update Submit Button
     var submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.className = 'btn btn-info btn-lg w-100 fw-bold';
         submitBtn.innerText = 'Kirim Permohonan Antrean';
     }
-
-    ui.success("Mode Antrean Aktif. Silakan lengkapi form dan klik 'Kirim Permohonan Antrean'.", "Antrean Teraktivasi");
 }
 
 /**

@@ -224,11 +224,11 @@ function renderTable(filter) {
     var filtered = pendingRequests.filter(function (r) {
         var statusMatch = true;
         var rStatus = (r.status || "").toUpperCase();
-        
+
         if (filterValue === 'ANTREAN') {
             statusMatch = (rStatus === 'ANTREAN');
         } else if (filterValue === 'PENDING') {
-            statusMatch = (rStatus === 'PENDING' || rStatus === '');
+            statusMatch = rStatus.startsWith('PENDING');
         } else if (filterValue) {
             // General text search
             var nama = (r.nama || "").toLowerCase();
@@ -236,8 +236,8 @@ function renderTable(filter) {
             var nim = (r.nim || "").toLowerCase();
             statusMatch = nama.indexOf(query) !== -1 || rid.indexOf(query) !== -1 || nim.indexOf(query) !== -1;
         } else {
-            // Default: Show PENDING only for the main "Permohonan Baru" view
-            statusMatch = (rStatus === 'PENDING' || rStatus === '');
+            // Default: Show PENDING and Mitra active workflows for the main view
+            statusMatch = rStatus.startsWith('PENDING');
         }
         return statusMatch;
     });
@@ -247,7 +247,22 @@ function renderTable(filter) {
         return;
     }
 
+    // --- CONFLICT DETECTION: Multiple ANTREAN on same specific computer ---
+    var queueComputerCount = {};
+    filtered.forEach(function (r) {
+        var rStatus = (r.status || '').toUpperCase();
+        var pref = (r.preferredComputer || '').trim();
+        if (rStatus === 'ANTREAN' && pref && pref !== 'ANTREAN') {
+            queueComputerCount[pref] = (queueComputerCount[pref] || 0) + 1;
+        }
+    });
+
     filtered.forEach(function (req) {
+        var rStatus = (req.status || '').toUpperCase();
+        var pref = (req.preferredComputer || '').trim();
+        req.hasQueueConflict = (rStatus === 'ANTREAN' && pref && pref !== 'ANTREAN' && queueComputerCount[pref] > 1);
+        req.queueConflictCount = queueComputerCount[pref] || 0;
+
         var tr = document.createElement('tr');
         var statusClass = req.status === 'ANTREAN' ? 'bg-warning text-dark' : 'bg-light text-dark';
         var statusLabel = req.status === 'ANTREAN' ? 'ANTREAN' : req.requestType;
@@ -261,6 +276,19 @@ function renderTable(filter) {
         if (startDt.getTime() === today.getTime()) urgencyBadge = '<span class="badge bg-danger ms-1" style="font-size:0.6rem;">Hari Ini</span>';
         else if (startDt.getTime() === tomorrow.getTime()) urgencyBadge = '<span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem;">Besok</span>';
 
+        // Queue conflict badge
+        var conflictBadge = req.hasQueueConflict
+            ? '<span class="badge bg-danger ms-1" style="font-size:0.6rem;" title="' + req.queueConflictCount + ' pengantre untuk unit yang sama">⚠️ Konflik Antrean</span>'
+            : '';
+
+        // Preferred computer label for ANTREAN rows
+        var queuePrefLabel = '';
+        if (rStatus === 'ANTREAN' && pref && pref !== 'ANTREAN') {
+            queuePrefLabel = '<div class="extra-small fw-bold" style="color:#dc3545;">🎯 Preferensi: ' + pref + conflictBadge + '</div>';
+        } else if (rStatus === 'ANTREAN') {
+            queuePrefLabel = '<div class="text-muted extra-small">⚠️ WAITING LIST (Bebas)</div>';
+        }
+
         tr.innerHTML = '<td>' +
             '<div class="fw-bold d-flex align-items-center">' +
             req.nama +
@@ -272,7 +300,7 @@ function renderTable(filter) {
             '<td>' +
             '<div class="small">' + req.software + '</div>' +
             '<div class="small fw-bold mt-1" style="color:var(--accent-color);">📅 Mulai: ' + formatDateHuman(req.mulaiPemakaian) + urgencyBadge + '</div>' +
-            '<div class="text-muted extra-small">' + (req.status === 'ANTREAN' ? '<span class="text-warning fw-bold">⚠️ WAITING LIST</span>' : req.roomPreference) + '</div>' +
+            (rStatus === 'ANTREAN' ? queuePrefLabel : '<div class="text-muted extra-small">' + req.roomPreference + '</div>') +
             '</td>' +
             '<td><span class="badge ' + statusClass + ' border">' + statusLabel + '</span></td>' +
             '<td class="text-center">' +
@@ -484,12 +512,12 @@ function openProcessModal(requestId, rowIndex) {
     var prodiContainer = document.getElementById('prodi-container');
     var dosenContainer = document.getElementById('dosen-container');
     var asalInstitusiContainer = document.getElementById('asal-institusi-container');
-    
+
     if (isMitra) {
         if (prodiContainer) prodiContainer.style.display = 'none';
         if (univContainer) univContainer.style.display = 'none';
         if (dosenContainer) dosenContainer.style.display = 'none';
-        
+
         if (asalInstitusiContainer) {
             asalInstitusiContainer.style.display = 'block';
             document.getElementById('modal-asal-institusi').textContent = req.asalInstitusi || '-';
@@ -514,7 +542,14 @@ function openProcessModal(requestId, rowIndex) {
         } else if (req.status === 'ANTREAN') {
             renewalBadge.classList.remove('d-none');
             renewalBadge.classList.replace('bg-info', 'bg-warning');
-            renewalBadge.innerHTML = '⏳ <strong>USER MENGANTRE:</strong> Tidak ada unit terpilih.';
+            var antreanPref = (req.preferredComputer || '').trim();
+            var antreanPrefLabel = (antreanPref && antreanPref !== 'ANTREAN')
+                ? 'Preferensi unit: <strong>' + antreanPref + '</strong>'
+                : 'Preferensi unit: <strong>Bebas (unit pertama yang tersedia)</strong>';
+            var conflictInfo = req.hasQueueConflict
+                ? ' &nbsp;<span class="badge bg-danger">&#9888;&#65039; ' + req.queueConflictCount + ' pengantre untuk unit yang sama — Keputusan ada di tangan Admin</span>'
+                : '';
+            renewalBadge.innerHTML = '&#9203; <strong>USER MENGANTRE:</strong> ' + antreanPrefLabel + conflictInfo;
         } else {
             renewalBadge.classList.add('d-none');
         }
@@ -732,7 +767,7 @@ function openProcessModal(requestId, rowIndex) {
     if (mitraContainer && standardAction) {
         if (isMitra) {
             mitraContainer.classList.remove('d-none');
-            
+
             // Default hide all sub-panels
             panelSurat.classList.add('d-none');
             panelInvoice.classList.add('d-none');
@@ -744,24 +779,24 @@ function openProcessModal(requestId, rowIndex) {
             document.getElementById('mitra-upload-invoice').value = '';
             document.getElementById('mitra-link-invoice').value = '';
 
-            var reqStatus = req.status || 'PENDING';
-            
-            if (reqStatus === 'PENDING') {
+            var reqStatus = req.status || 'PENDING - APPROVAL';
+
+            if (reqStatus === 'PENDING - IZIN' || reqStatus === 'PENDING') {
                 // Tahap 1: Biro setujui dan upload Surat Kadep
                 panelSurat.classList.remove('d-none');
                 standardAction.classList.add('d-none'); // Hide Reject/Grant buttons for now
-            } else if (reqStatus === 'Menunggu Invoice') {
+            } else if (reqStatus === 'PENDING - INVOICE') {
                 // Tahap 2: Keuangan upload Invoice
                 panelInvoice.classList.remove('d-none');
                 standardAction.classList.add('d-none');
-            } else if (reqStatus === 'Menunggu Pembayaran' || reqStatus === 'Menunggu Konfirmasi') {
+            } else if (reqStatus === 'PENDING - PAYMENT' || reqStatus === 'PENDING - APPROVAL') {
                 // Tahap 3: Mitra upload bukti, Admin/Keuangan cek
                 panelPayment.classList.remove('d-none');
                 standardAction.classList.remove('d-none'); // Munculkan Reject/Grant untuk finalisasi
 
                 var proofContainer = document.getElementById('mitra-payment-proof-container');
                 var proofLink = document.getElementById('mitra-payment-proof-link');
-                
+
                 if (req.buktiPembayaran) {
                     proofContainer.classList.remove('d-none');
                     proofLink.href = req.buktiPembayaran;
@@ -789,10 +824,10 @@ function openProcessModal(requestId, rowIndex) {
  */
 function submitMitraSurat() {
     if (!currentRequest) return;
-    
+
     var fileInput = document.getElementById('mitra-upload-surat');
     var linkInput = document.getElementById('mitra-link-surat');
-    
+
     if (fileInput.files.length === 0 && !linkInput.value.trim()) {
         ui.error("Mohon pilih file atau masukkan link Surat Persetujuan Kadep.");
         return;
@@ -806,8 +841,8 @@ function submitMitraSurat() {
             return;
         }
         var reader = new FileReader();
-        uploadPromise = new Promise(function(resolve, reject) {
-            reader.onload = function(e) {
+        uploadPromise = new Promise(function (resolve, reject) {
+            reader.onload = function (e) {
                 var base64 = e.target.result.split(',')[1];
                 resolve({
                     fileData: base64,
@@ -823,11 +858,11 @@ function submitMitraSurat() {
     }
 
     showLoading("Menyimpan Surat & Memberitahu Keuangan...");
-    uploadPromise.then(function(payload) {
+    uploadPromise.then(function (payload) {
         payload.requestId = currentRequest.requestId;
         payload.token = sessionToken; // Fix: Add auth token for Mitra backend validation
         return api.updateMitraSuratKadep(payload);
-    }).then(function(res) {
+    }).then(function (res) {
         if (res.success) {
             ui.success("Surat Persetujuan berhasil disimpan. Email notifikasi dikirim ke Keuangan.");
             processModalObj.hide();
@@ -835,19 +870,19 @@ function submitMitraSurat() {
         } else {
             ui.error("Gagal: " + res.message);
         }
-    }).catch(function(err) {
+    }).catch(function (err) {
         ui.error("Error: " + err);
-    }).finally(function() {
+    }).finally(function () {
         hideLoading();
     });
 }
 
 function submitMitraInvoice() {
     if (!currentRequest) return;
-    
+
     var fileInput = document.getElementById('mitra-upload-invoice');
     var linkInput = document.getElementById('mitra-link-invoice');
-    
+
     if (fileInput.files.length === 0 && !linkInput.value.trim()) {
         ui.error("Mohon pilih file atau masukkan link Invoice / Kode Bayar.");
         return;
@@ -861,8 +896,8 @@ function submitMitraInvoice() {
             return;
         }
         var reader = new FileReader();
-        uploadPromise = new Promise(function(resolve, reject) {
-            reader.onload = function(e) {
+        uploadPromise = new Promise(function (resolve, reject) {
+            reader.onload = function (e) {
                 var base64 = e.target.result.split(',')[1];
                 resolve({
                     fileData: base64,
@@ -878,11 +913,11 @@ function submitMitraInvoice() {
     }
 
     showLoading("Menyimpan Invoice & Mengirim Tagihan ke Mitra...");
-    uploadPromise.then(function(payload) {
+    uploadPromise.then(function (payload) {
         payload.requestId = currentRequest.requestId;
         payload.token = sessionToken; // Fix: Add auth token for Mitra backend validation
         return api.updateMitraInvoice(payload);
-    }).then(function(res) {
+    }).then(function (res) {
         if (res.success) {
             ui.success("Invoice berhasil dikirim. Email tagihan dikirim ke Mitra pemohon.");
             processModalObj.hide();
@@ -890,9 +925,9 @@ function submitMitraInvoice() {
         } else {
             ui.error("Gagal: " + res.message);
         }
-    }).catch(function(err) {
+    }).catch(function (err) {
         ui.error("Error: " + err);
-    }).finally(function() {
+    }).finally(function () {
         hideLoading();
     });
 }
@@ -951,13 +986,13 @@ function applyReallocation() {
 
                 // Toggle back to details
                 toggleReallocate();
-                
+
                 // Milestone Fix: IMMEDIATELY update Preferred_Computer in sheet to prevent race condition
                 api.jsonpRequest('admin-update-preferred-computer', {
                     requestId: currentRequest.requestId,
                     newComputer: newComp,
                     sheetName: currentRequest.sheetName
-                }).then(function(res) {
+                }).then(function (res) {
                     if (res.success) {
                         console.log("Computer reserved immediately: " + newComp);
                     }
@@ -1024,16 +1059,16 @@ function submitApproval() {
     if (currentRequest && currentRequest.needsKey) {
         var dynInputs = document.querySelectorAll('.dynamic-borrow-key');
         var singleInput = document.getElementById('activation-key-input');
-        
+
         var hasKey = false;
         if (dynInputs.length > 0) {
-            dynInputs.forEach(function(inp) { 
-                if(inp.value.trim()) {
+            dynInputs.forEach(function (inp) {
+                if (inp.value.trim()) {
                     hasKey = true;
                     inp.classList.remove('is-invalid');
-                } else { 
-                    inp.classList.add('is-invalid'); 
-                } 
+                } else {
+                    inp.classList.add('is-invalid');
+                }
             });
         } else if (singleInput) {
             if (singleInput.value.trim()) {
@@ -1043,10 +1078,10 @@ function submitApproval() {
                 singleInput.classList.add('is-invalid');
             }
         }
-        
+
         if (!hasKey) {
             ui.error("Akses ditolak: Mohon isi Activation Key untuk tipe Borrow License.", "Activation Key Kosong");
-            
+
             var targetInput = dynInputs.length > 0 ? dynInputs[0] : singleInput;
             if (targetInput) {
                 targetInput.focus();
@@ -1054,7 +1089,7 @@ function submitApproval() {
                 var container = targetInput.closest('.mb-3') || targetInput.parentElement;
                 if (container) {
                     container.classList.add('shake-animation');
-                    setTimeout(function() { container.classList.remove('shake-animation'); }, 500);
+                    setTimeout(function () { container.classList.remove('shake-animation'); }, 500);
                 }
             }
             return;
@@ -1089,7 +1124,7 @@ function submitApproval() {
         console.log("=== BROWSER DEBUG: SUBMIT APPROVAL ===");
         console.log("Target Software:", currentRequest.software);
         console.log("Full Data Payload:", data);
-        
+
         showLoading("Memproses Approval...");
         api.jsonpRequest('admin-approve', data)
             .then(function (res) {
@@ -1247,8 +1282,8 @@ function renderExpiredTable(data) {
         var pEmail = (item.email && item.email !== "-") ? item.email : "";
 
         if (uEmail && pEmail && uEmail.toLowerCase() !== pEmail.toLowerCase()) {
-            emailDisplay = '<div>' + uEmail + '</div>' + 
-                           '<div class="text-secondary" style="font-size: 0.7rem;">' + pEmail + '</div>';
+            emailDisplay = '<div>' + uEmail + '</div>' +
+                '<div class="text-secondary" style="font-size: 0.7rem;">' + pEmail + '</div>';
         } else {
             emailDisplay = '<div>' + (uEmail || pEmail || "-") + '</div>';
         }
@@ -1595,7 +1630,7 @@ function renderExpirationBanner(licenses) {
     if (!container) return;
 
     var grouped = {};
-    licenses.forEach(function(lic) {
+    licenses.forEach(function (lic) {
         var key = lic.vendor && lic.vendor !== "-" ? lic.vendor + '_' + lic.expiry : lic.name + '_' + lic.expiry;
         if (!grouped[key]) {
             grouped[key] = { vendor: lic.vendor, expiry: lic.expiry, daysLeft: lic.daysLeft, count: 0, names: [] };
@@ -1611,7 +1646,7 @@ function renderExpirationBanner(licenses) {
         '<strong class="outfit">Peringatan Lisensi:</strong> ' + licenses.length + ' software akan berakhir dalam waktu dekat.' +
         '<div class="small mt-1">';
 
-    Object.keys(grouped).forEach(function(key) {
+    Object.keys(grouped).forEach(function (key) {
         var g = grouped[key];
         var badgeColor = g.daysLeft < 7 ? 'bg-danger' : 'bg-warning text-dark';
         var displaySoftware = g.count > 1 ? g.vendor + ' Bundle (' + g.count + ' lisensi)' : g.names[0];
