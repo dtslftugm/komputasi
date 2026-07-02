@@ -781,7 +781,7 @@ function openProcessModal(requestId, rowIndex) {
 
             var reqStatus = req.status || 'PENDING - APPROVAL';
 
-            if (reqStatus === 'PENDING - IZIN' || reqStatus === 'PENDING') {
+            if (reqStatus === 'PENDING - IZIN') {
                 // Tahap 1: Biro setujui dan upload Surat Kadep
                 panelSurat.classList.remove('d-none');
                 standardAction.classList.add('d-none'); // Hide Reject/Grant buttons for now
