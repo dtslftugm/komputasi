@@ -399,11 +399,12 @@
                     <div class="row g-4">
                         <!-- Left Info -->
                         <div class="col-md-7">
-                            <h6 class="text-muted text-uppercase small fw-bold mb-3">Informasi Mahasiswa</h6>
+                            <h6 id="modal-info-header" class="text-muted text-uppercase small fw-bold mb-3">Informasi Mahasiswa</h6>
                             <p class="mb-1 small"><strong>Nama:</strong> <span id="modal-nama"></span></p>
-                            <p class="mb-1 small"><strong>NIM:</strong> <span id="modal-nim"></span></p>
+                            <p class="mb-1 small" id="modal-nim-row"><strong>NIM:</strong> <span id="modal-nim"></span></p>
+                            <p class="mb-1 small" id="modal-nik-row" style="display:none;"><strong>NIK / NPWP:</strong> <span id="modal-nik"></span></p>
                             <p class="mb-1 small"><strong>Email:</strong> <span id="modal-email"></span></p>
-                            <p class="mb-1 small"><strong>Email UGM:</strong> <span id="modal-email-ugm"
+                            <p class="mb-1 small" id="modal-email-ugm-row"><strong>Email UGM:</strong> <span id="modal-email-ugm"
                                     class="fw-bold text-primary"></span></p>
                             <p class="mb-4 small"><strong>Phone:</strong> <a id="modal-phone" href="#" target="_blank"
                                     class="text-decoration-none">📱 WhatsApp</a></p>
@@ -435,7 +436,7 @@
                                         style="min-height: 35px; word-break: break-word; color: #dc3545;"></div>
                                 </div>
                             </div>
-                            <p class="mb-1 small"><strong>Keperluan Penggunaan:</strong> <span
+                            <p class="mb-1 small" id="modal-keperluan-row"><strong>Keperluan Penggunaan:</strong> <span
                                     id="modal-keperluan"></span></p>
                             <p class="mb-1 small" id="prodi-container"><strong>Prodi:</strong> <span
                                     id="modal-prodi"></span></p>
@@ -460,7 +461,9 @@
                             </div>
 
                             <a id="modal-doc-link" href="#" target="_blank"
-                                class="btn btn-outline-primary btn-sm rounded-pill w-100 mb-3">📄 Buka Dokumen</a>
+                                class="btn btn-outline-primary btn-sm rounded-pill w-100 mb-2">📄 Buka Dokumen</a>
+                            <a id="modal-identity-link" href="#" target="_blank"
+                                class="btn btn-outline-warning btn-sm rounded-pill w-100 mb-3 d-none">🪪 Identitas KTP / NPWP</a>
 
                             <p class="mb-1 mt-3 small"><strong>Tipe Request:</strong> <span id="modal-request-type"
                                     class="badge bg-primary-subtle text-primary border-0"></span></p>
@@ -562,7 +565,7 @@
                                     <button class="btn btn-primary btn-sm w-100 fw-bold rounded-pill" onclick="submitMitraSurat()">📤 Simpan & Beritahu Keuangan</button>
                                 </div>
 
-                                <!-- Invoice Panel (Menunggu Invoice) -->
+                                <!-- Invoice Panel (Pending - Invoice) -->
                                 <div id="mitra-panel-invoice" class="d-none">
                                     <label class="form-label small fw-bold">Upload Invoice Tagihan (PDF/Image)</label>
                                     <input type="file" id="mitra-upload-invoice" class="form-control form-control-sm mb-2" accept=".pdf,.jpg,.jpeg,.png">
@@ -571,10 +574,10 @@
                                     <button class="btn btn-primary btn-sm w-100 fw-bold rounded-pill" onclick="submitMitraInvoice()">📤 Simpan & Kirim Tagihan ke Mitra</button>
                                 </div>
 
-                                <!-- Payment Verification Panel (Menunggu Pembayaran) -->
+                                <!-- Payment Verification Panel (Pending - Payment) -->
                                 <div id="mitra-panel-payment" class="d-none">
                                     <div class="alert alert-warning small mb-2 p-2">
-                                        <i class="bi bi-exclamation-triangle"></i> Menunggu pembayaran dari Mitra.
+                                        <i class="bi bi-exclamation-triangle"></i> Pending Payment: Menunggu pembayaran dari Mitra.
                                     </div>
                                     <div id="mitra-payment-proof-container" class="mb-2 d-none">
                                         <label class="form-label small fw-bold">Bukti Pembayaran dari Mitra:</label>

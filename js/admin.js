@@ -513,7 +513,37 @@ function openProcessModal(requestId, rowIndex) {
     var dosenContainer = document.getElementById('dosen-container');
     var asalInstitusiContainer = document.getElementById('asal-institusi-container');
 
+    // Elements specific to Mitra visibility
+    var infoHeader = document.getElementById('modal-info-header');
+    var nimRow = document.getElementById('modal-nim-row');
+    var nikRow = document.getElementById('modal-nik-row');
+    var emailUgmRow = document.getElementById('modal-email-ugm-row');
+    var keperluanRow = document.getElementById('modal-keperluan-row');
+    var identityLink = document.getElementById('modal-identity-link');
+
     if (isMitra) {
+        if (infoHeader) infoHeader.textContent = 'Informasi Mitra';
+        if (nimRow) nimRow.style.display = 'none';
+        if (emailUgmRow) emailUgmRow.style.display = 'none';
+        if (keperluanRow) keperluanRow.style.display = 'none';
+
+        // Show NIK/NPWP row
+        if (nikRow) {
+            nikRow.style.display = 'block';
+            var nikEl = document.getElementById('modal-nik');
+            if (nikEl) nikEl.textContent = req.nikNpwp || '-';
+        }
+
+        // Show Identitas KTP/NPWP link if available
+        if (identityLink) {
+            if (req.identityUrl && req.identityUrl.trim()) {
+                identityLink.href = req.identityUrl;
+                identityLink.classList.remove('d-none');
+            } else {
+                identityLink.classList.add('d-none');
+            }
+        }
+
         if (prodiContainer) prodiContainer.style.display = 'none';
         if (univContainer) univContainer.style.display = 'none';
         if (dosenContainer) dosenContainer.style.display = 'none';
@@ -523,6 +553,13 @@ function openProcessModal(requestId, rowIndex) {
             document.getElementById('modal-asal-institusi').textContent = req.asalInstitusi || '-';
         }
     } else {
+        if (infoHeader) infoHeader.textContent = 'Informasi Mahasiswa';
+        if (nimRow) nimRow.style.display = 'block';
+        if (nikRow) nikRow.style.display = 'none';
+        if (emailUgmRow) emailUgmRow.style.display = 'block';
+        if (keperluanRow) keperluanRow.style.display = 'block';
+        if (identityLink) identityLink.classList.add('d-none');
+
         if (prodiContainer) prodiContainer.style.display = 'block';
         if (dosenContainer) dosenContainer.style.display = 'block';
         if (asalInstitusiContainer) asalInstitusiContainer.style.display = 'none';
