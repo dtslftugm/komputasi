@@ -2530,7 +2530,7 @@ function showQueueEntryModal(historicalComputers, onConfirm) {
         '    </ul>',
         computerOptionsHtml,
         '    <div class="d-flex gap-2 justify-content-end mt-3">',
-        '      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById(\' queueEntryModal\').remove()">Batal</button>',
+        '      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window._closeQueueModal()">Batal</button>',
         '      <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="' + confirmScript + '">&#9989; Konfirmasi &amp; Masuk Antrean</button>',
         '    </div>',
         '  </div>',
@@ -2538,6 +2538,10 @@ function showQueueEntryModal(historicalComputers, onConfirm) {
     ].join('');
 
     window._queueEntryCallback = onConfirm;
+    window._closeQueueModal = function () {
+        var m = document.getElementById('queueEntryModal');
+        if (m) m.remove();
+    };
     document.body.appendChild(modal);
 }
 
@@ -2567,12 +2571,29 @@ function _activateQueueMode(preferredComputer) {
     var warnings = document.querySelectorAll('.renewal-warning-box');
     warnings.forEach(function (w) { w.remove(); });
 
+    // Disable dan ganti teks tombol Daftar Antrean
+    var joinBtn = document.getElementById('join-queue-btn');
+    if (joinBtn) {
+        joinBtn.disabled = true;
+        joinBtn.className = 'btn btn-secondary px-4 py-2 fw-bold';
+        joinBtn.style.borderRadius = '10px';
+        joinBtn.innerHTML = '&#9203; Memilih Antrean...';
+    }
+
     var submitBtn = document.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.className = 'btn btn-info btn-lg w-100 fw-bold';
         submitBtn.innerText = 'Kirim Permohonan Antrean';
     }
+
+    // Scroll ke bagian Metode Lampiran Surat
+    setTimeout(function () {
+        var lampiranSection = document.getElementById('lampiran-surat-section');
+        if (lampiranSection) {
+            lampiranSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 300);
 }
 
 /**
