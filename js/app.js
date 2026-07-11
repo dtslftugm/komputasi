@@ -1064,6 +1064,16 @@ function renderComputerPage() {
                 '  <button type="button" class="btn btn-primary px-4 py-2 shadow-sm fw-bold" onclick="handleJoinQueue()" style="border-radius: 10px;">📝 Daftar Antrean</button>' +
                 '  <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="$(\x27#software\x27).val(null).trigger(\x27change\x27);" style="border-radius: 10px;">Pilih Software Lain</button>' +
                 '</div>';
+        } else {
+            // Restore default message untuk software umum
+            noComputers.innerHTML =
+                '<div class="mb-3 fs-1">🏢</div>' +
+                '<h5 class="fw-bold mb-2">Maaf, Ruangan Penuh</h5>' +
+                '<p class="text-muted mb-4 small">Saat ini tidak ada unit komputer tersedia di ruangan yang Anda pilih.<br>Silakan pilih ruangan lain atau mendaftar di antrean.</p>' +
+                '<div class="d-grid gap-2 d-sm-flex justify-content-sm-center">' +
+                '  <button type="button" id="join-queue-btn" class="btn btn-primary px-4 py-2 shadow-sm fw-bold" onclick="handleJoinQueue()" style="border-radius: 10px;">📝 Daftar Antrean Penelitian</button>' +
+                '  <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="document.getElementById(\x27roomPreference\x27).focus()" style="border-radius: 10px;">Pilih Ruang Lain</button>' +
+                '</div>';
         }
         return;
     }
@@ -2261,7 +2271,7 @@ function prefillRenewalForm(data) {
                             '<strong>⚠️ PERINGATAN PENTING:</strong> Seluruh proses running/modeling yang sedang berjalan akan dihentikan secara paksa saat masa berlaku berakhir. ' +
                             'Segera simpan data simulasi Anda dan bersihkan folder kerja sebelum waktu akses habis.' +
                             '</div>' +
-                            '<p class="small mb-2 mt-2"><i>Catatan: Jika proses simulasi Anda diperkirakan selesai sedikit melebihi batas waktu (misal: H+1), silakan segera berkoordinasi dengan Administrator Lab untuk negosiasi waktu dengan pengantre berikutnya.</i></p>';
+                            '<p class="small mb-2 mt-2"><i>Catatan: Jika proses simulasi Anda diperkirakan selesai sedikit melebihi batas waktu (misal: H+1), silakan segera berkoordinasi dengan Admin Lab untuk negosiasi waktu dengan pengantre berikutnya.</i></p>';
 
                         // Add Join Queue button
                         message += '<div class="mt-3 d-flex gap-2">' +
