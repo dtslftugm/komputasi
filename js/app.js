@@ -7,6 +7,8 @@
 var initialData = null;
 var dosenList = [];
 var softwareRules = {};
+var softwareInstalledOnMap = {}; // Mapping: softwareName -> [hostname1, hostname2, ...] (hardware-locked)
+var allowedComputerNames = null; // null = semua, array = hanya unit tertentu
 var isQueueMode = false; // Milestone 20
 
 // ===== INITIALIZATION =====
@@ -521,6 +523,10 @@ function setupSoftwareSelect() {
                     opt.value = sw.name;
                     opt.textContent = sw.name + (sw.isAvailable ? "" : " (Tidak Tersedia)");
                     if (!sw.isAvailable) opt.disabled = true;
+                    // Simpan mapping hardware-locked software
+                    if (sw.installedOn && sw.installedOn.length > 0) {
+                        softwareInstalledOnMap[sw.name] = sw.installedOn;
+                    }
                 } else {
                     opt.value = sw;
                     opt.textContent = sw;
@@ -698,6 +704,26 @@ function handleSoftwareChange() {
     var warningText = document.getElementById('labOnlyWarningText');
     var roomSelect = document.getElementById('roomPreference');
 
+    // --- Hardware-locked multi-select validation ---
+    var hwLockedSelected = [];
+    selectedSoftware.forEach(function (swName) {
+        if (softwareInstalledOnMap[swName]) hwLockedSelected.push(swName);
+    });
+    if (hwLockedSelected.length > 1) {
+        // Tidak boleh pilih >1 hardware-locked software 
+        var lastAdded = hwLockedSelected[hwLockedSelected.length - 1];
+        var filtered = selectedSoftware.filter(function (s) { return s !== lastAdded; });
+        $('#software').val(filtered).trigger('change.select2');
+        ui.warning('Software <strong>' + lastAdded + '</strong> hanya tersedia di unit komputer khusus. Anda tidak dapat memilih lebih dari satu software bertipe hardware-locked sekaligus, karena masing-masing membutuhkan unit yang berbeda.', 'Batasan Lisensi Khusus');
+        return;
+    }
+
+    // --- Determine allowedComputerNames from Installed_On ---
+    allowedComputerNames = null; // Reset: null = semua unit
+    if (hwLockedSelected.length === 1) {
+        allowedComputerNames = softwareInstalledOnMap[hwLockedSelected[0]];
+    }
+
     if (selectedSoftware.length > 0) {
         // Perform Instant Check locally (Zero Latency)
         var result = checkSoftwareRestrictionsClient(selectedSoftware.join(', '));
@@ -706,8 +732,11 @@ function handleSoftwareChange() {
         var allowedRooms = result.allowedRooms || [];
 
         if (requiresLab) {
+            var hwMsg = allowedComputerNames
+                ? '<strong>Lisensi Khusus (Hardware-locked):</strong> Software <em>' + hwLockedSelected[0] + '</em> hanya tersedia di <strong>' + allowedComputerNames.length + ' unit</strong> komputer tertentu. Sistem akan menampilkan unit yang kompatibel.'
+                : '<strong>Wajib di Lab:</strong> Software ini hanya tersedia di lab Komputasi DTSL. Anda wajib memilih unit komputer di bawah ini.';
             warningDiv.classList.remove('d-none');
-            warningText.innerHTML = '<strong>Wajib di Lab:</strong> Software ini hanya tersedia di lab Komputasi DTSL. Anda wajib memilih unit komputer di bawah ini.';
+            warningText.innerHTML = hwMsg;
 
             var needsComputerYes = document.getElementById('needsComputerYes');
             var needsComputerNo = document.getElementById('needsComputerNo');
@@ -739,10 +768,16 @@ function handleSoftwareChange() {
             ui.warning('Software yang Anda pilih memiliki batasan akses yang tidak kompatibel. Silahkan dikirimkan secara terpisah.', 'Batasan Software');
         }
 
+        // Reload computers if room already selected (filter will apply)
+        if (roomSelect.value && document.getElementById('needsComputerYes').checked) {
+            loadAvailableComputers();
+        }
+
         // Calibrate Tipe Akses
         autoSetTipeAkses();
 
     } else {
+        allowedComputerNames = null;
         warningDiv.classList.add('d-none');
         Array.prototype.slice.call(roomSelect.options).forEach(function (opt) { opt.disabled = false; });
         var needsComputerNo = document.getElementById('needsComputerNo');
@@ -982,7 +1017,18 @@ function filterComputers() {
     filteredComputers = availableComputers.filter(function (comp) {
         var name = (comp.name || '').toLowerCase();
         var sw = (comp.softwareInstalled || '').toLowerCase();
-        return name.indexOf(searchTerm) !== -1 || sw.indexOf(searchTerm) !== -1;
+        var matchesSearch = name.indexOf(searchTerm) !== -1 || sw.indexOf(searchTerm) !== -1;
+
+        // Filter berdasarkan Installed_On (hardware-locked software)
+        if (allowedComputerNames && allowedComputerNames.length > 0) {
+            var compName = (comp.name || '').trim();
+            var isAllowed = allowedComputerNames.some(function (allowed) {
+                return allowed.toLowerCase() === compName.toLowerCase();
+            });
+            return matchesSearch && isAllowed;
+        }
+
+        return matchesSearch;
     });
 
     currentPage = 1;
@@ -1002,6 +1048,22 @@ function renderComputerPage() {
     if (filteredComputers.length === 0) {
         noComputers.classList.remove('d-none');
         pagination.classList.add('d-none');
+
+        // Pesan khusus jika semua unit hardware-locked sedang terpakai
+        if (allowedComputerNames && allowedComputerNames.length > 0) {
+            var hwSwName = '';
+            var selectedSw = $('#software').val() || [];
+            selectedSw.forEach(function (s) { if (softwareInstalledOnMap[s]) hwSwName = s; });
+            noComputers.innerHTML =
+                '<div class="mb-3 fs-1">🔒</div>' +
+                '<h5 class="fw-bold mb-2">Unit Komputer Lisensi Khusus Tidak Tersedia</h5>' +
+                '<p class="text-muted mb-2 small">Software <strong>' + (hwSwName || 'yang dipilih') + '</strong> hanya tersedia di <strong>' + allowedComputerNames.length + ' unit</strong> komputer tertentu (' + allowedComputerNames.join(', ') + '), dan saat ini semua unit tersebut sedang digunakan.</p>' +
+                '<p class="text-muted mb-4 small">Anda dapat mendaftar antrean untuk menggunakan unit tersebut setelah tersedia, atau memilih software lain.</p>' +
+                '<div class="d-grid gap-2 d-sm-flex justify-content-sm-center">' +
+                '  <button type="button" class="btn btn-primary px-4 py-2 shadow-sm fw-bold" onclick="handleJoinQueue()" style="border-radius: 10px;">📝 Daftar Antrean</button>' +
+                '  <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="$(\x27#software\x27).val(null).trigger(\x27change\x27);" style="border-radius: 10px;">Pilih Software Lain</button>' +
+                '</div>';
+        }
         return;
     }
 
@@ -1108,7 +1170,7 @@ function setupFormHandlers() {
                 var diffDays = Math.ceil((new Date(akhirVal) - new Date(mulaiVal)) / (1000 * 60 * 60 * 24));
                 if (diffDays > 0 && (diffDays % 30) !== 0) {
                     var billingMonths = Math.ceil(diffDays / 30);
-                    var billedDays    = billingMonths * 30;
+                    var billedDays = billingMonths * 30;
                     // Tampilkan modal konfirmasi — submit dilanjutkan hanya jika user setuju
                     showMitraBillingConfirmModal(diffDays, billingMonths, billedDays, function onConfirmed() {
                         proceedWithSubmission(formData);
@@ -2631,11 +2693,11 @@ function showMitraBillingConfirmModal(actualDays, billingMonths, billedDays, onC
 
     document.body.appendChild(modal);
 
-    document.getElementById('mitraBillConfirm').addEventListener('click', function() {
+    document.getElementById('mitraBillConfirm').addEventListener('click', function () {
         modal.remove();
         onConfirm();
     });
-    document.getElementById('mitraBillCancel').addEventListener('click', function() {
+    document.getElementById('mitraBillCancel').addEventListener('click', function () {
         modal.remove();
         var akhirEl = document.getElementById('akhir');
         if (akhirEl) {
@@ -2643,5 +2705,5 @@ function showMitraBillingConfirmModal(actualDays, billingMonths, billedDays, onC
             akhirEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
-    modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
 }
