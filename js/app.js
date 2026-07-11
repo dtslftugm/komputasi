@@ -1056,9 +1056,10 @@ function renderComputerPage() {
             selectedSw.forEach(function (s) { if (softwareInstalledOnMap[s]) hwSwName = s; });
             noComputers.innerHTML =
                 '<div class="mb-3 fs-1">🔒</div>' +
-                '<h5 class="fw-bold mb-2">Unit Komputer Lisensi Khusus Tidak Tersedia</h5>' +
-                '<p class="text-muted mb-2 small">Software <strong>' + (hwSwName || 'yang dipilih') + '</strong> hanya tersedia di <strong>' + allowedComputerNames.length + ' unit</strong> komputer tertentu (' + allowedComputerNames.join(', ') + '), dan saat ini semua unit tersebut sedang digunakan.</p>' +
-                '<p class="text-muted mb-4 small">Anda dapat mendaftar antrean untuk menggunakan unit tersebut setelah tersedia, atau memilih software lain.</p>' +
+                '<h5 class="fw-bold mb-2">Unit Komputer Tidak Tersedia</h5>' +
+                '<p class="text-muted mb-2 small">Software <strong>' + (hwSwName || 'yang dipilih') + '</strong> hanya tersedia <strong>' + allowedComputerNames.length + ' unit</strong> (' + allowedComputerNames.join(', ') + ').</p>' +
+                '<p class="text-muted mb-3 small">Saat ini <strong>tidak tersedia di ruangan yang Anda pilih</strong>. Hal ini dapat terjadi karena dua kemungkinan:<br>1. Unit tersebut sedang dipakai oleh orang lain.<br>2. Unit tersebut berada di ruangan lab yang berbeda.</p>' +
+                '<p class="text-muted mb-4 small">Silakan coba <strong>Pilih Ruang Lain</strong> pada dropdown di atas. Jika tetap tidak ada, berarti unit sedang terpakai dan Anda bisa mendaftar antrean.</p>' +
                 '<div class="d-grid gap-2 d-sm-flex justify-content-sm-center">' +
                 '  <button type="button" class="btn btn-primary px-4 py-2 shadow-sm fw-bold" onclick="handleJoinQueue()" style="border-radius: 10px;">📝 Daftar Antrean</button>' +
                 '  <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="$(\x27#software\x27).val(null).trigger(\x27change\x27);" style="border-radius: 10px;">Pilih Software Lain</button>' +
