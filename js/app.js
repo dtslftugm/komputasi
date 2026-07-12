@@ -674,27 +674,29 @@ function checkSoftwareRestrictionsClient(softwareStr) {
 
 function selectPenelitianMandiri() {
     var swSelect = $('#software');
-    var target = 'DTSL - Penelitian Mandiri';
+    var targetNew = 'Hanya unit komputer saja';
+    var targetOld = 'DTSL - Penelitian Mandiri';
+    var foundTarget = null;
 
     // Check if option exists
-    var exists = false;
     swSelect.find('option').each(function () {
-        if ($(this).val() === target) {
-            exists = true;
+        var val = $(this).val();
+        if (val === targetNew || val === targetOld) {
+            foundTarget = val;
             return false;
         }
     });
 
-    if (exists) {
+    if (foundTarget) {
         // Multi-select: we want to append or just set if it's the only one
         var current = swSelect.val() || [];
-        if (current.indexOf(target) === -1) {
-            current.push(target);
+        if (current.indexOf(foundTarget) === -1) {
+            current.push(foundTarget);
             swSelect.val(current).trigger('change');
         }
-        ui.success('Berhasil memilih Penelitian Mandiri. Silahkan pilih unit komputer di bawah.', 'Input Otomatis');
+        ui.success('Berhasil memilih "' + foundTarget + '". Silahkan pilih unit komputer di bawah.', 'Input Otomatis');
     } else {
-        ui.error('Software "DTSL - Penelitian Mandiri" tidak ditemukan di daftar. Hubungi admin.', 'Error');
+        ui.error('Opsi "Hanya unit komputer saja" tidak ditemukan di daftar. Hubungi admin.', 'Error');
     }
 }
 
@@ -783,6 +785,11 @@ function handleSoftwareChange() {
         var needsComputerNo = document.getElementById('needsComputerNo');
         if (needsComputerNo) needsComputerNo.disabled = false;
         document.getElementById('requestType').value = '';
+
+        // Reload/re-filter computers if room is already selected so the UI is updated
+        if (roomSelect.value && document.getElementById('needsComputerYes').checked) {
+            filterComputers();
+        }
     }
 }
 
@@ -1062,7 +1069,7 @@ function renderComputerPage() {
                 '<p class="text-muted mb-4 small">Silakan coba <strong>Pilih Ruang Lain</strong> pada dropdown di atas. Jika tetap tidak ada, berarti unit sedang terpakai dan Anda bisa mendaftar antrean.</p>' +
                 '<div class="d-grid gap-2 d-sm-flex justify-content-sm-center">' +
                 '  <button type="button" class="btn btn-primary px-4 py-2 shadow-sm fw-bold" onclick="handleJoinQueue()" style="border-radius: 10px;">📝 Daftar Antrean</button>' +
-                '  <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="$(\x27#software\x27).val(null).trigger(\x27change\x27);" style="border-radius: 10px;">Pilih Software Lain</button>' +
+                '  <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="$(\x27#software\x27).val(null).trigger(\x27change\x27); window.scrollTo({top: document.getElementById(\x27software-selection\x27) ? document.getElementById(\x27software-selection\x27).offsetTop - 100 : 0, behavior: \x27smooth\x27}); setTimeout(function(){$(\x27#software\x27).select2(\x27open\x27);}, 300);" style="border-radius: 10px;">Pilih Software Lain</button>' +
                 '</div>';
         } else {
             // Restore default message untuk software umum
