@@ -521,7 +521,13 @@ function setupSoftwareSelect() {
 
                 if (typeof sw === 'object' && sw.name) {
                     opt.value = sw.name;
-                    opt.textContent = sw.name + (sw.isAvailable ? "" : " (Tidak Tersedia)");
+                    var textExt = "";
+                    if (sw.hardwareOccupied) {
+                        textExt = " (Unit Terpakai)";
+                    } else if (!sw.isAvailable) {
+                        textExt = " (Tidak Tersedia)";
+                    }
+                    opt.textContent = sw.name + textExt;
                     if (!sw.isAvailable) opt.disabled = true;
                     // Simpan mapping hardware-locked software
                     if (sw.installedOn && sw.installedOn.length > 0) {
@@ -581,7 +587,11 @@ function setupQuotaCheck() {
                 var baseName = swData.name;
 
                 if (swData.isAvailable) {
-                    opt.textContent = baseName + " " + quotaString;
+                    if (swData.hardwareOccupied) {
+                        opt.textContent = baseName + " (Unit Terpakai)";
+                    } else {
+                        opt.textContent = baseName + " " + quotaString;
+                    }
                     opt.disabled = false;
                 } else {
                     opt.textContent = baseName + " " + (quotaString || "(Penuh/Habis)");
@@ -1021,6 +1031,22 @@ function loadAvailableComputers() {
 function filterComputers() {
     var searchTerm = document.getElementById('computer-search').value.toLowerCase();
 
+    if (selectedComputer && selectedComputer.name !== 'ANTREAN') {
+        var isStillValid = availableComputers.some(function (c) {
+            return c.name === selectedComputer.name;
+        });
+
+        if (isStillValid && allowedComputerNames && allowedComputerNames.length > 0) {
+            isStillValid = allowedComputerNames.some(function (a) {
+                return a.toLowerCase() === selectedComputer.name.toLowerCase();
+            });
+        }
+
+        if (!isStillValid) {
+            selectedComputer = null;
+        }
+    }
+
     filteredComputers = availableComputers.filter(function (comp) {
         var name = (comp.name || '').toLowerCase();
         var sw = (comp.softwareInstalled || '').toLowerCase();
@@ -1111,6 +1137,13 @@ function renderComputerPage() {
 
         col.querySelector('.card').addEventListener('click', function () {
             selectedComputer = comp;
+            isQueueMode = false;
+            
+            var banner = document.getElementById('renewalInfoBanner');
+            if (banner && banner.innerHTML.indexOf('Mode Antrean') !== -1) {
+                banner.classList.add('d-none');
+            }
+            
             renderComputerPage();
         });
 
@@ -1765,7 +1798,13 @@ function validateFormData(data) {
         // Skip computer selection check if user is in queue mode (unit akan ditentukan Admin)
         var isInQueueMode = isQueueMode || (data.preferredComputer === 'ANTREAN') || (getUrlParam('action') === 'queue');
         if (!isInQueueMode && (!data.preferredComputer || data.preferredComputer === "")) {
-            ui.alert('Silakan pilih salah satu unit komputer yang tersedia di daftar.', 'Unit Diperlukan', 'warning')
+            var isUnavailable = typeof filteredComputers !== 'undefined' && filteredComputers.length === 0;
+            var alertMsg = isUnavailable 
+                ? 'Saat ini unit komputer tidak tersedia. Silakan klik tombol "Daftar Antrean" atau ubah pilihan Anda.' 
+                : 'Silakan pilih salah satu unit komputer yang tersedia di daftar.';
+            var alertTitle = isUnavailable ? 'Unit Tidak Tersedia' : 'Unit Diperlukan';
+
+            ui.alert(alertMsg, alertTitle, 'warning')
                 .then(function () {
                     var container = document.getElementById('computer-selection-container');
                     if (container) {
