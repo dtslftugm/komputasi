@@ -141,7 +141,7 @@ function loadRequests() {
 
                 // Update stats
                 if (res.stats) {
-                    document.getElementById('count-pending').textContent = res.stats.pending || 0;
+                    document.getElementById('count-pending').textContent = (res.stats.pending || 0) + (res.stats.antrean || 0);
                     if (document.getElementById('count-antrean')) {
                         document.getElementById('count-antrean').textContent = res.stats.antrean || 0;
                     }
@@ -228,7 +228,7 @@ function renderTable(filter) {
         if (filterValue === 'ANTREAN') {
             statusMatch = (rStatus === 'ANTREAN');
         } else if (filterValue === 'PENDING') {
-            statusMatch = rStatus.startsWith('PENDING');
+            statusMatch = rStatus.startsWith('PENDING') || rStatus === 'ANTREAN';
         } else if (filterValue) {
             // General text search
             var nama = (r.nama || "").toLowerCase();
@@ -237,7 +237,7 @@ function renderTable(filter) {
             statusMatch = nama.indexOf(query) !== -1 || rid.indexOf(query) !== -1 || nim.indexOf(query) !== -1;
         } else {
             // Default: Show PENDING and Mitra active workflows for the main view
-            statusMatch = rStatus.startsWith('PENDING');
+            statusMatch = rStatus.startsWith('PENDING') || rStatus === 'ANTREAN';
         }
         return statusMatch;
     });
@@ -264,8 +264,8 @@ function renderTable(filter) {
         req.queueConflictCount = queueComputerCount[pref] || 0;
 
         var tr = document.createElement('tr');
-        var statusClass = req.status === 'ANTREAN' ? 'bg-warning text-dark' : 'bg-light text-dark';
-        var statusLabel = req.status === 'ANTREAN' ? 'ANTREAN' : req.requestType;
+        var statusClass = req.status === 'ANTREAN' ? 'bg-warning text-dark border-warning fw-bold' : 'bg-light text-dark';
+        var statusLabel = req.status === 'ANTREAN' ? '⏱️ MENGANTRE' : req.requestType;
 
         // Urgency Badge Logic
         var startDt = parseDateIndo(req.mulaiPemakaian);
