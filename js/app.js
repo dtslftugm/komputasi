@@ -523,7 +523,7 @@ function setupSoftwareSelect() {
                     opt.value = sw.name;
                     var textExt = "";
                     if (sw.hardwareOccupied) {
-                        textExt = " (Unit Terpakai)";
+                        textExt = " (Unit PC Sedang Dipakai)";
                     } else if (!sw.isAvailable) {
                         textExt = " (Tidak Tersedia)";
                     }
@@ -586,9 +586,9 @@ function setupQuotaCheck() {
                 var quotaString = swData.quotaInfo || "";
                 var baseName = swData.name;
 
-                if (swData.isAvailable) {
+                if (swData.isAvailable || swData.hardwareOccupied) {
                     if (swData.hardwareOccupied) {
-                        opt.textContent = baseName + " (Unit Terpakai)";
+                        opt.textContent = baseName + " (Unit PC Sedang Dipakai)";
                     } else {
                         opt.textContent = baseName + " " + quotaString;
                     }
