@@ -80,7 +80,7 @@ APIClient.prototype.run = function (functionName, params) {
 };
 
 /**
- * JSONP Request (ES5 Compatible)
+ * Fetch Request (ES5 Compatible, legacy name kept for backward compatibility)
  */
 APIClient.prototype.jsonpRequest = function (path, params) {
     var _this = this;
@@ -95,11 +95,7 @@ APIClient.prototype.jsonpRequest = function (path, params) {
                 return;
             }
 
-            _this.callbackCounter++;
-            var callbackName = 'cb' + _this.callbackCounter + '_' + Date.now();
-            var script = document.createElement('script');
-
-            var queryString = 'path=' + encodeURIComponent(path) + '&callback=' + encodeURIComponent(callbackName);
+            var queryString = 'path=' + encodeURIComponent(path);
             if (params && typeof params === 'object') {
                 for (var key in params) {
                     if (Object.prototype.hasOwnProperty.call(params, key)) {
@@ -111,46 +107,43 @@ APIClient.prototype.jsonpRequest = function (path, params) {
             }
 
             var finalURL = cleanBaseURL + (cleanBaseURL.indexOf('?') === -1 ? '?' : '&') + queryString + '&_t=' + Date.now();
-            console.log('JSONP Request attempt:', finalURL);
+            console.log('Fetch Request attempt:', finalURL);
 
-            // Force anonymous request to avoid Google Multiple-Account redirect issues
-            script.crossOrigin = 'anonymous';
-            script.src = finalURL;
-
-            // Timeout ditingkatkan ke 35s untuk mengakomodasi GAS cold start
-            // (rata-rata GAS butuh 8-25s untuk eksekusi submit)
+            var controller = new AbortController();
             var timeout = setTimeout(function () {
-                if (window[callbackName]) {
-                    // Do not delete outright; replace with a dummy to catch delayed GAS responses
-                    window[callbackName] = function () { delete window[callbackName]; };
-                    if (script.parentNode) script.parentNode.removeChild(script);
-                    reject(new Error('Request Timeout - Google Script lambat merespon (>35s) atau koneksi tidak stabil.'));
-                }
+                controller.abort();
+                reject(new Error('Request Timeout - Google Script lambat merespon (>35s) atau koneksi tidak stabil.'));
             }, 35000);
 
-            window[callbackName] = function (response) {
+            fetch(finalURL, {
+                method: 'GET',
+                signal: controller.signal,
+                redirect: 'follow'
+            })
+            .then(function (res) {
                 clearTimeout(timeout);
-                delete window[callbackName];
-                if (script.parentNode) script.parentNode.removeChild(script);
-
+                if (!res.ok) {
+                    throw new Error('HTTP error! Status: ' + res.status);
+                }
+                return res.json();
+            })
+            .then(function (response) {
                 if (response && response.success) {
                     resolve(response);
                 } else {
                     var msg = (response && response.message) ? response.message : 'Request failed at backend';
                     reject(new Error(msg));
                 }
-            };
-
-            script.onerror = function () {
+            })
+            .catch(function (err) {
                 clearTimeout(timeout);
-                delete window[callbackName];
-                if (script.parentNode) script.parentNode.removeChild(script);
-                console.error('Script failed to load:', finalURL);
-                var diag = "\nBaseURL: " + cleanBaseURL + "\nCallback: " + callbackName;
-                reject(new Error('Script load failed.' + diag + '\nFull URL: ' + finalURL));
-            };
-
-            document.body.appendChild(script);
+                if (err.name === 'AbortError') {
+                    return; // Already handled by timeout reject
+                }
+                console.error('Fetch failed:', finalURL, err);
+                var diag = "\nBaseURL: " + cleanBaseURL;
+                reject(new Error('Fetch request failed.' + diag + '\nError: ' + err.message + '\nFull URL: ' + finalURL));
+            });
         });
     };
 
