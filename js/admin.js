@@ -1005,7 +1005,8 @@ function loadAvailableComputers() {
         .then(function (res) {
             select.innerHTML = '<option value="">-- Pilih unit pengganti --</option>';
             if (res.success && res.data) {
-                res.data.forEach(function (c) {
+                var availableOnly = res.data.filter(function (c) { return c.isAvailable === true; });
+                availableOnly.forEach(function (c) {
                     var opt = document.createElement('option');
                     opt.value = c.name;
                     opt.innerText = c.name + " (" + (c.location || "Lab") + ")";

@@ -345,6 +345,25 @@ a:hover {
   background-color: rgba(25, 135, 84, 0.15) !important;
 }
 
+.computer-card.in-use {
+  border: 1px dashed #dc3545 !important;
+  background-color: rgba(220, 53, 69, 0.05) !important;
+  opacity: 0.85;
+}
+
+.computer-card.in-use:hover {
+  border: 1px solid #dc3545 !important;
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+}
+
+.computer-card.in-use.selected-queue {
+  border: 2px solid #ffc107 !important;
+  background-color: rgba(255, 193, 7, 0.15) !important;
+  opacity: 1;
+}
+
 /* 8. COMPONENT: SELECTED COMPUTER DETAILS */
 .selected-info-list {
   padding: 15px;

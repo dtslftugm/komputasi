@@ -1123,28 +1123,55 @@ function renderComputerPage() {
         var col = document.createElement('div');
         col.className = 'col-md-6 col-lg-4';
 
+        var isAvailable = (comp.isAvailable !== false); // default to true if undefined
         var isSelected = selectedComputer && selectedComputer.name === comp.name;
 
-        col.innerHTML = '<div class="card h-100 computer-card ' + (isSelected ? 'selected' : '') + '" style="cursor: pointer; transition: all 0.2s;">' +
+        var cardClass = '';
+        if (isAvailable) {
+            cardClass = isSelected ? 'selected' : '';
+        } else {
+            cardClass = 'in-use' + (isSelected ? ' selected-queue' : '');
+        }
+
+        var badgeHtml = '';
+        var actionTextHtml = '';
+        var titleClass = 'card-title fw-bold mb-1';
+        var textClass = 'small text-muted mb-2';
+        var swTextClass = 'small mb-2';
+
+        if (!isAvailable) {
+            badgeHtml = '<div class="badge bg-danger mb-2 small" style="font-size: 0.7rem; padding: 3px 6px;">🔴 Sedang Dipakai</div>';
+            titleClass += ' text-muted';
+            actionTextHtml = '<div class="mt-2 text-warning fw-bold" style="font-size: 0.7rem;">👉 Klik untuk antre unit ini</div>';
+        }
+
+        col.innerHTML = '<div class="card h-100 computer-card ' + cardClass + '" style="cursor: pointer; transition: all 0.2s;" ' + 
+            (!isAvailable ? 'title="Unit sedang dipakai. Klik untuk mengantre."' : '') + '>' +
             '<div class="card-body p-3">' +
-            '<h6 class="card-title fw-bold mb-1">' + comp.name + '</h6>' +
-            '<div class="small text-muted mb-2">📍 ' + (comp.location || '-') + '</div>' +
-            '<div class="small mb-2" style="font-size: 0.75rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">' +
+            badgeHtml +
+            '<h6 class="' + titleClass + '">' + comp.name + '</h6>' +
+            '<div class="' + textClass + '">📍 ' + (comp.location || '-') + '</div>' +
+            '<div class="' + swTextClass + '" style="font-size: 0.75rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">' +
             '<strong>💾:</strong> ' + (comp.softwareInstalled || '-') +
             '</div>' +
+            actionTextHtml +
             '</div>' +
             '</div>';
 
         col.querySelector('.card').addEventListener('click', function () {
-            selectedComputer = comp;
-            isQueueMode = false;
-            
-            var banner = document.getElementById('renewalInfoBanner');
-            if (banner && banner.innerHTML.indexOf('Mode Antrean') !== -1) {
-                banner.classList.add('d-none');
+            if (isAvailable) {
+                selectedComputer = comp;
+                isQueueMode = false;
+                
+                var banner = document.getElementById('renewalInfoBanner');
+                if (banner && banner.innerHTML.indexOf('Mode Antrean') !== -1) {
+                    banner.classList.add('d-none');
+                }
+                
+                renderComputerPage();
+            } else {
+                handleJoinQueue(comp.name);
             }
-            
-            renderComputerPage();
         });
 
         list.appendChild(col);
@@ -2571,8 +2598,9 @@ function parseAppDate(dateInput) {
 /**
  * Handle Joining the Queue for Research Room
  * Shows a confirmation modal FIRST, then activates queue mode after user confirms.
+ * @param {string} [preselectedComputer] - Optional specific computer name that the user wants to queue for.
  */
-function handleJoinQueue() {
+function handleJoinQueue(preselectedComputer) {
     var nimInput = document.getElementById('nim');
     var currentNim = nimInput ? nimInput.value.replace(/\s/g, '').toUpperCase() : '';
     var historicalComputers = [];
@@ -2581,7 +2609,7 @@ function handleJoinQueue() {
         historicalComputers = initialData.historicalComputerMap[currentNim] || [];
     }
 
-    showQueueEntryModal(historicalComputers, function (preferredComputer) {
+    showQueueEntryModal(historicalComputers, preselectedComputer, function (preferredComputer) {
         _activateQueueMode(preferredComputer);
     });
 }
@@ -2590,36 +2618,50 @@ function handleJoinQueue() {
  * Displays the Queue Entry Confirmation Modal.
  * Explains the queue system and lets returning users choose a preferred computer.
  * @param {string[]} historicalComputers - Array of unit names previously used by this NIM.
+ * @param {string} [preselectedComputer] - Optional specific computer name that the user clicked.
  * @param {function} onConfirm - Callback with selected preferredComputer value.
  */
-function showQueueEntryModal(historicalComputers, onConfirm) {
+function showQueueEntryModal(historicalComputers, preselectedComputer, onConfirm) {
     var existing = document.getElementById('queueEntryModal');
     if (existing) existing.remove();
 
-    // Build the computer options section
-    var computerOptionsHtml = '';
-    if (historicalComputers && historicalComputers.length > 0) {
-        computerOptionsHtml += '<div class="mb-3">';
-        computerOptionsHtml += '<label class="form-label fw-bold small mb-2">&#128187; Unit yang pernah Anda gunakan (pilih preferensi):</label>';
-        computerOptionsHtml += '<div class="d-flex flex-column gap-2">';
-
-        historicalComputers.forEach(function (comp) {
-            var safeId = 'queueComp_' + comp.replace(/[^a-zA-Z0-9]/g, '_');
-            computerOptionsHtml +=
-                '<label class="d-flex align-items-center gap-2 p-2 border rounded" style="cursor:pointer;">' +
-                '<input type="radio" name="queueComputerPref" value="' + comp + '" id="' + safeId + '">' +
-                '<span><strong>' + comp + '</strong></span>' +
-                '</label>';
-        });
-
-        computerOptionsHtml +=
-            '<label class="d-flex align-items-center gap-2 p-2 border border-primary rounded" style="cursor:pointer;">' +
-            '<input type="radio" name="queueComputerPref" value="ANTREAN" id="queueComp_bebas" checked>' +
-            '<span><strong>&#128256; Bebas</strong> <small class="text-muted ms-1">Admin mengalokasikan unit pertama yang tersedia</small></span>' +
-            '</label>';
-
-        computerOptionsHtml += '</div></div>';
+    // Prepare list of options
+    var options = [];
+    if (preselectedComputer && preselectedComputer !== 'ANTREAN') {
+        options.push({ name: preselectedComputer, label: 'Unit Pilihan Anda', checked: true });
     }
+
+    if (historicalComputers && historicalComputers.length > 0) {
+        historicalComputers.forEach(function (comp) {
+            // Avoid duplicates if preselectedComputer is also in historicalComputers
+            var exists = options.some(function (opt) { return opt.name === comp; });
+            if (!exists) {
+                options.push({ name: comp, label: 'Pernah Anda gunakan', checked: !preselectedComputer });
+            }
+        });
+    }
+
+    // Add Bebas option
+    var bebasChecked = !preselectedComputer && (!historicalComputers || historicalComputers.length === 0);
+    options.push({ name: 'ANTREAN', label: 'Bebas (Admin mengalokasikan unit pertama yang tersedia)', checked: bebasChecked });
+
+    // Build the computer options section
+    var computerOptionsHtml = '<div class="mb-3">';
+    computerOptionsHtml += '<label class="form-label fw-bold small mb-2">&#128187; Pilih Preferensi Unit Antrean:</label>';
+    computerOptionsHtml += '<div class="d-flex flex-column gap-2">';
+
+    options.forEach(function (opt) {
+        var safeId = 'queueComp_' + opt.name.replace(/[^a-zA-Z0-9]/g, '_');
+        var borderClass = opt.name === 'ANTREAN' ? 'border-primary' : '';
+        var checkedAttr = opt.checked ? 'checked' : '';
+        computerOptionsHtml +=
+            '<label class="d-flex align-items-center gap-2 p-2 border rounded ' + borderClass + '" style="cursor:pointer; background: var(--bg-input); color: var(--text-main);">' +
+            '<input type="radio" name="queueComputerPref" value="' + opt.name + '" id="' + safeId + '" ' + checkedAttr + '>' +
+            '<span><strong>' + opt.name + '</strong> <small class="text-muted ms-1">(' + opt.label + ')</small></span>' +
+            '</label>';
+    });
+
+    computerOptionsHtml += '</div></div>';
 
     var modal = document.createElement('div');
     modal.id = 'queueEntryModal';
@@ -2633,13 +2675,13 @@ function showQueueEntryModal(historicalComputers, onConfirm) {
         "})()";
 
     modal.innerHTML = [
-        '<div style="background:#fff;border-radius:16px;max-width:520px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.4);overflow:hidden;">',
+        '<div style="background:var(--bg-container);border-radius:16px;max-width:520px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,0.4);overflow:hidden;border:1px solid var(--border-color);color:var(--text-main); font-family: inherit;">',
         '  <div style="background:linear-gradient(135deg,#0d6efd,#0a58ca);padding:20px 24px;color:white;">',
         '    <h5 style="margin:0;">&#128221; Konfirmasi Daftar Antrean</h5>',
         '    <small style="opacity:0.85;">Ruang Penelitian &mdash; Sistem Antrean Aktif</small>',
         '  </div>',
         '  <div style="padding:20px 24px;">',
-        '    <div class="alert alert-warning border-start border-warning border-4 py-2 small mb-3">',
+        '    <div class="alert alert-warning border-start border-warning border-4 py-2 small mb-3" style="background-color: rgba(255, 193, 7, 0.1); color: var(--text-main); border-color: #ffc107 !important;">',
         '      <strong>&#9203; Perkiraan waktu tunggu:</strong> Pengguna aktif berhak melakukan perpanjangan hingga 2 periode (4 minggu). Estimasi waktu tunggu antrean bisa mencapai <strong>3 periode (6 minggu kalender)</strong>.',
         '    </div>',
         '    <ul class="small text-muted mb-3 ps-3">',
